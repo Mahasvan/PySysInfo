@@ -2,13 +2,13 @@ from pydantic import BaseModel
 
 
 class StatusModel(BaseModel):
-    status: str
+    string: str
 
 class SuccessStatus(StatusModel):
-    status: str = "success"
+    string: str = "success"
 
 class PartialStatus(StatusModel):
-    status: str = "partial"
+    string: str = "partial"
 
 class FailedStatus(StatusModel):
-    status: str = "failed"
+    string: str = "failed"

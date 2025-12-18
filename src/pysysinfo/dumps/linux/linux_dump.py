@@ -3,8 +3,9 @@ import re
 import subprocess
 
 from src.pysysinfo.dumps.linux.dmi_decode import get_string_entry, MEMORY_TYPE
-from src.pysysinfo.models.response_models import CPUInfo, LinuxHardwareInfo, MemoryInfo, MemoryModuleInfo, \
-    MemoryModuleSlot, Megabyte, Kilobyte
+from src.pysysinfo.models.response_models import CPUInfo, LinuxHardwareInfo, MemoryInfo
+from src.pysysinfo.models.memory_models import MemoryModuleInfo, MemoryModuleSlot, Megabyte, Kilobyte
+from src.pysysinfo.models.disk_models import DiskInfo, StorageInfo
 from src.pysysinfo.models.success_models import PartialStatus, FailedStatus
 
 
@@ -19,7 +20,8 @@ class LinuxHardwareManager:
     def __init__(self):
         self.info = LinuxHardwareInfo(
             cpu=CPUInfo(),
-            memory=MemoryInfo()
+            memory=MemoryInfo(),
+            storage=StorageInfo()
         )
 
     def fetch_cpu_info(self):
@@ -237,3 +239,61 @@ class LinuxHardwareManager:
                 # todo: Log this appropriately
 
             self.info.memory.modules.append(module)
+
+    def fetch_storage_info(self):
+        # Storage Block Information is in /sys/block
+        if not os.path.isdir("/sys/block"):
+            self.info.disk.status = FailedStatus()
+            return
+
+        for folder in os.listdir("/sys/block"):
+            disk = DiskInfo()
+
+            path = f"/sys/block/{folder}"
+            # todo: mmcblk detection e.g. eMMC storage
+            try:
+                if (not "nvme" in folder) and (not "sd" in folder):
+                    continue
+
+                # Check properties of block device
+                model = open(f"{path}/device/model", "r").read().strip()
+
+                if model:
+                    disk.model = model
+                else:
+                    self.info.storage.status = PartialStatus()
+
+                rotational = open(f"{path}/queue/rotational", "r").read().strip()
+                removable = open(f"{path}/removable", "r").read().strip()
+
+                # todo: USB block devices all report as HDDs?
+                disk.type = (
+                    "Solid State Drive (SSD)"
+                    if rotational == "0"
+                    else "Hard Disk Drive (HDD)"
+                )
+
+                disk.location = "Internal" if removable == "0" else "External"
+
+                if "nvme" in folder:
+                    disk.connector = "PCIe"
+                    disk.type = "Non-Volatile Memory Express (NVMe)"
+
+                    # Uses PCI vendor & device ids to get a vendor for the NVMe block device
+                    disk.device_id = open(f"{path}/device/device/device",
+                               "r").read().strip()
+                    disk.vendor_id = open(f"{path}/device/device/vendor",
+                               "r").read().strip()
+                elif "sd" in folder:
+                    # todo: Choose correct connector type for block devices that use the SCSI subsystem
+                    disk.connector = "SCSI"
+                    disk.vendor_id = open(f"{path}/device/vendor", "r").read().strip()
+                else:
+                    disk.connector = "Unknown"
+
+                self.info.storage.disks.append(disk)
+
+            except Exception as e:
+                self.info.disk.status = PartialStatus()
+                # todo: Log this properly
+                continue
