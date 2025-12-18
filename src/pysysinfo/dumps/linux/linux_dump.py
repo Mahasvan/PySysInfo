@@ -29,7 +29,7 @@ class LinuxHardwareManager:
 
         if not raw_cpu_info: return
 
-        cpu_info = raw_cpu_info.split("\n\n")
+        cpu_info = [x for x in raw_cpu_info.split("\n\n") if x.strip("\n")]
 
         # CPU Info is enumerated as many times as there are CPU Threads.
         # To get the info, we only need to parse the first entry - i.e. the first CPU Thread
@@ -70,8 +70,7 @@ class LinuxHardwareManager:
             self.info.cpu.cores = cores
 
         # The number of CPU Threads is the number of times the processor data is enumerated.
-        threads = raw_cpu_info.count("processor")
-        self.info.cpu.threads = threads
+        self.info.cpu.threads = len(cpu_info)
 
         # todo: get CPU codename from CodenameManager
 

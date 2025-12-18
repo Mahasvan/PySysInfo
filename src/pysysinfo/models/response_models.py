@@ -15,3 +15,4 @@ class CPUResponse(BaseModel):
     vendor: str = ""
     flags: List[str] = []
     cores: int = -1
+    threads: int = -1
