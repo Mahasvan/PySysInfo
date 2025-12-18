@@ -14,8 +14,30 @@ class CPUInfo(ComponentInfo):
     cores: int = -1
     threads: int = -1
 
+class MemorySize(BaseModel):
+    capacity: int
+
+class Kilobyte(MemorySize):
+    capacity: int = 0
+    unit: str = "KB"
+
+class Megabyte(MemorySize):
+    capacity: int = 0
+    unit: str = "MB"
+
+class MemoryModuleSlot(BaseModel):
+    channel: str = ""
+    bank: str = ""
+
+class MemoryModuleInfo(BaseModel):
+    manufacturer: str = ""
+    part_number: str = ""
+    type: str = ""
+    capacity: MemorySize = Kilobyte()
+    slot: MemoryModuleSlot = MemoryModuleSlot()
+
 class MemoryInfo(ComponentInfo):
-    pass
+    modules: List[MemoryModuleInfo] = []
 
 
 class HardwareInfo(BaseModel):
