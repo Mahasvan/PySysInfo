@@ -2,17 +2,25 @@ from typing import List
 
 from pydantic import BaseModel
 
+from src.pysysinfo.models.success_models import FailedStatus, StatusModel, SuccessStatus
+
 
 class HardwareInfo(BaseModel):
-    cpu: CPUResponse
+    cpu: CPUInfo
+    memory: MemoryInfo
 
 class LinuxHardwareInfo(HardwareInfo):
-    cpu: CPUResponse
+    pass
 
+class ComponentInfo(BaseModel):
+    status: StatusModel = SuccessStatus()
 
-class CPUResponse(BaseModel):
+class CPUInfo(ComponentInfo):
     model_name: str = ""
     vendor: str = ""
     flags: List[str] = []
     cores: int = -1
     threads: int = -1
+
+class MemoryInfo(ComponentInfo):
+    pass
