@@ -39,8 +39,7 @@ class LinuxHardwareManager:
         if not raw_cpu_info:
             self.info.cpu.status = FailedStatus()
             return
-
-        if (architecture.stdout == "aarch64") or ("arm" in architecture.stdout):
+        if ("aarch64" in architecture.stdout) or ("arm" in architecture.stdout):
             self.info.cpu.architecture = "ARM"
             model = re.search(r"(?<=Hardware\t\: ).+(?=\n)", raw_cpu_info)
             if model:
