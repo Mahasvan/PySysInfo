@@ -48,7 +48,7 @@ class LinuxHardwareManager:
                 # If the first regex doesn't match, try an alternative pattern
                 model_alt = re.search(r"Model\t+: (.+)(?=\n)", raw_cpu_info)
                 if model_alt:
-                    model_alt = model.group(1)
+                    model_alt = model_alt.group(1)
                     self.info.cpu.model = model_alt
                 else:
                     # if neither pattern matches, change Success to Partial status
