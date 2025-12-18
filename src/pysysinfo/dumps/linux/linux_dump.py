@@ -42,15 +42,17 @@ class LinuxHardwareManager:
         if ("aarch64" in architecture.stdout) or ("arm" in architecture.stdout):
             self.info.cpu.architecture = "ARM"
             model = re.search(r"(?<=Hardware\t: ).+(?=\n)", raw_cpu_info)
-
-            if not model:
-                model = re.search(r"(?<=Model\t: ).+(?=\n)", raw_cpu_info)
-
             if model:
-                model = model.group(0)
-                self.info.cpu.model = model
+                self.info.cpu.model = model.group(0)
             else:
-                self.info.cpu.status = PartialStatus()
+                # If the first regex doesn't match, try an alternative pattern
+                model_alt = re.search(r"Model\t+: (.+)(?=\n)", raw_cpu_info)
+                if model_alt:
+                    model_alt = model.group(1)
+                    self.info.cpu.model = model_alt
+                else:
+                    # if neither pattern matches, change Success to Partial status
+                    self.info.cpu.status = PartialStatus()
 
             arm_version = re.search(r"(?<=CPU architecture: ).+(?=\n)", raw_cpu_info)
             if arm_version:
