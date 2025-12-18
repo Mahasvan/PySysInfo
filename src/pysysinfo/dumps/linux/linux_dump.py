@@ -43,13 +43,13 @@ class LinuxHardwareManager:
             self.info.cpu.architecture = "ARM"
             model = re.search(r"(?<=Hardware\t: ).+(?=\n)", raw_cpu_info)
             if model:
-                self.info.cpu.model = model.group(0)
+                self.info.cpu.model_name = model.group(0)
             else:
                 # If the first regex doesn't match, try an alternative pattern
                 model_alt = re.search(r"Model\t+: (.+)(?=\n)", raw_cpu_info)
                 if model_alt:
                     model_alt = model_alt.group(1)
-                    self.info.cpu.model = model_alt
+                    self.info.cpu.model_name = model_alt
                 else:
                     # if neither pattern matches, change Success to Partial status
                     self.info.cpu.status = PartialStatus()
@@ -59,6 +59,7 @@ class LinuxHardwareManager:
                 self.info.cpu.version = arm_version.group(0)
             else:
                 self.info.cpu.status = PartialStatus()
+
             try:
                 threads = raw_cpu_info.count("processor")
                 self.info.cpu.threads = threads
