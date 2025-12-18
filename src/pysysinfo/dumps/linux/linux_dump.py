@@ -36,12 +36,38 @@ class LinuxHardwareManager:
         architecture = subprocess.run(['uname', '-m'], capture_output=True, text=True)
         # architecture = subprocess.run(['echo', 'x86_64'], capture_output=True, text=True)
 
-        if (architecture.stdout == "aarch64") or ("arm" in architecture.stdout):
-            raise NotImplementedError
-
         if not raw_cpu_info:
             self.info.cpu.status = FailedStatus()
             return
+
+        if (architecture.stdout == "aarch64") or ("arm" in architecture.stdout):
+            self.info.cpu.architecture = "ARM"
+            model = re.search(r"(?<=Hardware\t\: ).+(?=\n)", raw_cpu_info)
+            if model:
+                model = model.group(0)
+                self.info.cpu.model = model
+            else:
+                self.info.cpu.status = PartialStatus()
+
+            arm_version = re.search(r"(?<=CPU architecture\: ).+(?=\n)", raw_cpu_info)
+            if arm_version:
+                self.info.cpu.version = arm_version.group(0)
+            else:
+                self.info.cpu.status = PartialStatus()
+            try:
+                threads = raw_cpu_info.count("processor")
+                self.info.cpu.threads = threads
+            except Exception as e:
+                # todo: log this appropriately
+                self.info.cpu.status = PartialStatus()
+
+            # nothing more can be retrieved from /proc/cpuinfo for ARM
+            return
+
+        else:
+            # todo: check if this inference is valid
+            self.info.cpu.architecture = "x86_64"
+
 
         cpu_info = [x for x in raw_cpu_info.split("\n\n") if x.strip("\n")]
 
