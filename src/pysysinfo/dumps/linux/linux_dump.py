@@ -41,14 +41,18 @@ class LinuxHardwareManager:
             return
         if ("aarch64" in architecture.stdout) or ("arm" in architecture.stdout):
             self.info.cpu.architecture = "ARM"
-            model = re.search(r"(?<=Hardware\t\: ).+(?=\n)", raw_cpu_info)
+            model = re.search(r"(?<=Hardware\t: ).+(?=\n)", raw_cpu_info)
+
+            if not model:
+                model = re.search(r"(?<=Model\t: ).+(?=\n)", raw_cpu_info)
+
             if model:
                 model = model.group(0)
                 self.info.cpu.model = model
             else:
                 self.info.cpu.status = PartialStatus()
 
-            arm_version = re.search(r"(?<=CPU architecture\: ).+(?=\n)", raw_cpu_info)
+            arm_version = re.search(r"(?<=CPU architecture: ).+(?=\n)", raw_cpu_info)
             if arm_version:
                 self.info.cpu.version = arm_version.group(0)
             else:
