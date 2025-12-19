@@ -13,5 +13,6 @@ authors = [
     {name = "Mahasvan", email = "mahasvan@gmail.com"}
 ]
 dependencies = [
-    "pydantic"
+    "pydantic",
+    "pyobjc; sys_platform == 'darwin'"
 ]

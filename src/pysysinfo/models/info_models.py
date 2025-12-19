@@ -12,3 +12,6 @@ class HardwareInfo(BaseModel):
 
 class LinuxHardwareInfo(HardwareInfo):
     pass
+
+class MacHardwareInfo(HardwareInfo):
+    pass

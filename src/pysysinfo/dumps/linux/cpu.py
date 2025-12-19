@@ -22,7 +22,7 @@ def fetch_arm_cpu_info(raw_cpu_info: str) -> CPUInfo:
 
     arm_version = re.search(r"(?<=CPU architecture: ).+(?=\n)", raw_cpu_info)
     if arm_version:
-        cpu_info.version = arm_version.group(0)
+        cpu_info.arch_version = arm_version.group(0)
     else:
         cpu_info.status = PartialStatus()
 

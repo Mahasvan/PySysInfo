@@ -7,8 +7,8 @@ class CPUInfo(ComponentInfo):
     model_name: str = ""
     architecture: str = ""
     bitness: Optional[int] = None
-    version: Optional[str] = None
+    arch_version: Optional[str] = None
     vendor: Optional[str] = None
     sse_flags: List[str] = []
     cores: Optional[int] = None
-    threads: int = -1
+    threads: Optional[int] = None

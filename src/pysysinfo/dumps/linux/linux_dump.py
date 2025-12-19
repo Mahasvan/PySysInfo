@@ -5,7 +5,7 @@ from src.pysysinfo.dumps.linux.cpu import fetch_cpu_info
 from src.pysysinfo.dumps.linux.dmi_decode import get_string_entry, MEMORY_TYPE
 from src.pysysinfo.models.disk_models import DiskInfo, StorageInfo
 from src.pysysinfo.models.memory_models import MemoryModuleInfo, MemoryModuleSlot
-from src.pysysinfo.models.response_models import CPUInfo, LinuxHardwareInfo, MemoryInfo
+from src.pysysinfo.models.info_models import CPUInfo, LinuxHardwareInfo, MemoryInfo
 from src.pysysinfo.models.status_models import PartialStatus, FailedStatus
 from src.pysysinfo.models.storage_models import Megabyte, Kilobyte
 

@@ -1,9 +1,8 @@
 import json
 
-from src.pysysinfo.dumps.linux.linux_dump import LinuxHardwareManager
+from src.pysysinfo.dumps.mac.mac_dump import MacHardwareManager
 
-
-lhm = LinuxHardwareManager()
+lhm = MacHardwareManager()
 
 lhm.fetch_cpu_info()
 lhm.fetch_memory_info()
