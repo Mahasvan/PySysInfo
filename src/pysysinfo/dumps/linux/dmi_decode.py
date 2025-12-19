@@ -20,6 +20,7 @@ def get_string_entry(string, n):
     else:
         return string[n - 1].decode("ascii")
 
+
 MEMORY_TYPE = {
     0x01: "Other",
     0x02: "UNKNOWN",

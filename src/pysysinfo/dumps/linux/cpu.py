@@ -36,6 +36,7 @@ def fetch_arm_cpu_info(raw_cpu_info: str) -> CPUInfo:
     # nothing more can be retrieved from /proc/cpuinfo for ARM
     return cpu_info
 
+
 def fetch_x86_cpu_info(raw_cpu_info: str) -> CPUInfo:
     cpu_info = CPUInfo()
 

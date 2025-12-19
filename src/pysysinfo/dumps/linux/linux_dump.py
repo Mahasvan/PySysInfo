@@ -1,14 +1,13 @@
 import os
-import re
 import subprocess
 
 from src.pysysinfo.dumps.linux.cpu import fetch_cpu_info
 from src.pysysinfo.dumps.linux.dmi_decode import get_string_entry, MEMORY_TYPE
-from src.pysysinfo.models.response_models import CPUInfo, LinuxHardwareInfo, MemoryInfo
-from src.pysysinfo.models.memory_models import MemoryModuleInfo, MemoryModuleSlot
 from src.pysysinfo.models.disk_models import DiskInfo, StorageInfo
+from src.pysysinfo.models.memory_models import MemoryModuleInfo, MemoryModuleSlot
+from src.pysysinfo.models.response_models import CPUInfo, LinuxHardwareInfo, MemoryInfo
 from src.pysysinfo.models.status_models import PartialStatus, FailedStatus
-from src.pysysinfo.models.storage_models import Megabyte, Kilobyte, Gigabyte
+from src.pysysinfo.models.storage_models import Megabyte, Kilobyte
 
 
 class LinuxHardwareManager:
@@ -216,9 +215,9 @@ class LinuxHardwareManager:
 
                     # Uses PCI vendor & device ids to get a vendor for the NVMe block device
                     disk.device_id = open(f"{path}/device/device/device",
-                               "r").read().strip()
+                                          "r").read().strip()
                     disk.vendor_id = open(f"{path}/device/device/vendor",
-                               "r").read().strip()
+                                          "r").read().strip()
                 elif "sd" in folder:
                     # todo: Choose correct connector type for block devices that use the SCSI subsystem
                     disk.connector = "SCSI"
@@ -234,7 +233,7 @@ class LinuxHardwareManager:
 
                 size = open(f"{path}/size", "r").read().strip()
                 size_in_bytes = int(size) * 512
-                disk.size = Megabyte(capacity=(size_in_bytes // 1024**2))
+                disk.size = Megabyte(capacity=(size_in_bytes // 1024 ** 2))
 
             except Exception as e:
                 self.info.storage.status = PartialStatus()
