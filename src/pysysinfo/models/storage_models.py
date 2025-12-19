@@ -3,6 +3,7 @@ from pydantic import BaseModel
 
 class StorageSize(BaseModel):
     capacity: int
+    unit: str
 
 class Kilobyte(StorageSize):
     capacity: int = 0
