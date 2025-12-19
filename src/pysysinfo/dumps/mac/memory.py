@@ -37,6 +37,7 @@ def fetch_memory_info():
     dimm_sizes = []
     dimm_types = []
     ecc_enabled = False
+    # todo: Add ECC Detection to other OSes, and the Schema
     dimm_slots = []
 
     for child in children:
