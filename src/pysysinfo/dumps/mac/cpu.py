@@ -107,16 +107,17 @@ def fetch_cpu_info() -> CPUInfo:
     We can differentiate between v8 and v9 based on the presence of v9 capabilities,
     such as SME and SME2. Apple has not implemented SVE2 capabilities to their CPUs, so we cannot use those. 
     """
+    # todo: Detect minor ARM versions as well, like 8.X and 9.X ?
     if "arm" in arch:
         try:
-            SME_presence = subprocess.check_output(["sysctl", "hw.optional.arm.FEAT_SME"]).decode()
-            SME_presence = True if SME_presence.split(": ")[1].strip() == "1" else False
+            sme_presence = subprocess.check_output(["sysctl", "hw.optional.arm.FEAT_SME"]).decode()
+            sme_presence = True if sme_presence.split(": ")[1].strip() == "1" else False
 
-            SME2_presence = subprocess.check_output(["sysctl", "hw.optional.arm.FEAT_SME2"]).decode()
-            SME2_presence = True if SME2_presence.split(": ")[1].strip() == "1" else False
+            sme2_presence = subprocess.check_output(["sysctl", "hw.optional.arm.FEAT_SME2"]).decode()
+            sme2_presence = True if sme2_presence.split(": ")[1].strip() == "1" else False
 
 
-            if SME_presence or SME2_presence:
+            if sme_presence or sme2_presence:
                 cpu_info.arch_version = "9"
             else:
                 cpu_info.arch_version = "8"
