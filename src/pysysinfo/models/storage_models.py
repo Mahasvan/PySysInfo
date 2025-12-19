@@ -5,13 +5,13 @@ class StorageSize(BaseModel):
     capacity: int
 
 class Kilobyte(StorageSize):
-    capacity: int
+    capacity: int = 0
     unit: str = "KB"
 
 class Megabyte(StorageSize):
-    capacity: int
+    capacity: int = 0
     unit: str = "MB"
 
 class Gigabyte(StorageSize):
-    capacity: int
+    capacity: int = 0
     unit: str = "GB"
