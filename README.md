@@ -14,7 +14,7 @@ A Python Library to simplify retrieval of hardware components of your computer.
   - [ ] Input
   - [x] Storage
 - macOS
-  - [ ] CPU
+  - [x] CPU
   - [ ] GPU
   - [ ] Memory
   - [ ] Network
