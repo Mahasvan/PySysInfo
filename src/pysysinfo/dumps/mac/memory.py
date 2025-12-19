@@ -1,13 +1,12 @@
+import plistlib
 import subprocess
 
-from src.pysysinfo.dumps.mac.ioreg import corefoundation_to_native, IORegistryEntryCreateCFProperties, \
-    IORegistryEntryFromPath, kIOMasterPortDefault, kNilOptions
-from CoreFoundation import kCFAllocatorDefault
-from src.pysysinfo.models.memory_models import MemoryInfo
+from src.pysysinfo.models.memory_models import MemoryInfo, MemoryModuleInfo, MemoryModuleSlot
 from src.pysysinfo.models.status_models import FailedStatus, PartialStatus
+from src.pysysinfo.models.storage_models import Megabyte
 
 
-def fetch_memory_info() -> MemoryInfo:
+def fetch_memory_info():
 
     memory_info = MemoryInfo()
     """
@@ -25,117 +24,114 @@ def fetch_memory_info() -> MemoryInfo:
         memory_info.status = FailedStatus()
         return memory_info
 
-    interface = corefoundation_to_native(
-        IORegistryEntryCreateCFProperties(
-            IORegistryEntryFromPath(kIOMasterPortDefault, b"IODeviceTree:/memory"),
-            None,
-            kCFAllocatorDefault,
-            kNilOptions,
-        )
-    )[1]
-    if not interface:
-        memory_info.status = FailedStatus()
-        return memory_info
+    output = subprocess.check_output(["ioreg", "-alw0", "-p", "IODeviceTree"])
+    # output = subprocess.check_output(["cat", "/Users/mahas/Downloads/tree.txt"])
+    pl = plistlib.loads(output, fmt=plistlib.FMT_XML)
 
-    modules = []
-    part_no = []
-    dimm_types = []
-    slot_names = []
+    children = pl["IORegistryEntryChildren"]
+
+    dimm_manufacturer = []
+    dimm_part_numbers = []
+    dimm_serial_number = []
     dimm_speeds = []
-    dimm_manuf = []
-    dimm_capacities = []
-    sizes = []
-    length = None
+    dimm_sizes = []
+    dimm_types = []
+    ecc_enabled = False
+    dimm_slots = []
 
-    print(interface)
-    # print(interface.keys())
-    # print(interface.values())
+    for child in children:
+        array = child["IORegistryEntryChildren"]
+        for entry in array:
+            if entry["IORegistryEntryName"] != "memory":
+                continue
+            # This is the dictionary entry we want to parse
+            # print(entry)
 
-    for prop in interface:
-        val = interface[prop]
+            for k, v in entry.items():
+                """
+                Actual Key names:
+                - dimm-manufacturer
+                - dimm-part-number
+                - dimm-serial-number
+                - dimm-speeds
+                - dimm-types
+                - ecc-enabled
+                - reg
+                - slot-names
+                
+                We don't use exact matching in case there are some discrepancies across machines.
+                Since we have to accumulate all properties in their own arrays anyway,
+                and make the MemoryModuleInfo afterwards, there is no downsides to iterating through all keys.
+                """
 
-        if not length and "part-number" not in prop:
-            # --> [MEMORY]: No length specified for this RAM module – critical! — (IOKit/Memory)"
-            pass
+                if k.lower() == "reg":
+                    """
+                    This key contains the capacity of the RAM module.
+                    
+                    Sample output:
+                    b'\x02\x00\x00\x00\x00\x00\x00\x00\x02\x00\x00\x00\x00\x00\x00\x00'
+                    
+                    This, split into the number of RAM modules, gives us a value.
+                    The RAM Capacity is this value multiplied by 4096.
+                    
+                    For simplicity, we can drop all '\x00's, and only retain the non-zero values.
+                    Then, multiply every 16-bit offset by 4096, to get an array of RAM Capacities.
+                    
+                    (n * 0x010000 / 0x10) is used to multiply n by 4096.
+                    - 0x010000 is 65536.
+                    - 0x10 is 16.
+                    - The multiplier is 65536 / 16 = 4096. 
+                    """
+                    dimm_sizes.extend([round(n * 0x010000 / 0x10) for n in v.replace(b"\x00", b"")])
 
-        if type(val) == bytes and length is int:
-            if "reg" in prop.lower():
-                readable = [
-                    round(n * 0x010000 / 0x10)
-                    for n in val.replace(b"\x00", b"")
-                ]
 
-                for i in range(length):
-                    try:
-                        # Converts non-0 values from the 'reg' property
-                        # into readable integer values representing the memory capacity.
-                        sizes.append(
-                            readable[i]
-                        )
-                    except Exception as e:
-                        memory_info.status = PartialStatus()
-                        break
+                if "manufacturer" in k.lower():
+                    dimm_manufacturer.extend([x.decode() for x in v.split(b'\x00') if x.decode().strip()])
 
-            else:
-                try:
-                    val = [
-                        x.decode()
-                        for x in val.split(b"\x00")
-                        if type(x) == bytes and x.decode().strip()
-                    ]
-                except Exception as e:
-                    # --> [MEMORY]: Failed to decode bytes of RAM module – critical! — (IOKit/Memory)
-                    continue
+                if "part-number" in k.lower():
+                    dimm_part_numbers.extend([x.decode() for x in v.split(b'\x00') if x.decode().strip()])
 
-        if "part-number" in prop:
-            length = len(val)
+                if "serial-number" in k.lower():
+                    dimm_serial_number.extend([x.decode() for x in v.split(b'\x00') if x.decode().strip()])
 
-            for i in range(length):
-                part_no.append(val[i])
+                if "speed" in k.lower():
+                    dimm_speeds.extend([x.decode() for x in v.split(b'\x00') if x.decode().strip()])
 
-        else:
-            for i in range(length):
-                key = ""
-                value = None
+                if "type" in k.lower():
+                    dimm_types = [x.decode() for x in v.split(b'\x00') if x.decode().strip()]
 
-                if "dimm-types" in prop.lower():
-                    key = "Type"
-                    value = val[i]
-                    dimm_types.append(val[i])
+                if "ecc-enabled" in k.lower():
+                    ecc_enabled = v
 
-                elif "slot-names" in prop.lower():
-                    key = "Slot"
-                    try:
-                        bank, channel = val[i].split("/")
+                if "slot-name" in k.lower():
+                    # print(v)
+                    dimm_slots = [x.decode().split("/") for x in v.split(b'\x00') if x.decode().strip()]
 
-                        value = {"Bank": bank, "Channel": channel}
-                        slot_names.append(value)
-                    except Exception as e:
-                        # --> [MEMORY]: Failed to obtain location of current RAM module – ignoring! — (IOKit/Memory)"
-                        pass
+    print("Manufacturers:", dimm_manufacturer)
+    print("Part Numbers:", dimm_part_numbers)
+    print("Serial Numbers:", dimm_serial_number)
+    print("Speeds:", dimm_speeds)
+    print("Capacities:", dimm_sizes)
+    print("Types:", dimm_types)
+    print("ECC Enabled:", ecc_enabled)
+    print("Slot Names:", dimm_slots)
 
-                elif "dimm-speeds" in prop.lower():
-                    key = "Frequency (MHz)"
-                    value = val[i]
-                    dimm_speeds.append(value)
+    n_modules = max([len(dimm_manufacturer), len(dimm_part_numbers), len(dimm_serial_number),
+                     len(dimm_speeds), len(dimm_types), len(dimm_slots)])
 
-                elif "dimm-manufacturer" in prop.lower():
-                    key = "Manufacturer"
-                    value = val[i]
-                    dimm_manuf.append(value)
-
-                elif "reg" in prop.lower():
-                    # --> [MEMORY]: Obtained capacity size (in MBs) of current RAM module! — (IOKit/Memory)",
-                    key = "Capacity"
-                    value = f"{sizes[i]}MB"
-                    dimm_capacities.append(value)
-
-    print(part_no)
-    print(dimm_types)
-    print(dimm_speeds)
-    print(dimm_manuf)
-    print(dimm_capacities)
-    print(sizes)
-    print(slot_names)
+    for i in range(n_modules):
+        module = MemoryModuleInfo()
+        try:
+            module.manufacturer = dimm_manufacturer[i]
+            module.part_number = dimm_part_numbers[i]
+            module.type = dimm_types[i]
+            module.capacity = Megabyte(capacity=dimm_sizes[i])
+            module.slot = MemoryModuleSlot(
+                channel=dimm_slots[i][0],
+                bank=dimm_slots[i][1]
+            )
+            memory_info.modules.append(module)
+        except Exception as e:
+            memory_info.status = PartialStatus()
 
     return memory_info
