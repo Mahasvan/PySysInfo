@@ -1,6 +1,6 @@
 from pydantic import BaseModel
 
-from src.pysysinfo.models.success_models import SuccessStatus, StatusModel
+from src.pysysinfo.models.status_models import SuccessStatus, StatusModel
 
 
 class ComponentInfo(BaseModel):

@@ -4,9 +4,10 @@ import subprocess
 
 from src.pysysinfo.dumps.linux.dmi_decode import get_string_entry, MEMORY_TYPE
 from src.pysysinfo.models.response_models import CPUInfo, LinuxHardwareInfo, MemoryInfo
-from src.pysysinfo.models.memory_models import MemoryModuleInfo, MemoryModuleSlot, Megabyte, Kilobyte
+from src.pysysinfo.models.memory_models import MemoryModuleInfo, MemoryModuleSlot
 from src.pysysinfo.models.disk_models import DiskInfo, StorageInfo
-from src.pysysinfo.models.success_models import PartialStatus, FailedStatus
+from src.pysysinfo.models.status_models import PartialStatus, FailedStatus
+from src.pysysinfo.models.storage_models import Megabyte, Kilobyte, Gigabyte
 
 
 class LinuxHardwareManager:
@@ -322,9 +323,18 @@ class LinuxHardwareManager:
                 else:
                     disk.connector = "Unknown"
 
-                self.info.storage.disks.append(disk)
+                """
+                Disk Size - Is the value in /sys/block/sda/size Multiplied by the Block Size
+                In Linux, the block size is always considered as 512
+                - https://github.com/torvalds/linux/blob/master/include/linux/types.h#L132
+                """
+
+                size = open(f"{path}/size", "r").read().strip()
+                size_in_bytes = int(size) * 512
+                disk.size = Gigabyte(capacity=(size_in_bytes / 1024**3))
 
             except Exception as e:
                 self.info.disk.status = PartialStatus()
                 # todo: Log this properly
-                continue
+
+            self.info.storage.disks.append(disk)

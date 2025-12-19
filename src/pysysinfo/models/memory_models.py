@@ -3,18 +3,8 @@ from typing import List
 from pydantic import BaseModel
 
 from src.pysysinfo.models.component_model import ComponentInfo
+from src.pysysinfo.models.storage_models import StorageSize, Kilobyte
 
-
-class MemorySize(BaseModel):
-    capacity: int
-
-class Kilobyte(MemorySize):
-    capacity: int = 0
-    unit: str = "KB"
-
-class Megabyte(MemorySize):
-    capacity: int = 0
-    unit: str = "MB"
 
 class MemoryModuleSlot(BaseModel):
     channel: str = ""
@@ -24,7 +14,7 @@ class MemoryModuleInfo(BaseModel):
     manufacturer: str = ""
     part_number: str = ""
     type: str = ""
-    capacity: MemorySize = Kilobyte()
+    capacity: StorageSize = Kilobyte()
     slot: MemoryModuleSlot = MemoryModuleSlot()
 
 class MemoryInfo(ComponentInfo):
