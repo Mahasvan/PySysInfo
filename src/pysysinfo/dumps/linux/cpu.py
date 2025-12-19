@@ -105,23 +105,24 @@ def fetch_x86_cpu_info(raw_cpu_info: str) -> CPUInfo:
     return cpu_info
 
 
-def fetch_cpu_info(self) -> CPUInfo:
-    info = CPUInfo()
+def fetch_cpu_info() -> CPUInfo:
+    cpu_info = CPUInfo()
 
     # todo: Check if any of the regexes may suffer from string having two `\t`s
     try:
         raw_cpu_info = open('/proc/cpuinfo').read()
     except Exception as e:
         # todo: handle error using logger, dont interrupt execution
-        info.status = FailedStatus()
+        cpu_info.status = FailedStatus()
         # raise e
-        return info
+        return cpu_info
+
+    if not raw_cpu_info:
+        cpu_info.status = FailedStatus()
+        return cpu_info
 
     architecture = subprocess.run(['uname', '-m'], capture_output=True, text=True)
 
-    if not raw_cpu_info:
-        self.info.cpu.status = FailedStatus()
-        return info
 
     if ("aarch64" in architecture.stdout) or ("arm" in architecture.stdout):
         return fetch_arm_cpu_info(raw_cpu_info)
