@@ -331,7 +331,7 @@ class LinuxHardwareManager:
 
                 size = open(f"{path}/size", "r").read().strip()
                 size_in_bytes = int(size) * 512
-                disk.size = Gigabyte(capacity=(size_in_bytes / 1024**3))
+                disk.size = Megabyte(capacity=(size_in_bytes // 1024**2))
 
             except Exception as e:
                 self.info.storage.status = PartialStatus()
