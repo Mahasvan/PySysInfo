@@ -1,4 +1,5 @@
 import os
+from pyexpat.errors import messages
 
 from src.pysysinfo.models.storage_models import StorageInfo, DiskInfo
 from src.pysysinfo.models.status_models import FailedStatus, PartialStatus
@@ -13,7 +14,7 @@ def fetch_storage_info() -> StorageInfo:
     # https://www.kernel.org/doc/html/latest/admin-guide/sysfs-rules.html#:~:text=Classification%20by%20subsystem
 
     if not os.path.isdir("/sys/block"):
-        storage_info.status = FailedStatus()
+        storage_info.status = FailedStatus("The /sys/block directory does not exist")
         return storage_info
 
     for folder in os.listdir("/sys/block"):
@@ -31,7 +32,8 @@ def fetch_storage_info() -> StorageInfo:
             if model:
                 disk.model = model
             else:
-                storage_info.status = PartialStatus()
+                storage_info.status = PartialStatus(messages=storage_info.status.messages)
+                storage_info.status.messages.append("Disk Model could not be found")
 
             rotational = open(f"{path}/queue/rotational", "r").read().strip()
             removable = open(f"{path}/removable", "r").read().strip()
@@ -72,8 +74,8 @@ def fetch_storage_info() -> StorageInfo:
             disk.size = Megabyte(capacity=(size_in_bytes // 1024 ** 2))
 
         except Exception as e:
-            storage_info.status = PartialStatus()
-            # todo: Log this properly
+            storage_info.status = PartialStatus(messages=storage_info.status.messages)
+            storage_info.status.messages.append("Disk Info: " + str(e))
 
         storage_info.disks.append(disk)
 
