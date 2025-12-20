@@ -1,10 +1,9 @@
-import time
 from typing import List
 import ctypes
+from ctypes import wintypes
 
 from src.pysysinfo.models.cpu_models import CPUInfo
-from src.pysysinfo.models.status_models import PartialStatus, FailedStatus
-from src.pysysinfo.dumps.windows.cpuid import CPUID
+from src.pysysinfo.models.status_models import PartialStatus
 
 import winreg
 import os
@@ -16,34 +15,61 @@ References:
 - https://github.com/workhorsy/py-cpuinfo/blob/master/cpuinfo/cpuinfo.py
 """
 
-def is_set(cpu, leaf, subleaf, reg_idx, bit):
-    regs = cpu(leaf, subleaf)
+kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
+kernel32.IsProcessorFeaturePresent.argtypes = [wintypes.DWORD]
+kernel32.IsProcessorFeaturePresent.restype = wintypes.BOOL
 
-    return bool((1 << bit) & regs[reg_idx])
+def is_processor_feature_present(feature_id: int) -> bool:
+    """
+    Checks whether the specified processor feature is present.
 
-def get_features(cpu: CPUID) -> List[str]:
-    SSE = ["SSE", "SSE2", "SSE3", "SSE4.1", "SSE4.2"]
+    :param feature_id: One of the PF_* constants defined by Windows.
+    :return: True if the feature is present, False otherwise.
     """
-    The SSE feature flags are located in the ECX and EDX registers.
-    Each bit in those registers corresponds to a specific feature, and we check if that bit is set or unset.
-    https://en.wikipedia.org/wiki/CPUID#EAX=7,_ECX=0:_Extended_Features
+    return bool(kernel32.IsProcessorFeaturePresent(feature_id))
+
+def get_arm_version() -> str:
     """
-    SSE_OP = [
-        (1, 0, 3, 25),  # SSE
-        (1, 0, 3, 26),  # SSE2
-        (1, 0, 2, 0),   # SSE3
-        (1, 0, 2, 19),  # SSE4.1
-        (1, 0, 2, 20),  # SSE4.2
-    ]
-    SSSE3 = is_set(cpu, 1, 0, 2, 9)
+    We use instructions that were introduced in different ARM versions to determine the ARM version.
+    
+    ARMv9
+    - SVE2 - FEAT_SSVE_FP8DOT2 (78), FEAT_SSVE_FP8DOT4 (79), and FEAT_SSVE_FP8FMA (80)
+    
+    ARMv8
+    - Full AArch64 Instructions - FEAT_SME_FA64 (88)
+    
+    Otherwise
+    - we can assume it's ARMv7 or lower.
+    """
+    if any([is_processor_feature_present(i) for i in [78,79,80]]):
+        return "9"
+    elif is_processor_feature_present(88):
+        return "8"
+    else:
+        return "Unknown"
+
+def get_features() -> List[str]:
+    """
+    We use the Win32 API function IsProcessorFeaturePresent to check for SSE features.
+    https://learn.microsoft.com/en-us/windows/win32/api/processthreadsapi/nf-processthreadsapi-isprocessorfeaturepresent
+    
+    Feature IDs:
+    - SSE - 6
+    - SSE2 - 10
+    - SSE3 - 13
+    - SSSE3 - 36
+    - SSE4.1 - 37
+    - SSE4.2 - 38
+    """
+    SSE = ["SSE", "SSE2", "SSE3", "SSE4.1", "SSE4.2", "SSSE3"]
+    FEATURE_IDs = [6,10,13,37,38,36]
+    
     
     features = []
     for i in range(len(SSE)):
-        if is_set(cpu, *SSE_OP[i]):
+        if is_processor_feature_present(FEATURE_IDs[i]):
             features.append(SSE[i])
-    if SSSE3:
-        features.append("SSSE3")
-
+    
     return features
 
 def parse_registry():
@@ -125,13 +151,12 @@ def get_core_count() -> int:
 
 def fetch_cpu_info() -> CPUInfo:
     cpu_info = CPUInfo()
-    cpuid = CPUID()
 
     model_name, vendor = parse_registry()
     cpu_info.model_name = model_name.strip()
     cpu_info.vendor = "AMD" if "amd" in vendor.lower() else "Intel" if "intel" in vendor.lower() else vendor.strip()
     
-    features = get_features(cpuid)
+    features = get_features()
     cpu_info.sse_flags = features
     
     """
