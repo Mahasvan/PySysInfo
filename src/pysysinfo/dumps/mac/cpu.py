@@ -20,7 +20,7 @@ def fetch_cpu_info() -> CPUInfo:
         # we split it into lines, and make a dictionary with key:value pairs
         data = {k:v for (k,v) in [x.split(": ") for x in data.splitlines()]}
     except Exception as e:
-        cpu_info.status = FailedStatus()
+        cpu_info.status = FailedStatus("Error while parsing sysctl: " + str(e))
         return cpu_info
 
     try:
@@ -32,16 +32,22 @@ def fetch_cpu_info() -> CPUInfo:
         arm64 for Apple Silicon
         """
     except Exception as e:
-        cpu_info.status = FailedStatus()
+        cpu_info.status = FailedStatus("Error while getting architecture: " + str(e))
         return cpu_info
 
-    if "arm" in arch:
+    if not arch:
+        cpu_info.status = PartialStatus(messages=cpu_info.status.messages)
+        cpu_info.status.messages.append("No output from uname -m")
+        arch = ""
+
+    if "arm" in arch.lower():
         cpu_info.architecture = "ARM"
         cpu_info.bitness = 64
-    elif "i386" in arch or "x86" in arch:
+    elif "i386" in arch.lower() or "x86" in arch.lower():
         cpu_info.architecture = "x86"
     else:
-        cpu_info.status = PartialStatus()
+        cpu_info.status = PartialStatus(messages=cpu_info.status.messages)
+        cpu_info.status.messages.append("Unknown CPU architecture")
 
     try:
         bitness_64 = subprocess.check_output(["sysctl", "hw.cpu64bit_capable"]).decode()
@@ -53,12 +59,14 @@ def fetch_cpu_info() -> CPUInfo:
             cpu_info.bitness = 32
 
     except Exception as e:
-        cpu_info.status = PartialStatus()
+        cpu_info.status = PartialStatus(messages=cpu_info.status.messages)
+        cpu_info.status.messages.append("Error when checking CPU Architecture: " + str(e))
 
     if "machdep.cpu.brand_string" in data:
         cpu_info.model_name = data["machdep.cpu.brand_string"]
     else:
-        cpu_info.status = PartialStatus()
+        cpu_info.status = PartialStatus(messages=cpu_info.status.messages)
+        cpu_info.status.messages.append("Unable to determine CPU model")
 
     if "machdep.cpu.vendor" in data:
         """
@@ -87,19 +95,23 @@ def fetch_cpu_info() -> CPUInfo:
         if sse_features:
             cpu_info.sse_flags = sse_features
         else:
-            cpu_info.status = PartialStatus()
+            cpu_info.status = PartialStatus(messages=cpu_info.status.messages)
+            cpu_info.status.messages.append("Unable to determine SSE Flags")
 
     try:
         if "machdep.cpu.core_count" in data:
             cpu_info.cores = int(data["machdep.cpu.core_count"])
         else:
-            cpu_info.status = PartialStatus()
+            cpu_info.status = PartialStatus(messages=cpu_info.status.messages)
+            cpu_info.status.messages.append(f"Invalid CPU Cores: {data.get('machdep.cpu.core_count')}")
         if "machdep.cpu.thread_count" in data:
             cpu_info.threads = int(data["machdep.cpu.thread_count"])
         else:
-            cpu_info.status = PartialStatus()
+            cpu_info.status = PartialStatus(messages=cpu_info.status.messages)
+            cpu_info.status.messages.append(f"Invalid CPU Threads: {data.get('machdep.cpu.thread_count')}")
     except Exception as e:
-        cpu_info.status = PartialStatus()
+        cpu_info.status = PartialStatus(messages=cpu_info.status.messages)
+        cpu_info.status.messages.append("Unable to determine CPU Info: " + str(e))
 
     # Attempt to get ARM version
     """
@@ -122,6 +134,7 @@ def fetch_cpu_info() -> CPUInfo:
             else:
                 cpu_info.arch_version = "8"
         except Exception as e:
-            cpu_info.status = PartialStatus()
+            cpu_info.status = PartialStatus(messages=cpu_info.status.messages)
+            cpu_info.status.messages.append("Unable to determine ARM Version: " + str(e))
 
     return cpu_info
