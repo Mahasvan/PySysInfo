@@ -1,5 +1,6 @@
 from src.pysysinfo.dumps.mac.cpu import fetch_cpu_info
 from src.pysysinfo.dumps.mac.memory import fetch_memory_info
+from src.pysysinfo.dumps.mac.storage import fetch_storage_info
 from src.pysysinfo.models.cpu_models import CPUInfo
 from src.pysysinfo.models.disk_models import StorageInfo
 from src.pysysinfo.models.info_models import MacHardwareInfo
@@ -26,4 +27,4 @@ class MacHardwareManager:
         self.info.memory = fetch_memory_info()
 
     def fetch_storage_info(self):
-        pass
+        self.info.storage = fetch_storage_info()
