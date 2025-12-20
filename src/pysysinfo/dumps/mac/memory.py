@@ -36,7 +36,7 @@ def fetch_memory_info():
 
         children = pl["IORegistryEntryChildren"]
     except Exception as e:
-        memory_info.status = FailedStatus("Failed to parse ioreg: " + str(e))
+        memory_info.status = FailedStatus("Failed to parse ioreg command output: " + str(e))
         return memory_info
 
     dimm_manufacturer = []
@@ -49,81 +49,77 @@ def fetch_memory_info():
     # todo: Add ECC Detection to other OSes, and the Schema
     dimm_slots = []
 
-    for child in children:
-        array = child["IORegistryEntryChildren"]
-        for entry in array:
-            if entry["IORegistryEntryName"] != "memory":
-                continue
+    try:
+        for child in children:
+            array = child["IORegistryEntryChildren"]
+            for entry in array:
+                if entry["IORegistryEntryName"] != "memory":
+                    continue
 
-            # This is the dictionary entry we want to parse
-            for k, v in entry.items():
-                """
-                Actual Key names:
-                - dimm-manufacturer
-                - dimm-part-number
-                - dimm-serial-number
-                - dimm-speeds
-                - dimm-types
-                - ecc-enabled
-                - reg
-                - slot-names
-                
-                We don't use exact matching in case there are some discrepancies across machines.
-                Since we have to accumulate all properties in their own arrays anyway,
-                and make the MemoryModuleInfo afterwards, there is no downsides to iterating through all keys.
-                """
-                # we have to exactly match reg, because it can incorrectly match keys like IORegXYZ
-                if k.lower() == "reg":
+                # This is the dictionary entry we want to parse
+                for k, v in entry.items():
                     """
-                    This key contains the capacity of the RAM module.
+                    Actual Key names:
+                    - dimm-manufacturer
+                    - dimm-part-number
+                    - dimm-serial-number
+                    - dimm-speeds
+                    - dimm-types
+                    - ecc-enabled
+                    - reg
+                    - slot-names
                     
-                    Sample output:
-                    b'\x02\x00\x00\x00\x00\x00\x00\x00\x02\x00\x00\x00\x00\x00\x00\x00'
-                    
-                    This, split into the number of RAM modules, gives us a value.
-                    The RAM Capacity is this value multiplied by 4096.
-                    
-                    For simplicity, we can drop all '\x00's, and only retain the non-zero values.
-                    Then, multiply every 16-bit offset by 4096, to get an array of RAM Capacities.
-                    
-                    (n * 0x010000 / 0x10) is used to multiply n by 4096.
-                    - 0x010000 is 65536.
-                    - 0x10 is 16.
-                    - The multiplier is 65536 / 16 = 4096. 
+                    We don't use exact matching in case there are some discrepancies across machines.
+                    Since we have to accumulate all properties in their own arrays anyway,
+                    and make the MemoryModuleInfo afterwards, there is no downsides to iterating through all keys.
                     """
-                    dimm_sizes.extend([round(n * 0x010000 / 0x10) for n in v.replace(b"\x00", b"")])
+                    # we have to exactly match reg, because it can incorrectly match keys like IORegXYZ
+                    if k.lower() == "reg":
+                        """
+                        This key contains the capacity of the RAM module.
+                        
+                        Sample output:
+                        b'\x02\x00\x00\x00\x00\x00\x00\x00\x02\x00\x00\x00\x00\x00\x00\x00'
+                        
+                        This, split into the number of RAM modules, gives us a value.
+                        The RAM Capacity is this value multiplied by 4096.
+                        
+                        For simplicity, we can drop all '\x00's, and only retain the non-zero values.
+                        Then, multiply every 16-bit offset by 4096, to get an array of RAM Capacities.
+                        
+                        (n * 0x010000 / 0x10) is used to multiply n by 4096.
+                        - 0x010000 is 65536.
+                        - 0x10 is 16.
+                        - The multiplier is 65536 / 16 = 4096. 
+                        """
+                        dimm_sizes.extend([round(n * 0x010000 / 0x10) for n in v.replace(b"\x00", b"")])
 
 
-                if "manufacturer" in k.lower():
-                    dimm_manufacturer.extend([x.decode() for x in v.split(b'\x00') if x.decode().strip()])
+                    if "manufacturer" in k.lower():
+                        dimm_manufacturer.extend([x.decode() for x in v.split(b'\x00') if x.decode().strip()])
 
-                if "part-number" in k.lower():
-                    dimm_part_numbers.extend([x.decode() for x in v.split(b'\x00') if x.decode().strip()])
+                    if "part-number" in k.lower():
+                        dimm_part_numbers.extend([x.decode() for x in v.split(b'\x00') if x.decode().strip()])
 
-                if "serial-number" in k.lower():
-                    dimm_serial_number.extend([x.decode() for x in v.split(b'\x00') if x.decode().strip()])
+                    if "serial-number" in k.lower():
+                        dimm_serial_number.extend([x.decode() for x in v.split(b'\x00') if x.decode().strip()])
 
-                if "speed" in k.lower():
-                    dimm_speeds.extend([x.decode() for x in v.split(b'\x00') if x.decode().strip()])
+                    if "speed" in k.lower():
+                        dimm_speeds.extend([x.decode() for x in v.split(b'\x00') if x.decode().strip()])
 
-                if "type" in k.lower():
-                    dimm_types = [x.decode() for x in v.split(b'\x00') if x.decode().strip()]
+                    if "type" in k.lower():
+                        dimm_types = [x.decode() for x in v.split(b'\x00') if x.decode().strip()]
 
-                if "ecc-enabled" in k.lower():
-                    ecc_enabled = v
+                    if "ecc-enabled" in k.lower():
+                        ecc_enabled = v
 
-                if "slot-name" in k.lower():
-                    # print(v)
-                    dimm_slots = [x.decode().split("/") for x in v.split(b'\x00') if x.decode().strip()]
+                    if "slot-name" in k.lower():
+                        # print(v)
+                        dimm_slots = [x.decode().split("/") for x in v.split(b'\x00') if x.decode().strip()]
 
-    # print("Manufacturers:", dimm_manufacturer)
-    # print("Part Numbers:", dimm_part_numbers)
-    # print("Serial Numbers:", dimm_serial_number)
-    # print("Speeds:", dimm_speeds)
-    # print("Capacities:", dimm_sizes)
-    # print("Types:", dimm_types)
-    # print("ECC Enabled:", ecc_enabled)
-    # print("Slot Names:", dimm_slots)
+    except Exception as e:
+        memory_info.status = PartialStatus(messages=memory_info.status.messages)
+        memory_info.status.messages.append("Error parsing ioreg plist: " + str(e))
 
     n_modules = max([len(dimm_manufacturer), len(dimm_part_numbers), len(dimm_serial_number),
                      len(dimm_speeds), len(dimm_types), len(dimm_slots)])
@@ -140,9 +136,11 @@ def fetch_memory_info():
                 bank=dimm_slots[i][1]
             )
             module.frequency_mhz = int(dimm_speeds[i].lower().rstrip("mhz"))
+
             memory_info.modules.append(module)
 
         except Exception as e:
-            memory_info.status = PartialStatus()
+            memory_info.status = PartialStatus(messages=memory_info.status.messages)
+            memory_info.status.messages.append("Failed to parse DIMM info: " + str(e))
 
     return memory_info
