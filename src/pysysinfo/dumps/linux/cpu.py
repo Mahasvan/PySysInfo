@@ -2,7 +2,7 @@ import re
 import subprocess
 
 from src.pysysinfo.models.cpu_models import CPUInfo
-from src.pysysinfo.models.status_models import FailedStatus, PartialStatus
+from src.pysysinfo.models.status_models import FailedStatus, PartialStatus, make_partial_status
 
 
 def fetch_arm_cpu_info(raw_cpu_info: str) -> CPUInfo:
@@ -18,13 +18,13 @@ def fetch_arm_cpu_info(raw_cpu_info: str) -> CPUInfo:
     elif model_alt:
         cpu_info.model_name = model_alt.group(1)
     else:
-        cpu_info.status = PartialStatus()
+        make_partial_status(cpu_info.status, "Model Name for ARM CPU could not be found")
 
-    arm_version = re.search(r"(?<=CPU architecture: ).+(?=\n)", raw_cpu_info)
+    arm_version = re.search(r"(?<=CPU architectures: ).+(?=\n)", raw_cpu_info)
     if arm_version:
         cpu_info.arch_version = arm_version.group(0)
     else:
-        cpu_info.status = PartialStatus()
+        make_partial_status(cpu_info.status, "ARM version could not be found")
 
     try:
         threads = raw_cpu_info.count("processor")
