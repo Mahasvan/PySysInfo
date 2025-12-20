@@ -54,7 +54,7 @@ def fetch_x86_cpu_info(raw_cpu_info: str) -> CPUInfo:
     if model:
         model = model.group(0)
         cpu_info.model_name = model
-        vendor = "intel" if "intel" in model.lower() else "amd"
+        vendor = "intel" if "intel" in model.lower() else "amd" if "amd" in model.lower() else "unknown"
         cpu_info.vendor = vendor
     else:
         cpu_info.status = PartialStatus(messages=cpu_info.status.messages)
@@ -119,12 +119,12 @@ def fetch_cpu_info() -> CPUInfo:
         raw_cpu_info = open('/proc/cpuinfo').read()
     except Exception as e:
         # todo: handle error using logger, dont interrupt execution
-        cpu_info.status = FailedStatus()
+        cpu_info.status = FailedStatus(messages=["Could not open /proc/cpuinfo"])
         # raise e
         return cpu_info
 
     if not raw_cpu_info:
-        cpu_info.status = FailedStatus()
+        cpu_info.status = FailedStatus(messages=["/proc/cpuinfo has no content"])
         return cpu_info
 
     architecture = subprocess.run(['uname', '-m'], capture_output=True, text=True)
