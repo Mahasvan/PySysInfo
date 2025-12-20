@@ -18,13 +18,15 @@ def fetch_arm_cpu_info(raw_cpu_info: str) -> CPUInfo:
     elif model_alt:
         cpu_info.model_name = model_alt.group(1)
     else:
-        make_partial_status(cpu_info.status, "Model Name for ARM CPU could not be found")
+        cpu_info.status = PartialStatus(messages=cpu_info.status.messages)
+        cpu_info.status.messages.append("Could not find model name")
 
     arm_version = re.search(r"(?<=CPU architectures: ).+(?=\n)", raw_cpu_info)
     if arm_version:
         cpu_info.arch_version = arm_version.group(0)
     else:
-        make_partial_status(cpu_info.status, "ARM version could not be found")
+        cpu_info.status = PartialStatus(messages=cpu_info.status.messages)
+        cpu_info.status.messages.append("Could not find architecture")
 
     try:
         threads = raw_cpu_info.count("processor")
