@@ -6,6 +6,7 @@ from src.pysysinfo.models.disk_models import StorageInfo
 import wmi
 from src.pysysinfo.dumps.windows.cpu import fetch_cpu_info
 from src.pysysinfo.dumps.windows.memory import fetch_memory_info
+from src.pysysinfo.dumps.windows.storage import fetch_storage_info
 
 import time
 
@@ -32,5 +33,5 @@ class WindowsHardwareManager:
         self.info.memory = fetch_memory_info()
 
     def fetch_storage_info(self):
-        pass
+        self.info.storage = fetch_storage_info()
     

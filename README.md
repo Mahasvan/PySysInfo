@@ -33,7 +33,7 @@ A Python Library to simplify retrieval of hardware components of your computer.
   - [ ] Audio
   - [ ] Motherboard
   - [ ] Input
-  - [ ] Storage
+  - [x] Storage
 
 ### Supporting Features
 
