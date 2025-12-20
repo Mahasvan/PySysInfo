@@ -1,7 +1,7 @@
 from src.pysysinfo.dumps.mac.ioreg import *
 from CoreFoundation import kCFAllocatorDefault
 
-from src.pysysinfo.models.disk_models import StorageInfo, DiskInfo
+from src.pysysinfo.models.storage_models import StorageInfo, DiskInfo
 from src.pysysinfo.models.status_models import FailedStatus, PartialStatus
 
 

@@ -2,7 +2,7 @@ from pydantic import BaseModel
 
 from src.pysysinfo.models.cpu_models import CPUInfo
 from src.pysysinfo.models.memory_models import MemoryInfo
-from src.pysysinfo.models.disk_models import StorageInfo
+from src.pysysinfo.models.storage_models import StorageInfo
 
 
 class HardwareInfo(BaseModel):

@@ -4,7 +4,7 @@ import subprocess
 from src.pysysinfo.dumps.linux.dmi_decode import get_string_entry, MEMORY_TYPE
 from src.pysysinfo.models.memory_models import MemoryInfo, MemoryModuleSlot, MemoryModuleInfo
 from src.pysysinfo.models.status_models import PartialStatus, FailedStatus
-from src.pysysinfo.models.storage_models import Megabyte, Kilobyte
+from src.pysysinfo.models.size_models import Megabyte, Kilobyte
 
 
 def fetch_memory_info() -> MemoryInfo:

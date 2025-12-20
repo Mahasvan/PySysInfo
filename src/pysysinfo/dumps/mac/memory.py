@@ -3,7 +3,7 @@ import subprocess
 
 from src.pysysinfo.models.memory_models import MemoryInfo, MemoryModuleInfo, MemoryModuleSlot
 from src.pysysinfo.models.status_models import FailedStatus, PartialStatus
-from src.pysysinfo.models.storage_models import Megabyte
+from src.pysysinfo.models.size_models import Megabyte
 
 
 def fetch_memory_info():

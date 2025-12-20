@@ -1,7 +1,7 @@
 from src.pysysinfo.dumps.linux.cpu import fetch_cpu_info
 from src.pysysinfo.dumps.linux.memory import fetch_memory_info
 from src.pysysinfo.dumps.linux.storage import fetch_storage_info
-from src.pysysinfo.models.disk_models import StorageInfo
+from src.pysysinfo.models.storage_models import StorageInfo
 from src.pysysinfo.models.info_models import CPUInfo, LinuxHardwareInfo, MemoryInfo
 
 

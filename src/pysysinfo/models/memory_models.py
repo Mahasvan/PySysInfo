@@ -3,7 +3,7 @@ from typing import List, Optional
 from pydantic import BaseModel
 
 from src.pysysinfo.models.component_model import ComponentInfo
-from src.pysysinfo.models.storage_models import StorageSize, Kilobyte
+from src.pysysinfo.models.size_models import StorageSize, Kilobyte
 
 
 class MemoryModuleSlot(BaseModel):
