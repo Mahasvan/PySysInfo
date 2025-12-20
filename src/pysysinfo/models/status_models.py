@@ -18,8 +18,3 @@ class PartialStatus(StatusModel):
 class FailedStatus(StatusModel):
     string: str = "failed"
     messages: List[str] = []
-
-def make_partial_status(status: StatusModel, message: Optional[str]) -> None:
-    if type(status) is not PartialStatus:
-        status = PartialStatus()
-    status.messages.append(message)
