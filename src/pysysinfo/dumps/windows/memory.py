@@ -1,15 +1,17 @@
-from src.pysysinfo.models.memory_models import MemoryInfo, MemoryModuleInfo, MemoryModuleSlot
-from src.pysysinfo.models.storage_models import Megabyte
 import subprocess
-from src.pysysinfo.dumps.windows.win_enum import MEMORY_TYPE
-from src.pysysinfo.models.status_models import PartialStatus, FailedStatus
-
 from typing import List
+
+from src.pysysinfo.dumps.windows.win_enum import MEMORY_TYPE
+from src.pysysinfo.models.memory_models import MemoryInfo, MemoryModuleInfo, MemoryModuleSlot
+from src.pysysinfo.models.status_models import PartialStatus, FailedStatus
+from src.pysysinfo.models.storage_models import Megabyte
 
 """
 the WMIC command-line utility is deprecated, and is replaced by PowerShell cmdlets.
 We first check if the WMIC command works, and if it fails, we fallback to the PowerShell cmdlet.
 """
+
+
 def fetch_wmic_memory_info() -> MemoryInfo:
     memory_info = MemoryInfo()
     command = "wmic memorychip get BankLabel,Capacity,Manufacturer,PartNumber,Speed,DeviceLocator,SMBIOSMemoryType /format:csv"
@@ -22,11 +24,12 @@ def fetch_wmic_memory_info() -> MemoryInfo:
         """
         memory_info.status = FailedStatus()
         return memory_info
-    
+
     lines = result.strip().splitlines()
     lines = [line.split(",") for line in lines if line.strip()]
 
-    return parse_cmd_output(lines)        
+    return parse_cmd_output(lines)
+
 
 def fetch_wmi_cmdlet_memory_info() -> MemoryInfo:
     memory_info = MemoryInfo()
@@ -41,11 +44,12 @@ def fetch_wmi_cmdlet_memory_info() -> MemoryInfo:
         """
         memory_info.status = FailedStatus()
         return memory_info
-    
+
     lines = [x.split(",") for x in result.strip().splitlines()]
     lines = [[x.strip('"') for x in line] for line in lines]
-    
+
     return parse_cmd_output(lines)
+
 
 def parse_cmd_output(lines: List[List[str]]):
     header = lines[0]
@@ -67,14 +71,14 @@ def parse_cmd_output(lines: List[List[str]]):
     part_number_idx = header.index("PartNumber")
     speed_idx = header.index("Speed")
     device_locator_idx = header.index("DeviceLocator")
-    smbios_memory_type_idx = header.index("SMBIOSMemoryType")    
-    
+    smbios_memory_type_idx = header.index("SMBIOSMemoryType")
+
     memory_info = MemoryInfo()
     for data in lines[1:]:
         try:
             module = MemoryModuleInfo()
             capacity = int(data[capacity_idx]) if data[capacity_idx].isdigit() else 0
-            module.capacity = Megabyte(capacity= capacity // (1024 * 1024))
+            module.capacity = Megabyte(capacity=capacity // (1024 * 1024))
             module.manufacturer = data[manufacturer_idx]
             module.part_number = data[part_number_idx]
             slot = MemoryModuleSlot(bank=data[bank_idx], channel=data[device_locator_idx])
@@ -87,7 +91,8 @@ def parse_cmd_output(lines: List[List[str]]):
             print(e)
             memory_info.status = PartialStatus()
     return memory_info
-        
+
+
 def fetch_memory_info() -> MemoryInfo:
     memory_info = fetch_wmic_memory_info()
     if type(memory_info.status) is FailedStatus:

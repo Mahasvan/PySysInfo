@@ -1,14 +1,13 @@
-from src.pysysinfo.models.info_models import WindowsHardwareInfo
-from src.pysysinfo.models.cpu_models import CPUInfo
-from src.pysysinfo.models.memory_models import MemoryInfo
-from src.pysysinfo.models.disk_models import StorageInfo
-
 import wmi
+
 from src.pysysinfo.dumps.windows.cpu import fetch_cpu_info
 from src.pysysinfo.dumps.windows.memory import fetch_memory_info
 from src.pysysinfo.dumps.windows.storage import fetch_storage_info
+from src.pysysinfo.models.cpu_models import CPUInfo
+from src.pysysinfo.models.disk_models import StorageInfo
+from src.pysysinfo.models.info_models import WindowsHardwareInfo
+from src.pysysinfo.models.memory_models import MemoryInfo
 
-import time
 
 class WindowsHardwareManager:
     """
@@ -34,4 +33,3 @@ class WindowsHardwareManager:
 
     def fetch_storage_info(self):
         self.info.storage = fetch_storage_info()
-    

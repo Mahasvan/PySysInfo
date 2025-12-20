@@ -1,16 +1,16 @@
-from typing import List
 import ctypes
+import os
+import winreg
 from ctypes import wintypes
+from typing import List
 
 from src.pysysinfo.models.cpu_models import CPUInfo
 from src.pysysinfo.models.status_models import PartialStatus
 
-import winreg
-import os
-
 kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
 kernel32.IsProcessorFeaturePresent.argtypes = [wintypes.DWORD]
 kernel32.IsProcessorFeaturePresent.restype = wintypes.BOOL
+
 
 def is_processor_feature_present(feature_id: int) -> bool:
     """
@@ -20,6 +20,7 @@ def is_processor_feature_present(feature_id: int) -> bool:
     :return: True if the feature is present, False otherwise.
     """
     return bool(kernel32.IsProcessorFeaturePresent(feature_id))
+
 
 def get_arm_version() -> str:
     """
@@ -34,12 +35,13 @@ def get_arm_version() -> str:
     Otherwise
     - we can assume it's ARMv7 or lower.
     """
-    if any([is_processor_feature_present(i) for i in [78,79,80]]):
+    if any([is_processor_feature_present(i) for i in [78, 79, 80]]):
         return "9"
     elif is_processor_feature_present(88):
         return "8"
     else:
         return "Unknown"
+
 
 def get_features() -> List[str]:
     """
@@ -55,15 +57,15 @@ def get_features() -> List[str]:
     - SSE4.2 - 38
     """
     SSE = ["SSE", "SSE2", "SSE3", "SSE4.1", "SSE4.2", "SSSE3"]
-    FEATURE_IDs = [6,10,13,37,38,36]
-    
-    
+    FEATURE_IDs = [6, 10, 13, 37, 38, 36]
+
     features = []
     for i in range(len(SSE)):
         if is_processor_feature_present(FEATURE_IDs[i]):
             features.append(SSE[i])
-    
+
     return features
+
 
 def parse_registry():
     """
@@ -73,26 +75,24 @@ def parse_registry():
     key_path = r"HARDWARE\DESCRIPTION\System\CentralProcessor\0"
     model_key = "ProcessorNameString"
     vendor_key = "VendorIdentifier"
-    
-    model_name = ""
-    vendor = ""
 
     with winreg.OpenKey(
-        winreg.HKEY_LOCAL_MACHINE,
-        key_path,
-        0,
-        winreg.KEY_READ
+            winreg.HKEY_LOCAL_MACHINE,
+            key_path,
+            0,
+            winreg.KEY_READ
     ) as key:
         model_name, _ = winreg.QueryValueEx(key, model_key)
         vendor, _ = winreg.QueryValueEx(key, vendor_key)
         return model_name, vendor
+
 
 def get_core_count() -> int:
     """
     Uses the GetLogicalProcessorInformation function in the Win32 API to get the number of physical cores.
     https://learn.microsoft.com/en-us/windows/win32/api/sysinfoapi/nf-sysinfoapi-getlogicalprocessorinformation
     """
-    
+
     """
     typedef struct _SYSTEM_LOGICAL_PROCESSOR_INFORMATION {
         ULONG_PTR ProcessorMask;
@@ -139,8 +139,9 @@ def get_core_count() -> int:
     physical_cores = sum(
         1 for info in buffer if info.Relationship == RelationProcessorCore
     )
-    
+
     return physical_cores
+
 
 def fetch_cpu_info() -> CPUInfo:
     cpu_info = CPUInfo()
@@ -148,10 +149,10 @@ def fetch_cpu_info() -> CPUInfo:
     model_name, vendor = parse_registry()
     cpu_info.model_name = model_name.strip()
     cpu_info.vendor = "AMD" if "amd" in vendor.lower() else "Intel" if "intel" in vendor.lower() else vendor.strip()
-    
+
     features = get_features()
     cpu_info.sse_flags = features
-    
+
     """
     The CPU Architecture is exposed as an environment variable on Windows systems.
     https://www.tenforums.com/tutorials/176966-how-check-if-processor-32-bit-64-bit-arm-windows-10-a.html
@@ -175,7 +176,7 @@ def fetch_cpu_info() -> CPUInfo:
         cpu_info.bitness = 64
     else:
         cpu_info.status = PartialStatus()
-    
+
     cpu_info.cores = get_core_count()
     if not cpu_info.cores:
         cpu_info.status = PartialStatus()
