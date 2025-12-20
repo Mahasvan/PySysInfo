@@ -16,15 +16,15 @@ A Python Library to simplify retrieval of hardware components of your computer.
 - macOS
   - [x] CPU
   - [ ] GPU
-  - [ ] Memory
+  - [x] Memory
   - [ ] Network
   - [ ] Audio
   - [ ] Vendor
   - [ ] Input
-  - [ ] Storage
+  - [x] Storage
   - [ ] Display
 - Windows
-  - [ ] CPU
+  - [x] CPU
   - [ ] GPU
   - [ ] Memory
   - [ ] Network

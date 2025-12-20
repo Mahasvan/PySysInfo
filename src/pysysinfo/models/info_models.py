@@ -15,3 +15,6 @@ class LinuxHardwareInfo(HardwareInfo):
 
 class MacHardwareInfo(HardwareInfo):
     pass
+
+class WindowsHardwareInfo(HardwareInfo):
+    pass
