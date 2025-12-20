@@ -50,16 +50,16 @@ def fetch_x86_cpu_info(raw_cpu_info: str) -> CPUInfo:
     # To get the info, we only need to parse the first entry - i.e. the first CPU Thread
     cpu_lines = info_lines[0]
 
-    model = re.search(r"(?<=model namesd\t: ).+(?=\n)", cpu_lines)
+    model = re.search(r"(?<=model name\t: ).+(?=\n)", cpu_lines)
     if model:
         model = model.group(0)
         cpu_info.model_name = model
+        vendor = "intel" if "intel" in model.lower() else "amd"
+        cpu_info.vendor = vendor
     else:
         cpu_info.status = PartialStatus(messages=cpu_info.status.messages)
         cpu_info.status.messages.append("Could not find model name")
 
-    vendor = "intel" if "intel" in model.lower() else "amd"
-    cpu_info.vendor = vendor
 
     # The CPU flags are in the format of "flags : sse sse2 sse3 ssse3 sse4_1 sse4_2 lm"
     flags = re.search(r"(?<=flags\t\t: ).+(?=\n)", cpu_lines)
@@ -94,7 +94,7 @@ def fetch_x86_cpu_info(raw_cpu_info: str) -> CPUInfo:
         cpu_info.bitness = 32
 
     # Cores are in the format of "cores : 6"
-    cores = re.search(r"(?<=cpu coresss\t: ).+(?=\n)", cpu_lines)
+    cores = re.search(r"(?<=cpu cores\t: ).+(?=\n)", cpu_lines)
 
     try:
         if cores:
