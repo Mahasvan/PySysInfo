@@ -21,7 +21,7 @@ def fetch_memory_info():
     arm64 for Apple Silicon
     """
     if "arm" in arch.lower():
-        memory_info.status = FailedStatus()
+        memory_info.status = FailedStatus("Memory Info Retrieval not supported on Apple Silicon")
         return memory_info
 
     """
@@ -29,11 +29,15 @@ def fetch_memory_info():
     `-alw0` forces a Plist output
     `-p` is used to traverse registry over the IODeviceTree plane (IOService is default)
     """
-    output = subprocess.check_output(["ioreg", "-alw0", "-p", "IODeviceTree"])
-    # output = subprocess.check_output(["cat", "/Users/mahas/Downloads/tree.txt"])
-    pl = plistlib.loads(output, fmt=plistlib.FMT_XML)
+    try:
+        output = subprocess.check_output(["ioreg", "-alw0", "-p", "IODeviceTree"])
+        # output = subprocess.check_output(["cat", "/Users/mahas/Downloads/tree.txt"])
+        pl = plistlib.loads(output, fmt=plistlib.FMT_XML)
 
-    children = pl["IORegistryEntryChildren"]
+        children = pl["IORegistryEntryChildren"]
+    except Exception as e:
+        memory_info.status = FailedStatus("Failed to parse ioreg: " + str(e))
+        return memory_info
 
     dimm_manufacturer = []
     dimm_part_numbers = []
@@ -135,7 +139,9 @@ def fetch_memory_info():
                 channel=dimm_slots[i][0],
                 bank=dimm_slots[i][1]
             )
+            module.frequency_mhz = int(dimm_speeds[i].lower().rstrip("mhz"))
             memory_info.modules.append(module)
+
         except Exception as e:
             memory_info.status = PartialStatus()
 
