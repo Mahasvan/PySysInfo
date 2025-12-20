@@ -1,9 +1,11 @@
 # PySysInfo
+
 A Python Library to simplify retrieval of hardware components of your computer.
 
 ## Tracker
 
 ### Hardware Discovery
+
 - Linux
   - [x] CPU
   - [ ] GPU
@@ -34,8 +36,9 @@ A Python Library to simplify retrieval of hardware components of your computer.
   - [ ] Storage
 
 ### Supporting Features
+
 - [ ] PCI Lookup - DeviceHunt
-- [ ] PCI Lookup - https://pci-ids.ucw.cz - [GitHub](https://github.com/pciutils/pciids/blob/master/pci.ids)
+- [ ] PCI Lookup - [Homepage](https://pci-ids.ucw.cz) - [GitHub](https://github.com/pciutils/pciids/blob/master/pci.ids)
 - [ ] Intel ARK and AMD Equivalent
 - [ ] Logging
 - [ ] Working Library
