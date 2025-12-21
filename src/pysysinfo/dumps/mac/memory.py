@@ -46,10 +46,10 @@ def get_arm_ram_info() -> MemoryInfo:
         memory_info.status = FailedStatus("Failed to parse SPMemoryDataType: " + str(e))
         return memory_info
 
-    print(pl)
+    # print(pl)
     try:
         for entry in pl:
-            print(entry["_items"])
+            # print(entry["_items"])
             sticks = entry["_items"]
             for stick in sticks:
                 module = MemoryModuleInfo()
