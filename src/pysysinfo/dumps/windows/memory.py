@@ -22,7 +22,7 @@ def fetch_wmic_memory_info() -> MemoryInfo:
         This means the WMIC command failed - possibly because it is not available on this system.
         We mark the status as failed and return an empty MemoryInfo object, so that we can fallback to the PowerShell cmdlet.
         """
-        memory_info.status = FailedStatus()
+        memory_info.status = FailedStatus(f"WMIC command failed: {e}")
         return memory_info
 
     lines = result.strip().splitlines()
@@ -42,7 +42,7 @@ def fetch_wmi_cmdlet_memory_info() -> MemoryInfo:
         This should not happen on modern Windows systems, where the wmic command is not available.
         In this case, mark status as failed and return an empty object
         """
-        memory_info.status = FailedStatus()
+        memory_info.status = FailedStatus(f"Powershell WMI cmdlet failed: {e}")
         return memory_info
 
     lines = [x.split(",") for x in result.strip().splitlines()]
@@ -88,8 +88,8 @@ def parse_cmd_output(lines: List[List[str]]):
             module.type = MEMORY_TYPE.get(int(data[smbios_memory_type_idx]), "Unknown")
             memory_info.modules.append(module)
         except Exception as e:
-            print(e)
-            memory_info.status = PartialStatus()
+            memory_info.status = PartialStatus(messages=memory_info.status.messages)
+            memory_info.status.messages.append(f"Error while parsing memory info: {e}")
     return memory_info
 
 

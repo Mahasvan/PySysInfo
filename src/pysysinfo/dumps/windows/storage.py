@@ -18,7 +18,7 @@ def fetch_wmic_storage_info() -> StorageInfo:
         This means the WMIC command failed - possibly because it is not available on this system.
         We mark the status as failed and return an empty StorageInfo object, so that we can fallback to the PowerShell cmdlet.
         """
-        storage_info.status = FailedStatus()
+        storage_info.status = FailedStatus(f"WMIC Command failed: {e}")
         return storage_info
 
     lines = result.strip().splitlines()
@@ -39,7 +39,7 @@ def fetch_wmi_cmdlet_storage_info() -> StorageInfo:
         This should not happen on modern Windows systems, where the wmic command is not available.
         In this case, mark status as failed and return an empty object
         """
-        storage_info.status = FailedStatus()
+        storage_info.status = FailedStatus(f"WMI Powershell cmdlet failed: {e}")
         return storage_info
 
     lines = [x.split(",") for x in result.strip().splitlines()]
@@ -87,7 +87,8 @@ def parse_cmd_output(lines: List[List[str]]) -> StorageInfo:
             storage_info.disks.append(disk)
 
         except Exception as e:
-            storage_info.status = PartialStatus()
+            storage_info.status = PartialStatus(messages=storage_info.status.messages)
+            storage_info.status.messages.append(f"Error processing disk info: {e}")
     return storage_info
 
 
