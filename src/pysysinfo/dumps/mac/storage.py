@@ -1,8 +1,13 @@
+from typing import Optional
+
 from src.pysysinfo.dumps.mac.ioreg import *
 from CoreFoundation import kCFAllocatorDefault
 
+from src.pysysinfo.models.size_models import Megabyte
 from src.pysysinfo.models.storage_models import StorageInfo, DiskInfo
 from src.pysysinfo.models.status_models import PartialStatus
+
+from ctypes import byref, create_string_buffer
 
 
 STORAGE_MAP = {
@@ -10,10 +15,39 @@ STORAGE_MAP = {
     "Rotational": "Hard Disk Drive (HDD)",
 }
 
+def find_media(entry) -> dict:
+    kr, iterator = IORegistryEntryGetChildIterator(
+        entry,
+        kIOServicePlane,
+        None
+    )
+
+    if kr != 0 or not iterator:
+        return {}
+
+    for child in ioiterator_to_list(iterator):
+        if IOObjectConformsTo(child, b"IOMedia"):
+            kr, props = corefoundation_to_native(
+                IORegistryEntryCreateCFProperties(
+                    child, None, kCFAllocatorDefault, kNilOptions
+                )
+            )
+            if kr != 0 or not props:
+                continue
+
+            if props.get("Whole"):
+                return props
+
+        # recurse
+        result = find_media(child)
+        if result:
+            return result
+
+    return {}
+
 
 def fetch_storage_info() -> StorageInfo:
     storage_info = StorageInfo()
-    # todo: fetch storage capacity
     device = {"IOProviderClass": "IOBlockStorageDevice"}
 
     interfaces = ioiterator_to_list(
@@ -22,6 +56,17 @@ def fetch_storage_info() -> StorageInfo:
 
     for i in interfaces:
         try:
+            # We first attempt to get the IOMedia entry for this IOBlockStorageDevice entry
+            # by traversing down the tree
+            try:
+                media_info = find_media(i)
+                if not media_info:
+                    raise ValueError("Media Info is empty")
+            except Exception as e:
+                storage_info.status = PartialStatus(messages=storage_info.status.messages)
+                storage_info.status.messages.append("Could not fetch media info: " + str(e))
+                media_info = {}
+
             device = corefoundation_to_native(
                 IORegistryEntryCreateCFProperties(
                     i, None, kCFAllocatorDefault, kNilOptions
@@ -71,11 +116,16 @@ def fetch_storage_info() -> StorageInfo:
             else:
                 _type = STORAGE_MAP.get(_type, _type)
 
+            size = media_info.get("Size")
+
             disk = DiskInfo()
             disk.model = name
             disk.location = location
             disk.type = _type
             disk.manufacturer = vendor
+
+            if size:
+                disk.size = Megabyte(capacity=size // (1024*1024))
 
             storage_info.disks.append(disk)
         except Exception as e:

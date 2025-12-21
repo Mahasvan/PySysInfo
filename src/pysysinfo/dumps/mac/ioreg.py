@@ -19,6 +19,7 @@ CFAllocatorRef = b"^{__CFAllocator=}"
 # https://developer.apple.com/library/archive/documentation/Cocoa/Conceptual/ObjCRuntimeGuide/Articles/ocrtTypeEncodings.html
 functions = [
     ("IORegistryEntryCreateCFProperties", b"IIo^@" + CFAllocatorRef + b"I"),
+    ("IORegistryEntryGetChildIterator", b"IIr*o^I"),
     ("IORegistryEntryGetLocationInPlane", b"II" + const_io_name_t_ref_in + b"o" + io_name_t_ref_out),
     ("IORegistryEntryGetRegistryEntryID", b"IIo^Q"),
     ("IORegistryEntrySearchCFProperty", b"@Ir*" + CFStringRef + CFAllocatorRef + b"I"),
@@ -34,6 +35,8 @@ functions = [
     ("IOObjectRelease", b"II"),
     ("IOIteratorNext", b"II"),
 ]
+
+kIOServicePlane = b"IOService"
 
 variables = [("kIOMasterPortDefault", b"I")]
 
