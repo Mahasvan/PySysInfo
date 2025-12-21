@@ -1,0 +1,41 @@
+{
+  "cpu": {
+    "status": {
+      "string": "success",
+      "messages": []
+    },
+    "model_name": "Apple M3",
+    "architecture": "ARM",
+    "bitness": 64,
+    "arch_version": "8",
+    "vendor": "Apple",
+    "sse_flags": [],
+    "cores": 8,
+    "threads": 8
+  },
+  "memory": {
+    "status": {
+      "string": "failed",
+      "messages": []
+    },
+    "modules": []
+  },
+  "storage": {
+    "status": {
+      "string": "success",
+      "messages": []
+    },
+    "disks": [
+      {
+        "model": "APPLE SSD AP0512Z",
+        "location": "Internal",
+        "connector": null,
+        "type": "Solid State Drive (SSD)",
+        "device_id": null,
+        "vendor_id": null,
+        "vendor_name": "Apple",
+        "size": null
+      }
+    ]
+  }
+}
