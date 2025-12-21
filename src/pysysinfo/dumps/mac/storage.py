@@ -2,7 +2,7 @@ from src.pysysinfo.dumps.mac.ioreg import *
 from CoreFoundation import kCFAllocatorDefault
 
 from src.pysysinfo.models.storage_models import StorageInfo, DiskInfo
-from src.pysysinfo.models.status_models import FailedStatus, PartialStatus
+from src.pysysinfo.models.status_models import PartialStatus
 
 
 STORAGE_MAP = {
@@ -27,9 +27,6 @@ def fetch_storage_info() -> StorageInfo:
                     i, None, kCFAllocatorDefault, kNilOptions
                 )
             )[1]
-
-            # print(device)
-
 
             product = device.get("Device Characteristics")
             protocol = device.get("Protocol Characteristics")
@@ -83,6 +80,7 @@ def fetch_storage_info() -> StorageInfo:
             storage_info.disks.append(disk)
         except Exception as e:
             print(e)
-            storage_info.status = PartialStatus()
+            storage_info.status = PartialStatus(messages=storage_info.status.messages)
+            storage_info.status.messages.append("Error while enumerating storage: " + str(e))
 
     return storage_info
