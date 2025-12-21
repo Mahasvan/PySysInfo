@@ -6,7 +6,6 @@ from src.pysysinfo.models.memory_models import MemoryInfo, MemoryModuleSlot, Mem
 from src.pysysinfo.models.status_models import PartialStatus, FailedStatus
 from src.pysysinfo.models.size_models import Megabyte, Kilobyte
 
-
 def fetch_memory_info() -> MemoryInfo:
     memory_info = MemoryInfo()
 
@@ -174,6 +173,20 @@ def fetch_memory_info() -> MemoryInfo:
             module.supports_ecc = True
         else:
             module.supports_ecc = False
+
+        # Now we attempt to check the frequency
+        """
+        The speed of the RAM module (in MT/s) is stored in the offset 0x15 to 0x17.
+        if the value of these 4 bytes is 0x0000, then the speed is unknown.
+        If the value is 0xFFFF, then the speed is in the Extended Speed field,
+        which is in the offset 0x54 to 0x58
+        """
+        ram_speed = int.from_bytes(value[0x15:0x17], "little")
+        if ram_speed == 0xFFFF:
+            ram_speed = int.from_bytes(value[0x54:0x58], "little")
+        print("RAM Speed: " + str(ram_speed))
+
+        module.frequency_mhz = ram_speed
 
         memory_info.modules.append(module)
 
