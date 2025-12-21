@@ -7,7 +7,7 @@ from src.pysysinfo.models.status_models import FailedStatus, PartialStatus
 
 def fetch_cpu_cores() -> Optional[int]:
     try:
-        result = subprocess.run(["lscpu", "-p"], capture_output=True, text=True)
+        result = subprocess.run(["lscpu", "-p"], capture_output=True, text=True).stdout
         print(result)
         lines = [x for x in result.splitlines() if not x.startswith("#")]
         print(lines)
