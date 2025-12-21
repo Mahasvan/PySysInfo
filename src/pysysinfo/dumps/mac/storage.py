@@ -84,11 +84,11 @@ def fetch_storage_info() -> StorageInfo:
             if name: name = name.strip()
 
             # Name of vendor
-            vendor = product.get("Vendor Name")
+            manufacturer = product.get("Vendor Name")
 
-            if vendor: vendor = vendor.strip()
+            if manufacturer: manufacturer = manufacturer.strip()
             elif "apple" in name.lower():
-                vendor = "Apple"
+                manufacturer = "Apple"
 
             # Type of storage device (SSD, HDD, etc.)
             _type = product.get("Medium Type")
@@ -122,7 +122,7 @@ def fetch_storage_info() -> StorageInfo:
             disk.model = name
             disk.location = location
             disk.type = _type
-            disk.manufacturer = vendor
+            disk.manufacturer = manufacturer
 
             if size:
                 disk.size = Megabyte(capacity=size // (1024*1024))
