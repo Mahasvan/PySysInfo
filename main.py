@@ -19,24 +19,27 @@ else:
     from src.pysysinfo.dumps.linux.linux_dump import LinuxHardwareManager
     lhm = LinuxHardwareManager()
 
+start_times = [0.0, 0.0, 0.0, 0.0]
+# CPU, Memory, Storage, Total
+start_times[0] = start_times[-1] = time.time() * 1000
+end_times = [0.0, 0.0, 0.0, 0.0]
 
-start_time = time.time()
 lhm.fetch_cpu_info()
-end_time = time.time()
-print("CPU Discovery:", end_time - start_time)
+end_times[0] = start_times[1] = time.time() * 1000
 
-start_time = time.time()
 lhm.fetch_memory_info()
-end_time = time.time()
-print("Memory Discovery:", end_time - start_time)
+end_times[1] = start_times[2] = time.time() * 1000
 
-start_time = time.time()
 lhm.fetch_storage_info()
-end_time = time.time()
-print("Storage Discovery:", end_time - start_time)
+end_times[2] = end_times[-1] = time.time() * 1000
 
-end_time = time.time()
-print(f"Time taken: {end_time - global_start_time} seconds")
+# print(start_times)
+# print(end_times)
+print("CPU:", end_times[0] - start_times[0], "ms")
+print("Memory:", end_times[1] - start_times[1], "ms")
+print("Storage:", end_times[2] - start_times[2], "ms")
+print("Total:", end_times[3] - start_times[3], "ms")
+
 #
 json_data = json.loads(lhm.info.model_dump_json())
 #
