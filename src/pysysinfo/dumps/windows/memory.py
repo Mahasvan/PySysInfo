@@ -79,13 +79,25 @@ def parse_cmd_output(lines: List[List[str]]):
             module = MemoryModuleInfo()
             capacity = int(data[capacity_idx]) if data[capacity_idx].isdigit() else 0
             module.capacity = Megabyte(capacity=capacity // (1024 * 1024))
-            module.manufacturer = data[manufacturer_idx]
-            module.part_number = data[part_number_idx]
-            slot = MemoryModuleSlot(bank=data[bank_idx], channel=data[device_locator_idx])
+
+            if data[manufacturer_idx]:
+                module.manufacturer = data[manufacturer_idx].strip()
+            if data[part_number_idx]:
+                module.part_number = data[part_number_idx].strip()
+
+            slot = MemoryModuleSlot(
+                bank=data[bank_idx].strip() if data[bank_idx] else None,
+                channel=data[device_locator_idx].strip() if data[device_locator_idx] else None
+            )
             module.slot = slot
+
             # The speed is already reported as MHz
             module.frequency_mhz = int(data[speed_idx]) if data[speed_idx].isdigit() else None
-            module.type = MEMORY_TYPE.get(int(data[smbios_memory_type_idx]), "Unknown")
+
+            if data[smbios_memory_type_idx]:
+                smbios_mem_type = data[smbios_memory_type_idx].strip()
+                module.type = MEMORY_TYPE.get(int(smbios_mem_type), "Unknown")
+
             memory_info.modules.append(module)
         except Exception as e:
             memory_info.status = PartialStatus(messages=memory_info.status.messages)
