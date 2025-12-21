@@ -3,8 +3,9 @@ import os
 
 import time
 import platform
-start_time = time.time()
-# if the current os is windows:
+
+global_start_time = time.time()
+
 if os.name == "nt":
     print("OS: Windows")
     from src.pysysinfo.dumps.windows.windows_dump import WindowsHardwareManager
@@ -19,11 +20,23 @@ else:
     lhm = LinuxHardwareManager()
 
 
+start_time = time.time()
 lhm.fetch_cpu_info()
+end_time = time.time()
+print("CPU Discovery:", end_time - start_time)
+
+start_time = time.time()
 lhm.fetch_memory_info()
+end_time = time.time()
+print("Memory Discovery:", end_time - start_time)
+
+start_time = time.time()
 lhm.fetch_storage_info()
 end_time = time.time()
-print(f"Time taken: {end_time - start_time} seconds")
+print("Storage Discovery:", end_time - start_time)
+
+end_time = time.time()
+print(f"Time taken: {end_time - global_start_time} seconds")
 #
 json_data = json.loads(lhm.info.model_dump_json())
 #
