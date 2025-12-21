@@ -129,7 +129,6 @@ def fetch_storage_info() -> StorageInfo:
 
             storage_info.disks.append(disk)
         except Exception as e:
-            print(e)
             storage_info.status = PartialStatus(messages=storage_info.status.messages)
             storage_info.status.messages.append("Error while enumerating storage: " + str(e))
 

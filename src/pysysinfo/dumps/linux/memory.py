@@ -149,7 +149,6 @@ def fetch_memory_info() -> MemoryInfo:
                 module.capacity = Kilobyte(capacity=size)
 
         except Exception as e:
-            print(e)
             memory_info.status = PartialStatus(messages=memory_info.status.messages)
             memory_info.status.messages.append("DIMM Capacity: " + str(e))
             continue
@@ -166,9 +165,6 @@ def fetch_memory_info() -> MemoryInfo:
         total_width = int.from_bytes(value[0x08:0x0A], "little")
         data_width = int.from_bytes(value[0x0A:0x0C], "little")
 
-        print("Total Width: " + str(total_width))
-        print("DataWidth: " + str(data_width))
-
         if total_width - data_width == data_width//8:
             module.supports_ecc = True
         else:
@@ -184,9 +180,10 @@ def fetch_memory_info() -> MemoryInfo:
         ram_speed = int.from_bytes(value[0x15:0x17], "little")
         if ram_speed == 0xFFFF:
             ram_speed = int.from_bytes(value[0x54:0x58], "little")
-        print("RAM Speed: " + str(ram_speed))
 
-        module.frequency_mhz = ram_speed
+        if ram_speed != 0x0000:
+            module.frequency_mhz = ram_speed
+        # Otherwise, we leave it as None
 
         memory_info.modules.append(module)
 
