@@ -4,6 +4,7 @@ import winreg
 from ctypes import wintypes
 from typing import List
 
+from src.pysysinfo.dumps.windows.win_enum import FEATURE_ID_MAP
 from src.pysysinfo.models.cpu_models import CPUInfo
 from src.pysysinfo.models.status_models import PartialStatus, FailedStatus
 
@@ -56,15 +57,8 @@ def get_features() -> List[str]:
     - SSE4.1 - 37
     - SSE4.2 - 38
     """
-    SSE = ["SSE", "SSE2", "SSE3", "SSE4.1", "SSE4.2", "SSSE3"]
-    FEATURE_IDs = [6, 10, 13, 37, 38, 36]
 
-    features = []
-    for i in range(len(SSE)):
-        if is_processor_feature_present(FEATURE_IDs[i]):
-            features.append(SSE[i])
-
-    return features
+    return [k for k, v in FEATURE_ID_MAP.items() if is_processor_feature_present(v)]
 
 
 def parse_registry():
