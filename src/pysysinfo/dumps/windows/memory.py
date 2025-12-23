@@ -14,7 +14,9 @@ We first check if the WMIC command works, and if it fails, we fallback to the Po
 
 def fetch_wmic_memory_info() -> MemoryInfo:
     memory_info = MemoryInfo()
-    command = "wmic memorychip get BankLabel,Capacity,Manufacturer,PartNumber,Speed,DeviceLocator,SMBIOSMemoryType /format:csv"
+    command = ("wmic memorychip get "
+               "BankLabel,Capacity,Manufacturer,PartNumber,Speed,DeviceLocator,SMBIOSMemoryType,DataWidth,TotalWidth "
+               "/format:csv")
     try:
         result = subprocess.check_output(command, shell=True, text=True)
     except Exception as e:
@@ -33,7 +35,9 @@ def fetch_wmic_memory_info() -> MemoryInfo:
 
 def fetch_wmi_cmdlet_memory_info() -> MemoryInfo:
     memory_info = MemoryInfo()
-    command = 'powershell -Command "Get-CimInstance Win32_PhysicalMemory | Select-Object BankLabel, Capacity, Manufacturer, PartNumber, Speed, DeviceLocator, SMBIOSMemoryType | ConvertTo-Csv -NoTypeInformation"'
+    command = ('powershell -Command "Get-CimInstance Win32_PhysicalMemory | '
+               'Select-Object BankLabel, Capacity, Manufacturer, PartNumber, Speed, DeviceLocator, SMBIOSMemoryType, DataWidth, TotalWidth | '
+               'ConvertTo-Csv -NoTypeInformation"')
     try:
         result = subprocess.check_output(command, shell=True, text=True)
     except Exception as e:
@@ -72,6 +76,8 @@ def parse_cmd_output(lines: List[List[str]]):
     speed_idx = header.index("Speed")
     device_locator_idx = header.index("DeviceLocator")
     smbios_memory_type_idx = header.index("SMBIOSMemoryType")
+    data_width_idx = header.index("DataWidth")
+    total_width_idx = header.index("TotalWidth")
 
     memory_info = MemoryInfo()
     for data in lines[1:]:
@@ -97,6 +103,12 @@ def parse_cmd_output(lines: List[List[str]]):
             if data[smbios_memory_type_idx]:
                 smbios_mem_type = data[smbios_memory_type_idx].strip()
                 module.type = MEMORY_TYPE.get(int(smbios_mem_type), "Unknown")
+
+            if data[data_width_idx] and data[total_width_idx]:
+               if int(data[total_width_idx]) > int(data[data_width_idx]):
+                   module.supports_ecc = True
+               else:
+                   module.supports_ecc = False
 
             memory_info.modules.append(module)
         except Exception as e:
