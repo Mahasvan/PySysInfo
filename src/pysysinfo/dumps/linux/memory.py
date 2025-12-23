@@ -31,12 +31,9 @@ def fetch_memory_info() -> MemoryInfo:
         module = MemoryModuleInfo()
         # Attempt to get Part Number
         try:
-            value = subprocess.check_output(
-                [
-                    "cat",
-                    f"{parent_dir.path}/raw",
-                ]
-            )
+            with open(f"{parent_dir.path}/raw", "rb") as f:
+                value = f.read()
+
             if "dimm" in value.upper().decode("latin-1").strip().lower():
                 length_field = value[0x1]
                 strings = value[length_field:len(value)].split(b'\0')
@@ -52,7 +49,7 @@ def fetch_memory_info() -> MemoryInfo:
 
                 part_no = get_string_entry(strings, value[0x1A]).strip()
                 module.part_number = part_no
-        except subprocess.CalledProcessError as e:
+        except PermissionError:
             # todo: Need SUDO for this. Mention this in the Log
             memory_info.status = FailedStatus("Unable to open /sys/firmware/dmi/entries. Are you root?")
             return memory_info
@@ -135,11 +132,7 @@ def fetch_memory_info() -> MemoryInfo:
 
             if size == 0x7FFF:
                 # 4 bytes, at offset 1Ch
-                size = int(
-                    "".join(
-                        reversed(value.hex()[0x1C: 0x1C + 0x4])),
-                    base=16
-                )
+                size = int.from_bytes(value[0x1C:0x20], "little")
 
             if (size >> 15) & 1 == 0:
                 # Size is in Megabytes
