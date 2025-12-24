@@ -4,57 +4,79 @@ import os
 
 
 def pci_from_acpi_linux(device_path):
-    acpi = ""
-    pci = ""
+    acpi_path = os.path.join(device_path, "firmware_node", "path")
+    uevent_path = os.path.join(device_path, "uevent")
 
     try:
-        acpi = open(f"{device_path}/firmware_node/path", "r").read().strip()
-        pci = open(f"{device_path}/uevent", "r").read().strip()
-
-    except:
+        with open(acpi_path, "r") as f:
+            acpi = f.read().strip()
+        with open(uevent_path, "r") as f:
+            pci_uevent = f.read().strip()
+    except (OSError, IOError):
         return None, None
 
-    if not (acpi and pci):
+    if not (acpi and pci_uevent):
         return None, None
 
-    # Path to be yielded in the end.
-    # E.g: PciRoot(0x0)/Pci(0x2,0x0)
-    pci_path = ""
-
-    # Parent PCI description
-    #
-    # <domain>:<bus>:<slot>.<function>
-    slot = ""
-
-    for line in pci.split("\n"):
-        if "pci_slot_name" in line.lower():
-            slot = line.split("=")[1]
+    # Extract PCI slot name from uevent
+    # Format: <domain>:<bus>:<slot>.<function>
+    slot = None
+    for line in pci_uevent.splitlines():
+        if line.lower().startswith("pci_slot_name="):
+            slot = line.split("=", 1)[1]
             break
 
-    if slot:
-        # Domain
-        pci_path += f"PciRoot({hex(int(slot.split(':')[0], 16))})"
-        children = []
-        paths = [",".join(_get_valid(slot))]
+    if not slot:
+        return acpi, ""
 
-        for path in os.listdir("/sys/bus/pci/devices"):
-            if slot in os.listdir(f"/sys/bus/pci/devices/{path}"):
-                children.append(path)
+    # Construct PCI path
+    # E.g: PciRoot(0x0)/Pci(0x2,0x0)
+    try:
+        domain = int(slot.split(":")[0], 16)
+        pci_path = f"PciRoot({hex(domain)})"
+    except (IndexError, ValueError):
+        return acpi, ""
 
-        for child in children:
-            paths.append(",".join(_get_valid(child)))
+    # Collect path components (current device and parents)
+    paths = []
 
-        for comp in sorted(paths, reverse=True):
-            pci_path += f"/Pci({comp})"
+    # Add current device
+    current_components = _get_address_components(slot)
+    if current_components:
+        paths.append(",".join(current_components))
+
+    # Find parent bridges
+    # Check if 'slot' is listed in the directory of other devices
+    pci_root = "/sys/bus/pci/devices"
+    if os.path.exists(pci_root):
+        for device_name in os.listdir(pci_root):
+            device_dir = os.path.join(pci_root, device_name)
+            try:
+                if slot in os.listdir(device_dir):
+                    parent_components = _get_address_components(device_name)
+                    if parent_components:
+                        paths.append(",".join(parent_components))
+            except OSError:
+                continue
+
+    # Sort paths and append to pci_path
+    # Note: Sorting logic preserved from original code
+    for comp in sorted(paths, reverse=True):
+        pci_path += f"/Pci({comp})"
 
     return acpi, pci_path
 
-def _get_valid(slot):
+
+def _get_address_components(slot_name):
+    """
+    Parses PCI slot name (domain:bus:device.function)
+    and returns a tuple of hex strings (device, function).
+    """
     try:
-        return tuple([
-            hex(
-                int(n, 16)) for n
-            in slot.split(":")[-1].split(".")
-        ])
-    except:
-        return None, None
+        # slot_name example: 0000:00:1f.3
+        # split(":")[-1] -> 1f.3
+        # split(".") -> ['1f', '3']
+        device_func = slot_name.split(":")[-1]
+        return tuple(hex(int(n, 16)) for n in device_func.split("."))
+    except (ValueError, IndexError, AttributeError):
+        return None
