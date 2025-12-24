@@ -19,7 +19,7 @@ def pci_from_acpi_linux(device_path):
 
     # Path to be yielded in the end.
     # E.g: PciRoot(0x0)/Pci(0x2,0x0)
-    pcip = ""
+    pci_path = ""
 
     # Parent PCI description
     #
@@ -33,7 +33,7 @@ def pci_from_acpi_linux(device_path):
 
     if slot:
         # Domain
-        pcip += f"PciRoot({hex(int(slot.split(':')[0], 16))})"
+        pci_path += f"PciRoot({hex(int(slot.split(':')[0], 16))})"
         children = []
         paths = [",".join(_get_valid(slot))]
 
@@ -45,9 +45,9 @@ def pci_from_acpi_linux(device_path):
             paths.append(",".join(_get_valid(child)))
 
         for comp in sorted(paths, reverse=True):
-            pcip += f"/Pci({comp})"
+            pci_path += f"/Pci({comp})"
 
-    return acpi, pci
+    return acpi, pci_path
 
 def _get_valid(slot):
     try:
