@@ -18,6 +18,7 @@ else:
     print("OS: Linux")
     from src.pysysinfo.dumps.linux.linux_dump import LinuxHardwareManager
     lhm = LinuxHardwareManager()
+    lhm.fetch_graphics_info()
 
 start_times = [0.0, 0.0, 0.0, 0.0]
 # CPU, Memory, Storage, Total
