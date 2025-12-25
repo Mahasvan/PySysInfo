@@ -78,7 +78,7 @@ def fetch_gpu_info() -> GraphicsInfo:
                     data[key.strip()] = value.strip()
 
             gpu.manufacturer = data.get("Vendor")
-            gpu.model = data.get("Model")
+            gpu.model = data.get("Device")
             gpu.subsystem_manufacturer = data.get("SVendor")
             gpu.subsystem_model = data.get("SDevice")
         except Exception as e:
