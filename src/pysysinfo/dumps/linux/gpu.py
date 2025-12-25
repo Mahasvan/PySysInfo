@@ -1,13 +1,30 @@
 import os
 import subprocess
+import glob
+from typing import Optional
 
 from src.pysysinfo.dumps.linux.common import get_pci_path_linux
 from src.pysysinfo.models.gpu_models import GPUInfo, GraphicsInfo
+from src.pysysinfo.models.size_models import Megabyte
 from src.pysysinfo.models.status_models import FailedStatus, PartialStatus
 
 # Currently, the info in /sys/class/drm/cardX is being used.
 # todo: Check if lspci and lshw -c display can be used
 # https://unix.stackexchange.com/questions/393/how-to-check-how-many-lanes-are-used-by-the-pcie-card
+
+def fetch_vram_amd(device) -> Optional[int]:
+    ROOT_PATH = "/sys/bus/pci/devices/"
+    vram_files = os.path.join(*[ROOT_PATH, device, "drm", "card*", "device", "mem_info_vram_total"])
+    try:
+        drm_files = glob.glob(vram_files)
+        if drm_files:
+            with open(drm_files[0]) as f:
+                vram_bits = int(f.read().strip())
+                vram_mb = int(vram_bits / 1024 / 1024)
+                return vram_mb
+        return None
+    except:
+        return None
 
 def fetch_gpu_info() -> GraphicsInfo:
     graphics_info = GraphicsInfo()
@@ -59,6 +76,10 @@ def fetch_gpu_info() -> GraphicsInfo:
         except Exception as e:
             graphics_info.status = PartialStatus(messages=graphics_info.status.messages)
             graphics_info.status.messages.append(f"Could not get PCI path: {e}")
+
+        if gpu.vendor_id == "0x1002":
+            # get VRAM for AMD GPUs
+            gpu.vram = Megabyte(capacity=fetch_vram_amd(device))
 
         try:
             lspci_output = subprocess.run(["lspci", "-s", device, "-vmm"], capture_output=True, text=True).stdout
