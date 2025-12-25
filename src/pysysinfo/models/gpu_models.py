@@ -21,6 +21,7 @@ class GPUInfo(BaseModel):
     pci_path: Optional[str] = None
 
     pcie_width: Optional[int] = None
+    pcie_gen: Optional[int] = None
     vram: Optional[StorageSize] = None
     pass
 

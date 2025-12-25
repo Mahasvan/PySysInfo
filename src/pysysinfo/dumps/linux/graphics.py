@@ -1,7 +1,7 @@
 import os
 import subprocess
 import glob
-from typing import Optional
+from typing import Optional, Tuple
 
 from src.pysysinfo.dumps.linux.common import get_pci_path_linux
 from src.pysysinfo.models.gpu_models import GPUInfo, GraphicsInfo
@@ -26,12 +26,72 @@ def fetch_vram_amd(device) -> Optional[int]:
     except:
         return None
 
-def fetch_vram_nvidia(device) -> Optional[int]:
-    command = ["nvidia-smi", f"--id={device}", "--query-gpu=memory.total", "--format=csv,noheader,nounits"]
-    output = subprocess.run(command, capture_output=True, text=True).stdout
-    # we do not try and except, we will catch the error in fetch_gpu_info
+def get_pcie_gen(device) -> Optional[int]:
+    # Path example: /sys/bus/pci/devices/0000:03:00.0/current_link_speed
+    path = f"/sys/bus/pci/devices/{device}/current_link_speed"
 
-    return int(output)
+    if not os.path.exists(path):
+        return None
+
+    try:
+        with open(path, "r") as f:
+            raw_speed = f.read().strip() # e.g., "16.0 GT/s"
+
+        # Mapping Dictionary
+        speed_to_gen = {
+            "2.5 GT/s": 1,
+            "5.0 GT/s": 2,
+            "8.0 GT/s": 3,
+            "16.0 GT/s": 4,
+            "32.0 GT/s": 5,
+            "64.0 GT/s": 6
+        }
+
+        for k, v in speed_to_gen.items():
+            """ `8.0 GT/s PCIe` may be a possible candidate"""
+            if k in raw_speed:
+                return v
+
+        return None
+
+    except Exception as e:
+        print(f"Error: {e}")
+        return None
+
+def fetch_gpu_details_nvidia(device) -> Tuple[str, int, int, int]:
+    # Combine all queries into a single comma-separated string
+    # Fields: Name, PCIe Width, PCIe Gen, Memory Total
+    query_fields = "name,pcie.link.width.current,pcie.link.gen.current,memory.total"
+
+    command = [
+        "nvidia-smi",
+        f"--id={device}",
+        f"--query-gpu={query_fields}",
+        "--format=csv,noheader,nounits"
+    ]
+
+    # Run the command
+    result = subprocess.run(command, capture_output=True, text=True)
+
+    # Check for execution errors
+    if result.returncode != 0:
+        raise RuntimeError(f"nvidia-smi failed: {result.stderr}")
+
+    # Parse output (Expected: "Name, Width, Gen, Memory")
+    output = result.stdout.strip()
+    parts = output.split(',')
+
+    # Validate we got exactly 4 fields back
+    if len(parts) != 4:
+        raise ValueError(f"Unexpected output format from nvidia-smi: {output}")
+
+    # Parse and Type Convert
+    gpu_name = parts[0].strip()
+    pci_width = int(parts[1].strip())   # e.g., 16
+    pci_gen = int(parts[2].strip())     # e.g., 3, 4, or 5
+    vram_total = int(parts[3].strip())  # e.g., 16384 (MiB)
+
+    return gpu_name, pci_width, pci_gen, vram_total
 
 def fetch_graphics_info() -> GraphicsInfo:
     graphics_info = GraphicsInfo()
@@ -85,22 +145,31 @@ def fetch_graphics_info() -> GraphicsInfo:
             graphics_info.status = PartialStatus(messages=graphics_info.status.messages)
             graphics_info.status.messages.append(f"Could not get PCI path: {e}")
 
+        try:
+            pcie_gen = get_pcie_gen(device)
+            if pcie_gen:
+                gpu.pcie_gen = pcie_gen
+        except Exception as e:
+            graphics_info.status = PartialStatus(messages=graphics_info.status.messages)
+            graphics_info.status.messages.append(f"Could not get PCI gen: {e}")
+
         if gpu.vendor_id == "0x1002":
             # get VRAM for AMD GPUs
             vram_capacity = fetch_vram_amd(device)
             if vram_capacity is not None:
                 gpu.vram = Megabyte(capacity=vram_capacity)
+
         elif gpu.vendor_id and gpu.vendor_id.lower() == "0x10de":
             # get VRAM for Nvidia GPUs
             try:
-                vram_capacity = fetch_vram_nvidia(device)
-                if vram_capacity is not None:
-                    gpu.vram = Megabyte(capacity=vram_capacity)
+                gpu_name, pcie_width, pcie_gen, vram_total = fetch_gpu_details_nvidia()
+                if gpu_name: gpu.name = gpu_name
+                if pcie_width: gpu.pcie_width = pcie_width
+                if pcie_gen: gpu.pcie_gen = pcie_gen
+                if vram_total: gpu.vram = Megabyte(capacity=vram_total)
             except Exception as e:
                 graphics_info.status = PartialStatus(messages=graphics_info.status.messages)
-                graphics_info.status.messages.append(f"Could not get VRAM for NVIDIA GPU {device}: {e}")
-
-
+                graphics_info.status.messages.append(f"Could not get additional GPU info for NVIDIA GPU {device}: {e}")
         try:
             lspci_output = subprocess.run(["lspci", "-s", device, "-vmm"], capture_output=True, text=True).stdout
             # We gather all data here and parse whatever data we have. Subsystem data may not be returned.
