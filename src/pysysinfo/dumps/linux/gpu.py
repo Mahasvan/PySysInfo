@@ -57,8 +57,9 @@ def fetch_gpu_info() -> GraphicsInfo:
             if base_class != 3:
                 continue
         except Exception as e:
-            graphics_info.status = FailedStatus(f"Could not open file for {device}: {e}")
-            return graphics_info
+            graphics_info.status = PartialStatus(messages=graphics_info.status.messages)
+            graphics_info.status.messages.append(f"Could not open file for {device}: {e}")
+            continue
 
         gpu = GPUInfo()
 
@@ -86,11 +87,15 @@ def fetch_gpu_info() -> GraphicsInfo:
 
         if gpu.vendor_id == "0x1002":
             # get VRAM for AMD GPUs
-            gpu.vram = Megabyte(capacity=fetch_vram_amd(device))
-        elif gpu.vendor_id.lower() == "0x10de":
+            vram_capacity = fetch_vram_amd(device)
+            if vram_capacity is not None:
+                gpu.vram = Megabyte(capacity=vram_capacity)
+        elif gpu.vendor_id and gpu.vendor_id.lower() == "0x10de":
             # get VRAM for Nvidia GPUs
             try:
-                gpu.vram = Megabyte(capacity=fetch_vram_nvidia(device))
+                vram_capacity = fetch_vram_nvidia(device)
+                if vram_capacity is not None:
+                    gpu.vram = Megabyte(capacity=vram_capacity)
             except Exception as e:
                 graphics_info.status = PartialStatus(messages=graphics_info.status.messages)
                 graphics_info.status.messages.append(f"Could not get VRAM for NVIDIA GPU {device}: {e}")
