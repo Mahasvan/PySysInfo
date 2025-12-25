@@ -48,6 +48,14 @@ def fetch_gpu_info() -> GraphicsInfo:
         try:
             lspci_output = subprocess.run(["lspci", "-s", device, "-vmm"], capture_output=True, text=True).stdout
             # We gather all data here and parse whatever data we have. Subsystem data may not be returned.
+        except Exception as e:
+            # lspci may not be available in some distros
+            graphics_info.status = PartialStatus(messages=graphics_info.status.messages)
+            graphics_info.status.messages.append(f"Could not get lspci output for {device}: {e}")
+            graphics_info.modules.append(gpu)
+            continue
+
+        try:
             data = {}
             for line in lspci_output.splitlines():
                 if ":" in line:
@@ -62,6 +70,6 @@ def fetch_gpu_info() -> GraphicsInfo:
             graphics_info.status = PartialStatus(messages=graphics_info.status.messages)
             graphics_info.status.messages.append(f"Could not parse LSPCI output for GPU {device}: {e}")
 
-        graphics_info.gpus.append(gpu)
+        graphics_info.modules.append(gpu)
 
     return graphics_info
