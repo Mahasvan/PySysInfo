@@ -162,7 +162,7 @@ def fetch_graphics_info() -> GraphicsInfo:
         elif gpu.vendor_id and gpu.vendor_id.lower() == "0x10de":
             # get VRAM for Nvidia GPUs
             try:
-                gpu_name, pcie_width, pcie_gen, vram_total = fetch_gpu_details_nvidia()
+                gpu_name, pcie_width, pcie_gen, vram_total = fetch_gpu_details_nvidia(device)
                 if gpu_name: gpu.name = gpu_name
                 if pcie_width: gpu.pcie_width = pcie_width
                 if pcie_gen: gpu.pcie_gen = pcie_gen
