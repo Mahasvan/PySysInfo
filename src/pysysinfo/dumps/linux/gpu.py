@@ -1,7 +1,7 @@
 import os
 import subprocess
 
-from src.pysysinfo.dumps.linux.common import pci_from_acpi_linux
+from src.pysysinfo.dumps.linux.common import get_pci_path_linux
 from src.pysysinfo.models.gpu_models import GPUInfo, GraphicsInfo
 from src.pysysinfo.models.status_models import FailedStatus, PartialStatus
 
@@ -41,9 +41,24 @@ def fetch_gpu_info() -> GraphicsInfo:
         try:
             gpu.vendor_id = open(os.path.join(path, "vendor")).read().strip()
             gpu.device_id = open(os.path.join(path, "device")).read().strip()
+            width = open(os.path.join(path, "current_link_width")).read().strip()
+            if width.isnumeric() and int(width) > 0:
+                gpu.width = int(width)
         except Exception as e:
             graphics_info.status = PartialStatus(messages=graphics_info.status.messages)
-            graphics_info.status.messages.append(f"Could not get vendor or device id: {e}")
+            graphics_info.status.messages.append(f"Could not get GPU properties: {e}")
+        try:
+            acpi_path = open(os.path.join(path, "firmware_node", "path")).read().strip()
+            gpu.acpi_path = acpi_path
+        except Exception as e:
+            graphics_info.status = PartialStatus(messages=graphics_info.status.messages)
+            graphics_info.status.messages.append(f"Could not get ACPI path: {e}")
+        try:
+            pci_path = get_pci_path_linux(device)
+            gpu.pci_path = pci_path
+        except Exception as e:
+            graphics_info.status = PartialStatus(messages=graphics_info.status.messages)
+            graphics_info.status.messages.append(f"Could not get PCI path: {e}")
 
         try:
             lspci_output = subprocess.run(["lspci", "-s", device, "-vmm"], capture_output=True, text=True).stdout
