@@ -1,29 +1,45 @@
 import csv
 import io
+import json
 import subprocess
 import re
 import winreg
 from typing import Optional
 
+from pysysinfo.dumps.windows.common import format_acpi_path, format_pci_path
 from src.pysysinfo.models.gpu_models import GPUInfo
 from src.pysysinfo.models.size_models import Megabyte
 from src.pysysinfo.models.status_models import PartialStatus
 from src.pysysinfo.models.gpu_models import GraphicsInfo
 from src.pysysinfo.models.status_models import FailedStatus
 
+import html
+
 def fetch_acpi_path(pnp_device_id: str):
-    escaped = pnp_device_id.encode("unicode_escape").decode("ascii")
-    command = ("wmic path Win32_PnPEntity "
-               f"WHERE \"PNPDeviceID={escaped}\" "
-               "get DEVPKEY_Device_LocationPaths "
-               # "AdapterCompatibility,Name,AdapterRAM,VideoProcessor,PNPDeviceID,DriverVersion "
-               "/format:csv")
+    escaped = html.unescape(pnp_device_id)
+    ps_script = f"""
+        Get-PnpDeviceProperty -InstanceId "{escaped}" -KeyName DEVPKEY_Device_LocationPaths | 
+        Select-Object -ExpandProperty Data | ConvertTo-Json
+        """
     pass
     try:
-        result = subprocess.check_output(command, shell=True, text=True)
-        print(result)
-    except Exception as e:
-        print(e)
+        result = subprocess.run(["powershell", "-Command", ps_script], capture_output=True, text=True)
+    except:
+        return None
+    if not result.stdout and not result.stdout.strip():
+        return None
+
+    paths = json.loads(result.stdout)
+    acpi_path = None
+    pciroot = None
+
+    for path in paths:
+        if path.startswith("ACPI"):
+            acpi_path = path
+        if path.startswith("PCIROOT"):
+            pciroot = path
+
+    return acpi_path, pciroot
 
 def fetch_vram_from_registry(device_name: str, driver_version: str) -> Optional[int]:
     key_path = r"SYSTEM\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}"
@@ -122,7 +138,10 @@ def parse_cmd_output(lines: list) -> GraphicsInfo:
             gpu.manufacturer = line[manufacturer_idx]
             pnp_device_id = line[pnp_device_idx]
             drv_version = line[drv_version_idx]
-            fetch_acpi_path(pnp_device_id)
+
+            acpi_path, pci_path = fetch_acpi_path(pnp_device_id)
+            gpu.acpi_path = format_acpi_path(acpi_path)
+            gpu.pci_path = format_pci_path(pci_path)
 
             """
             The PNPDeviceID is of the form ****VEN_1234&DEV_5678&SUBSYS_9ABCDE0F.****
