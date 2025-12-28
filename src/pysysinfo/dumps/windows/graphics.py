@@ -1,19 +1,19 @@
 import csv
+import html
 import io
 import json
-import subprocess
 import re
+import subprocess
 import winreg
 from typing import Optional
 
-from pysysinfo.dumps.windows.common import format_acpi_path, format_pci_path
+from src.pysysinfo.dumps.windows.common import format_acpi_path, format_pci_path
 from src.pysysinfo.models.gpu_models import GPUInfo
-from src.pysysinfo.models.size_models import Megabyte
-from src.pysysinfo.models.status_models import PartialStatus
 from src.pysysinfo.models.gpu_models import GraphicsInfo
+from src.pysysinfo.models.size_models import Megabyte
 from src.pysysinfo.models.status_models import FailedStatus
+from src.pysysinfo.models.status_models import PartialStatus
 
-import html
 
 def fetch_acpi_path(pnp_device_id: str):
     escaped = html.unescape(pnp_device_id)
@@ -40,6 +40,7 @@ def fetch_acpi_path(pnp_device_id: str):
             pciroot = path
 
     return acpi_path, pciroot
+
 
 def fetch_vram_from_registry(device_name: str, driver_version: str) -> Optional[int]:
     key_path = r"SYSTEM\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}"
@@ -68,6 +69,7 @@ def fetch_vram_from_registry(device_name: str, driver_version: str) -> Optional[
                 continue
 
     return None
+
 
 def fetch_wmic_graphics_info() -> GraphicsInfo:
     graphics_info = GraphicsInfo()
@@ -117,6 +119,7 @@ def fetch_wmi_cmdlet_graphics_info() -> GraphicsInfo:
 
     return parse_cmd_output(list(rows))
 
+
 def parse_cmd_output(lines: list) -> GraphicsInfo:
     graphics_info = GraphicsInfo()
     if len(lines) < 2:
@@ -129,7 +132,8 @@ def parse_cmd_output(lines: list) -> GraphicsInfo:
     vram_idx = headers.index("AdapterRAM")
     drv_version_idx = headers.index("DriverVersion")
 
-    ven_dev_subsys_regex = re.compile(r"VEN_([0-9a-fA-F]{4}).*DEV_([0-9a-fA-F]{4}).*SUBSYS_([0-9a-fA-F]{4})([0-9a-fA-F]{4})")
+    ven_dev_subsys_regex = re.compile(
+        r"VEN_([0-9a-fA-F]{4}).*DEV_([0-9a-fA-F]{4}).*SUBSYS_([0-9a-fA-F]{4})([0-9a-fA-F]{4})")
 
     for line in lines[1:]:
         try:
@@ -167,9 +171,9 @@ def parse_cmd_output(lines: list) -> GraphicsInfo:
                 # WMI's VRAM entry is a signed 32-bit integer. The maximum value it can show is 4095MB.
                 # If it is more than 4000 MB, we query the registry instead, for accuracy
                 vram_bytes = fetch_vram_from_registry(gpu.model, drv_version)
-                gpu.vram = Megabyte(capacity=(vram_bytes//1024//1024))
+                gpu.vram = Megabyte(capacity=(vram_bytes // 1024 // 1024))
             elif vram:
-                gpu.vram = Megabyte(capacity=(int(vram)//1024//1024))
+                gpu.vram = Megabyte(capacity=(int(vram) // 1024 // 1024))
 
             graphics_info.modules.append(gpu)
 
@@ -177,7 +181,6 @@ def parse_cmd_output(lines: list) -> GraphicsInfo:
             graphics_info.status = PartialStatus(messages=graphics_info.status.messages)
             graphics_info.status.messages.append(f"Error parsing GPU info: {e}")
     return graphics_info
-
 
 
 def fetch_graphics_info() -> GraphicsInfo:

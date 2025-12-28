@@ -105,14 +105,13 @@ def parse_cmd_output(lines: List[List[str]]):
                 module.type = MEMORY_TYPE.get(int(smbios_mem_type), "Unknown")
 
             if data[data_width_idx] and data[total_width_idx]:
-               if int(data[total_width_idx]) > int(data[data_width_idx]):
-                   module.supports_ecc = True
-               else:
-                   module.supports_ecc = False
+                if int(data[total_width_idx]) > int(data[data_width_idx]):
+                    module.supports_ecc = True
+                else:
+                    module.supports_ecc = False
             # Todo: Extract ECC Type
             # https://learn.microsoft.com/en-us/windows/win32/cimwin32prov/win32-physicalmemoryarray
             # SMBIOS Specification - Section 7.17.3 - Physical Memory Array (Type 16)
-
 
             memory_info.modules.append(module)
         except Exception as e:
