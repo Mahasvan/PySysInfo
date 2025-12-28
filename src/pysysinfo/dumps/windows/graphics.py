@@ -57,9 +57,13 @@ def fetch_wmic_graphics_info() -> GraphicsInfo:
     result = result.replace(", Inc", " Inc")
     # Hacky fix that solves CSV splitting errors when "Advanced Micro Devices, Inc." is split between the comma.
     # So we rely on the better parsing using cmdlet, and this as the backup
+
     lines = result.strip().splitlines()
     lines = [line.split(",") for line in lines if line.strip()]
-
+    if len(set([len(x) for x in lines])) != 1:
+        # If we have errors parsing the csv, we will have uneven lengths across rows.
+        graphics_info.status = FailedStatus("Error parsing output, abnormal CSV structure")
+        return graphics_info
     return parse_cmd_output(lines)
 
 
@@ -143,7 +147,7 @@ def parse_cmd_output(lines: list) -> GraphicsInfo:
 
 
 def fetch_graphics_info() -> GraphicsInfo:
-    graphics_info = fetch_wmi_cmdlet_graphics_info()
+    graphics_info = fetch_wmic_graphics_info()
     if type(graphics_info.status) is FailedStatus:
-        graphics_info = fetch_wmic_graphics_info()
+        graphics_info = fetch_wmi_cmdlet_graphics_info()
     return graphics_info
