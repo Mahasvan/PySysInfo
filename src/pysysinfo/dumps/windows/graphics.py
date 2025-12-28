@@ -103,11 +103,12 @@ def parse_cmd_output(lines: list) -> GraphicsInfo:
 
             # Attempt to get VRAM details
             vram = line[vram_idx]
+            fetch_vram_from_registry()
             if vram >= 4_194_304_000:
                 # WMI's VRAM is a signed 32-bit integer. The maximum value it can show is 4095MB.
                 # If it is more than 4000 MB, we query registry instead, for accuracy
                 # todo: Query with registry
-                fetch_vram_from_registry()
+                pass
             else:
                 gpu.vram = Megabyte(capacity=(vram//1024//1024))
 
