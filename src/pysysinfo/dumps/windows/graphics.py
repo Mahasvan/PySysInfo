@@ -191,9 +191,9 @@ def parse_cmd_output(lines: list) -> GraphicsInfo:
                 # and the low 16 bits are the function number.
                 # The format of the PCI location string is {domain}:{bus}:{device}.{function}
                 # We can assume domain is 0000
-                device_num = (device_address >> 16) & 0xFFFF
-                func_num = device_address & 0xFFFF
-                nvidia_smi_id = f"0000:{bus_number:02x}:{device_address:02x}.{func_num:02x}"
+                device_num = (int(device_address) >> 16) & 0xFFFF
+                func_num = int(device_address) & 0xFFFF
+                nvidia_smi_id = f"0000:{bus_number:02x}:{device_num:02x}.{func_num:02x}"
                 print(nvidia_smi_id)
                 pass
 
