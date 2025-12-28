@@ -8,7 +8,7 @@ from src.pysysinfo.models.status_models import FailedStatus
 def fetch_wmic_graphics_info() -> GraphicsInfo:
     graphics_info = GraphicsInfo()
     command = ("wmic path Win32_VideoController get "
-               "AdapterCompatibility,Name,AdapterRAM,VideoProcessor,PCPDeviceID"
+               "AdapterCompatibility,Name,AdapterRAM,VideoProcessor,PNPDeviceID "
                "/format:csv")
     try:
         result = subprocess.check_output(command, shell=True, text=True)
@@ -26,7 +26,7 @@ def fetch_wmic_graphics_info() -> GraphicsInfo:
     return parse_cmd_output(lines)
 
 
-def fetch_wmi_cmdlet_memory_info() -> GraphicsInfo:
+def fetch_wmi_cmdlet_graphics_info() -> GraphicsInfo:
     graphics_info = GraphicsInfo()
     command = ('powershell -Command "Get-CimInstance Win32_VideoController | '
                'Select-Object "AdapterCompatibility,Name,AdapterRAM,VideoProcessor,PCPDeviceID" | '
@@ -55,5 +55,7 @@ def parse_cmd_output(lines: list) -> GraphicsInfo:
 
 
 def fetch_graphics_info() -> GraphicsInfo:
-    graphics_info = GraphicsInfo()
+    graphics_info = fetch_wmic_graphics_info()
+    if type(graphics_info.status) is FailedStatus:
+        graphics_info = fetch_wmi_cmdlet_graphics_info()
     return graphics_info
