@@ -14,11 +14,12 @@ from src.pysysinfo.models.status_models import FailedStatus
 from src.pysysinfo.models.status_models import PartialStatus
 
 
-def fetch_acpi_path(pnp_device_id: str):
+def fetch_additional_properties(pnp_device_id: str):
     escaped = html.unescape(pnp_device_id)
     ps_script = f"""
-        Get-PnpDeviceProperty -InstanceId "{escaped}" -KeyName DEVPKEY_Device_LocationPaths | 
-        Select-Object -ExpandProperty Data
+        Get-PnpDeviceProperty -InstanceId "{escaped}" 
+        -KeyName DEVPKEY_Device_LocationPaths,DEVPKEY_Device_BusNumber,DEVPKEY_Device_Address | 
+        ConvertTo-Csv -NoTypeInformation
         """
     try:
         result = subprocess.run(["powershell", "-Command", ps_script], capture_output=True, text=True)
@@ -27,7 +28,13 @@ def fetch_acpi_path(pnp_device_id: str):
     if not result.stdout and not result.stdout.strip():
         return None
 
+    rows = list(csv.reader(io.StringIO(result.stdout)))
+    for row in rows:
+        print(row)
+    return
+
     paths = result.stdout.splitlines()
+
     acpi_path = None
     pciroot = None
 
@@ -140,7 +147,7 @@ def parse_cmd_output(lines: list) -> GraphicsInfo:
             pnp_device_id = line[pnp_device_idx]
             drv_version = line[drv_version_idx]
 
-            acpi_path, pci_path = fetch_acpi_path(pnp_device_id)
+            acpi_path, pci_path = fetch_additional_properties(pnp_device_id)
             gpu.acpi_path = format_acpi_path(acpi_path)
             gpu.pci_path = format_pci_path(pci_path)
 
@@ -171,6 +178,12 @@ def parse_cmd_output(lines: list) -> GraphicsInfo:
                 gpu.vram = Megabyte(capacity=(vram_bytes // 1024 // 1024))
             elif vram:
                 gpu.vram = Megabyte(capacity=(int(vram) // 1024 // 1024))
+
+            # Attempt to get PCIe width and link speed for Nvidia
+            if gpu.vendor_id and gpu.vendor_id.lower() == "0x10de":
+                # todo: get PCIE stuff from nvidia
+                nvidia_smi_id =
+                pass
 
             graphics_info.modules.append(gpu)
 
