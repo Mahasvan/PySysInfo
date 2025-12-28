@@ -2,12 +2,33 @@ import csv
 import io
 import subprocess
 import re
+import winreg
 
-from pysysinfo.models.gpu_models import GPUInfo
-from pysysinfo.models.status_models import PartialStatus
+from src.pysysinfo.models.gpu_models import GPUInfo
+from src.pysysinfo.models.size_models import Megabyte
+from src.pysysinfo.models.status_models import PartialStatus
 from src.pysysinfo.models.gpu_models import GraphicsInfo
-from src.pysysinfo.models.memory_models import MemoryInfo
 from src.pysysinfo.models.status_models import FailedStatus
+
+def fetch_vram_from_registry():
+    key_path = r"SYSTEM\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}"
+    with winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, key_path) as key:
+        # Iterate subkeys (0000, 0001, etc) to find the one matching our PNPDeviceID
+        for i in range(100):
+            try:
+                sub_key_name = winreg.EnumKey(key, i)
+                with winreg.OpenKey(key, sub_key_name) as subkey:
+                    # Check if this registry entry belongs to our device
+                    # Often stored in "MatchingDeviceId" or similar,
+                    # but robust matching requires correlating "DriverDesc" or "InfSection"
+
+                    # FAST METHOD: Try to read qwMemorySize directly if Name matches
+                    drv_desc, _ = winreg.QueryValueEx(subkey, "DriverDesc")
+                    print(drv_desc)
+                    vram_bytes, _ = winreg.QueryValueEx(subkey, "HardwareInformation.qwMemorySize")
+                    print(vram_bytes)
+            except Exception as e:
+                print(e)
 
 
 def fetch_wmic_graphics_info() -> GraphicsInfo:
@@ -63,6 +84,7 @@ def parse_cmd_output(lines: list) -> GraphicsInfo:
     name_idx = headers.index("Name")
     manufacturer_idx = headers.index("AdapterCompatibility")
     pnp_device_idx = headers.index("PNPDeviceID")
+    vram_idx = headers.index("AdapterRAM")
 
     ven_dev_subsys_regex = re.compile(r"VEN_([0-9a-fA-F]{4}).*DEV_([0-9a-fA-F]{4}).*SUBSYS_([0-9a-fA-F]{4})([0-9a-fA-F]{4})")
     for line in lines[1:]:
@@ -78,6 +100,16 @@ def parse_cmd_output(lines: list) -> GraphicsInfo:
                 gpu.device_id = f"0x{device_id}"
                 gpu.subsystem_model = f"0x{subsystem_model_id}"
                 gpu.subsystem_manufacturer = f"0x{subsystem_manuf_id}"
+
+            # Attempt to get VRAM details
+            vram = line[vram_idx]
+            if vram >= 4_194_304_000:
+                # WMI's VRAM is a signed 32-bit integer. The maximum value it can show is 4095MB.
+                # If it is more than 4000 MB, we query registry instead, for accuracy
+                # todo: Query with registry
+                fetch_vram_from_registry()
+            else:
+                gpu.vram = Megabyte(capacity=(vram//1024//1024))
 
             graphics_info.modules.append(gpu)
         except Exception as e:
