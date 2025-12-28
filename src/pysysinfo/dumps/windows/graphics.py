@@ -16,22 +16,28 @@ from src.pysysinfo.models.status_models import PartialStatus
 
 def fetch_additional_properties(pnp_device_id: str):
     escaped = html.unescape(pnp_device_id)
-    ps_script = f"""
-        Get-PnpDeviceProperty -InstanceId "{escaped}" 
-        -KeyName DEVPKEY_Device_LocationPaths,DEVPKEY_Device_BusNumber,DEVPKEY_Device_Address | 
-        ConvertTo-Csv -NoTypeInformation
-        """
+    ps_script = (f"Get-PnpDeviceProperty -InstanceId \"{escaped}\"  "
+                 f"-KeyName DEVPKEY_Device_LocationPaths,DEVPKEY_Device_BusNumber,DEVPKEY_Device_Address | "
+                 f"Select-Object -ExpandProperty Data")
     try:
         result = subprocess.run(["powershell", "-Command", ps_script], capture_output=True, text=True)
     except:
-        return None
+        return None, None, None, None
     if not result.stdout and not result.stdout.strip():
-        return None
+        return None, None, None, None
 
-    rows = list(csv.reader(io.StringIO(result.stdout)))
-    for row in rows:
-        print(row)
-    return
+    rows = result.stdout.splitlines()
+    if len(rows) < 2: return None, None, None, None
+
+    paths, bus_number, device_address = rows[:-2], rows[-2], rows[-1]
+    acpi_path = None
+    pci_root = None
+    for path in paths:
+        if path.startswith("ACPI"):
+            acpi_path = path
+        if path.startswith("PCIROOT"):
+            pci_root = path
+    return acpi_path, pci_root, bus_number, device_address
 
     paths = result.stdout.splitlines()
 
@@ -147,9 +153,9 @@ def parse_cmd_output(lines: list) -> GraphicsInfo:
             pnp_device_id = line[pnp_device_idx]
             drv_version = line[drv_version_idx]
 
-            acpi_path, pci_path = fetch_additional_properties(pnp_device_id)
+            acpi_path, pci_root, bus_number, device_address  = fetch_additional_properties(pnp_device_id)
             gpu.acpi_path = format_acpi_path(acpi_path)
-            gpu.pci_path = format_pci_path(pci_path)
+            gpu.pci_path = format_pci_path(pci_root)
 
             """
             The PNPDeviceID is of the form ****VEN_1234&DEV_5678&SUBSYS_9ABCDE0F.****
@@ -181,8 +187,7 @@ def parse_cmd_output(lines: list) -> GraphicsInfo:
 
             # Attempt to get PCIe width and link speed for Nvidia
             if gpu.vendor_id and gpu.vendor_id.lower() == "0x10de":
-                # todo: get PCIE stuff from nvidia
-                nvidia_smi_id =
+                nvidia_smi_id = None
                 pass
 
             graphics_info.modules.append(gpu)
