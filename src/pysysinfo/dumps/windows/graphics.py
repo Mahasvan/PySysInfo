@@ -3,6 +3,7 @@ import io
 import subprocess
 import re
 import winreg
+from typing import Optional
 
 from src.pysysinfo.models.gpu_models import GPUInfo
 from src.pysysinfo.models.size_models import Megabyte
@@ -10,7 +11,7 @@ from src.pysysinfo.models.status_models import PartialStatus
 from src.pysysinfo.models.gpu_models import GraphicsInfo
 from src.pysysinfo.models.status_models import FailedStatus
 
-def fetch_vram_from_registry():
+def fetch_vram_from_registry(device_name: str, driver_version: str) -> Optional[int]:
     key_path = r"SYSTEM\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}"
     with winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, key_path) as key:
         # Iterate subkeys (0000, 0001, etc) to find the one matching our PNPDeviceID
@@ -24,17 +25,24 @@ def fetch_vram_from_registry():
 
                     # FAST METHOD: Try to read qwMemorySize directly if Name matches
                     drv_desc, _ = winreg.QueryValueEx(subkey, "DriverDesc")
-                    print(drv_desc)
-                    vram_bytes, _ = winreg.QueryValueEx(subkey, "HardwareInformation.qwMemorySize")
-                    print(vram_bytes)
-            except Exception as e:
-                print(e)
+                    drv_version, _ = winreg.QueryValueEx(subkey, "DriverVersion")
 
+                    if drv_desc == device_name and drv_version == driver_version:
+                        vram_bytes, _ = winreg.QueryValueEx(subkey, "HardwareInformation.qwMemorySize")
+                        if vram_bytes:
+                            return int(vram_bytes)
+                        alt_vram_bytes, _ = winreg.QueryValueEx(subkey, "HardwareInformation.MemorySize")
+                        if alt_vram_bytes:
+                            return int(alt_vram_bytes)
+            except:
+                continue
+
+    return None
 
 def fetch_wmic_graphics_info() -> GraphicsInfo:
     graphics_info = GraphicsInfo()
     command = ("wmic path Win32_VideoController get "
-               "AdapterCompatibility,Name,AdapterRAM,VideoProcessor,PNPDeviceID "
+               "AdapterCompatibility,Name,AdapterRAM,VideoProcessor,PNPDeviceID,DriverVersion "
                "/format:csv")
     try:
         result = subprocess.check_output(command, shell=True, text=True)
@@ -58,7 +66,7 @@ def fetch_wmic_graphics_info() -> GraphicsInfo:
 def fetch_wmi_cmdlet_graphics_info() -> GraphicsInfo:
     graphics_info = GraphicsInfo()
     command = ('powershell -Command "Get-CimInstance Win32_VideoController | '
-               'Select-Object "AdapterCompatibility,Name,AdapterRAM,VideoProcessor,PNPDeviceID" | '
+               'Select-Object "AdapterCompatibility,Name,AdapterRAM,VideoProcessor,PNPDeviceID,DriverVersion" | '
                'ConvertTo-Csv -NoTypeInformation"')
     try:
         result = subprocess.check_output(command, shell=True, text=True)
@@ -85,14 +93,27 @@ def parse_cmd_output(lines: list) -> GraphicsInfo:
     manufacturer_idx = headers.index("AdapterCompatibility")
     pnp_device_idx = headers.index("PNPDeviceID")
     vram_idx = headers.index("AdapterRAM")
+    drv_version_idx = headers.index("DriverVersion")
 
     ven_dev_subsys_regex = re.compile(r"VEN_([0-9a-fA-F]{4}).*DEV_([0-9a-fA-F]{4}).*SUBSYS_([0-9a-fA-F]{4})([0-9a-fA-F]{4})")
+
     for line in lines[1:]:
         try:
             gpu = GPUInfo()
             gpu.model = line[name_idx]
             gpu.manufacturer = line[manufacturer_idx]
             pnp_device_id = line[pnp_device_idx]
+            drv_version = line[drv_version_idx]
+
+            """
+            The PNPDeviceID is of the form ****VEN_1234&DEV_5678&SUBSYS_9ABCDE0F.****
+            we use the regular expression defined above to get the Vendor and device ids as VEN_{ABCD}&DEV_{PQRS}
+            where ABCD and PQRS are 4 hex digits. 
+            Same goes for subsystem vendor and device ID. 
+            One thing to note is that WMI does not expose the strings for subsystem vendor name and model name, like Linux. 
+            So we return the values as they are, prefixed with "0x" for clarity. 
+            todo: PCI lookup? 
+            """
             match = ven_dev_subsys_regex.findall(pnp_device_id)
             if match:
                 vendor_id, device_id, subsystem_model_id, subsystem_manuf_id = match[0]
@@ -103,16 +124,17 @@ def parse_cmd_output(lines: list) -> GraphicsInfo:
 
             # Attempt to get VRAM details
             vram = line[vram_idx]
-            fetch_vram_from_registry()
-            if vram >= 4_194_304_000:
-                # WMI's VRAM is a signed 32-bit integer. The maximum value it can show is 4095MB.
-                # If it is more than 4000 MB, we query registry instead, for accuracy
-                # todo: Query with registry
-                pass
-            else:
-                gpu.vram = Megabyte(capacity=(vram//1024//1024))
+
+            if vram and int(vram) >= 4_194_304_000:
+                # WMI's VRAM entry is a signed 32-bit integer. The maximum value it can show is 4095MB.
+                # If it is more than 4000 MB, we query the registry instead, for accuracy
+                vram_bytes = fetch_vram_from_registry(gpu.model, drv_version)
+                gpu.vram = Megabyte(capacity=(vram_bytes//1024//1024))
+            elif vram:
+                gpu.vram = Megabyte(capacity=(int(vram)//1024//1024))
 
             graphics_info.modules.append(gpu)
+
         except Exception as e:
             graphics_info.status = PartialStatus(messages=graphics_info.status.messages)
             graphics_info.status.messages.append(f"Error parsing GPU info: {e}")
