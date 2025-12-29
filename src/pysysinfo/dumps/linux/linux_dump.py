@@ -4,10 +4,11 @@ from pysysinfo.dumps.linux.memory import fetch_memory_info
 from pysysinfo.dumps.linux.storage import fetch_storage_info
 from pysysinfo.models.gpu_models import GraphicsInfo
 from pysysinfo.models.info_models import CPUInfo, LinuxHardwareInfo, MemoryInfo
+from pysysinfo.models.info_models import HardwareManagerInterface
 from pysysinfo.models.storage_models import StorageInfo
 
 
-class LinuxHardwareManager:
+class LinuxHardwareManager(HardwareManagerInterface):
     """
     Instance, implementing `DeviceManager`, for extracting system information
     from Linux using the `sysfs` pseudo file system.
@@ -23,14 +24,18 @@ class LinuxHardwareManager:
             graphics=GraphicsInfo(),
         )
 
-    def fetch_cpu_info(self):
+    def fetch_cpu_info(self) -> CPUInfo:
         self.info.cpu = fetch_cpu_info()
+        return self.info.cpu
 
-    def fetch_memory_info(self):
+    def fetch_memory_info(self) -> MemoryInfo:
         self.info.memory = fetch_memory_info()
+        return self.info.memory
 
-    def fetch_storage_info(self):
+    def fetch_storage_info(self) -> StorageInfo:
         self.info.storage = fetch_storage_info()
+        return self.info.storage
 
-    def fetch_graphics_info(self):
+    def fetch_graphics_info(self) -> GraphicsInfo:
         self.info.graphics = fetch_graphics_info()
+        return self.info.graphics
