@@ -4,6 +4,7 @@ from pysysinfo.dumps.linux.memory import fetch_memory_info
 from pysysinfo.dumps.linux.storage import fetch_storage_info
 from pysysinfo.models.gpu_models import GraphicsInfo
 from pysysinfo.models.info_models import CPUInfo, LinuxHardwareInfo, MemoryInfo
+from pysysinfo.models.info_models import HardwareInfo
 from pysysinfo.models.info_models import HardwareManagerInterface
 from pysysinfo.models.storage_models import StorageInfo
 
@@ -39,3 +40,10 @@ class LinuxHardwareManager(HardwareManagerInterface):
     def fetch_graphics_info(self) -> GraphicsInfo:
         self.info.graphics = fetch_graphics_info()
         return self.info.graphics
+
+    def fetch_hardware_info(self) -> HardwareInfo:
+        self.fetch_cpu_info()
+        self.fetch_memory_info()
+        self.fetch_storage_info()
+        self.fetch_graphics_info()
+        return self.info
