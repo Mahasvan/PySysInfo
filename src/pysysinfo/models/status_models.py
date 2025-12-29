@@ -7,9 +7,11 @@ class StatusModel(BaseModel):
     string: str
     messages: List[str]
 
+
 class SuccessStatus(StatusModel):
     string: str = "success"
     messages: List[str] = []
+
 
 class PartialStatus(StatusModel):
     """
@@ -17,6 +19,7 @@ class PartialStatus(StatusModel):
     """
     string: str = "partial"
     messages: List[str] = []
+
 
 class FailedStatus(StatusModel):
     """
@@ -29,7 +32,7 @@ class FailedStatus(StatusModel):
     string: str = "failed"
     messages: List[str] = []
 
-    def __init__(self, message: Optional[str]=None, messages: Optional[List[str]]=None):
+    def __init__(self, message: Optional[str] = None, messages: Optional[List[str]] = None):
         super().__init__()
         if messages:
             self.messages = messages

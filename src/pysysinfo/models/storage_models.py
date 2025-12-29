@@ -1,7 +1,6 @@
 from typing import List, Optional
 
 from pydantic import BaseModel
-
 from pysysinfo.models.component_model import ComponentInfo
 from pysysinfo.models.size_models import StorageSize
 
@@ -21,6 +20,7 @@ class DiskInfo(BaseModel):
     vendor_id: Optional[str] = None
     size: Optional[StorageSize] = None
     pass
+
 
 class StorageInfo(ComponentInfo):
     disks: List[DiskInfo] = []

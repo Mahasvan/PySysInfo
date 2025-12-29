@@ -35,8 +35,8 @@ def fetch_gpu_details_nvidia(device: str) -> Tuple[str, int, int, int]:
 
     # Parse and Type Convert
     gpu_name = parts[0].strip()
-    pci_width = int(parts[1].strip())   # e.g., 16
-    pci_gen = int(parts[2].strip())     # e.g., 3, 4, or 5
+    pci_width = int(parts[1].strip())  # e.g., 16
+    pci_gen = int(parts[2].strip())  # e.g., 3, 4, or 5
     vram_total = int(parts[3].strip())  # e.g., 16384 (MiB)
 
     return gpu_name, pci_width, pci_gen, vram_total

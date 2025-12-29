@@ -1,13 +1,11 @@
 from typing import Optional, List
 
 from pydantic import BaseModel
-
 from pysysinfo.models.component_model import ComponentInfo
 from pysysinfo.models.size_models import StorageSize
 
 
 class GPUInfo(BaseModel):
-
     model: Optional[str] = None
 
     vendor_id: Optional[str] = None
@@ -28,6 +26,6 @@ class GPUInfo(BaseModel):
     apple_neural_core_count: Optional[int] = None
     pass
 
+
 class GraphicsInfo(ComponentInfo):
     modules: List[GPUInfo] = []
-
