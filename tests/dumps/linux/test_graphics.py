@@ -2,14 +2,80 @@ import os
 import subprocess
 import builtins
 from unittest.mock import MagicMock, mock_open
+import pytest
 
-from src.pysysinfo.dumps.linux.graphics import fetch_graphics_info
+from src.pysysinfo.dumps.linux.graphics import fetch_graphics_info, get_pcie_gen, fetch_vram_amd
 from src.pysysinfo.models.status_models import FailedStatus, PartialStatus, SuccessStatus
 from src.pysysinfo.models.size_models import Megabyte
 
-class TestLinuxGPU:
+class TestLinuxGraphics:
 
-    def test_fetch_gpu_info_root_not_found(self, monkeypatch):
+    # Tests from original test_graphics.py for helper functions
+    def test_get_pcie_gen_success(self, monkeypatch):
+        device = "0000:01:00.0"
+        path = f"/sys/bus/pci/devices/{device}/current_link_speed"
+        
+        monkeypatch.setattr(os.path, "exists", lambda x: x == path)
+        
+        def mock_open_func(file, *args, **kwargs):
+            if file == path:
+                return mock_open(read_data="16.0 GT/s")()
+            raise FileNotFoundError(file)
+            
+        monkeypatch.setattr(builtins, "open", mock_open_func)
+        
+        gen = get_pcie_gen(device)
+        assert gen == 4
+
+    def test_get_pcie_gen_unknown_speed(self, monkeypatch):
+        device = "0000:01:00.0"
+        path = f"/sys/bus/pci/devices/{device}/current_link_speed"
+        
+        monkeypatch.setattr(os.path, "exists", lambda x: x == path)
+        
+        def mock_open_func(file, *args, **kwargs):
+            if file == path:
+                return mock_open(read_data="100.0 GT/s")()
+            raise FileNotFoundError(file)
+            
+        monkeypatch.setattr(builtins, "open", mock_open_func)
+        
+        gen = get_pcie_gen(device)
+        assert gen is None
+
+    def test_get_pcie_gen_file_not_found(self, monkeypatch):
+        device = "0000:01:00.0"
+        monkeypatch.setattr(os.path, "exists", lambda x: False)
+        
+        gen = get_pcie_gen(device)
+        assert gen is None
+
+    def test_fetch_vram_amd_success(self, monkeypatch):
+        device = "0000:03:00.0"
+        vram_path = f"/sys/bus/pci/devices/{device}/drm/card0/device/mem_info_vram_total"
+        
+        monkeypatch.setattr("glob.glob", lambda x: [vram_path])
+        
+        def mock_open_func(file, *args, **kwargs):
+            if file == vram_path:
+                # 8GB in bytes
+                return mock_open(read_data=str(8 * 1024 * 1024 * 1024))()
+            raise FileNotFoundError(file)
+            
+        monkeypatch.setattr(builtins, "open", mock_open_func)
+        
+        vram_mb = fetch_vram_amd(device)
+        assert vram_mb == 8192
+
+    def test_fetch_vram_amd_no_file(self, monkeypatch):
+        device = "0000:03:00.0"
+        monkeypatch.setattr("glob.glob", lambda x: [])
+        
+        vram_mb = fetch_vram_amd(device)
+        assert vram_mb is None
+
+    # Tests merged from test_gpu.py
+    def test_fetch_graphics_info_root_not_found(self, monkeypatch):
         monkeypatch.setattr(os.path, "exists", lambda x: False)
         
         info = fetch_graphics_info()
@@ -18,7 +84,7 @@ class TestLinuxGPU:
         assert "not found" in info.status.messages[0]
         assert len(info.modules) == 0
 
-    def test_fetch_gpu_info_success_generic(self, monkeypatch):
+    def test_fetch_graphics_info_success_generic(self, monkeypatch):
         # Mock os.path.exists
         monkeypatch.setattr(os.path, "exists", lambda x: True)
         
@@ -49,7 +115,7 @@ class TestLinuxGPU:
         monkeypatch.setattr(builtins, "open", custom_open)
         
         # Mock get_pci_path_linux
-        monkeypatch.setattr("src.pysysinfo.dumps.linux.gpu.get_pci_path_linux", lambda x: f"/PCI0@0/{x}")
+        monkeypatch.setattr("src.pysysinfo.dumps.linux.graphics.get_pci_path_linux", lambda x: f"/PCI0@0/{x}")
         
         # Mock subprocess.run for lspci
         def mock_run(command, *args, **kwargs):
@@ -80,7 +146,7 @@ class TestLinuxGPU:
         assert gpu.model == "UHD Graphics 620"
         assert gpu.subsystem_manufacturer == "Lenovo"
 
-    def test_fetch_gpu_info_nvidia(self, monkeypatch):
+    def test_fetch_graphics_info_nvidia(self, monkeypatch):
         monkeypatch.setattr(os.path, "exists", lambda x: True)
         monkeypatch.setattr(os, "listdir", lambda x: ["0000:01:00.0"])
         
@@ -101,11 +167,11 @@ class TestLinuxGPU:
             raise FileNotFoundError(path)
 
         monkeypatch.setattr(builtins, "open", custom_open)
-        monkeypatch.setattr("src.pysysinfo.dumps.linux.gpu.get_pci_path_linux", lambda x: f"/PCI0@0/{x}")
+        monkeypatch.setattr("src.pysysinfo.dumps.linux.graphics.get_pci_path_linux", lambda x: f"/PCI0@0/{x}")
         
         def mock_run(command, *args, **kwargs):
             if command[0] == "nvidia-smi":
-                return subprocess.CompletedProcess(command, 0, stdout="6144\n")
+                return subprocess.CompletedProcess(command, 0, stdout="GeForce GTX 1060, 16, 3, 6144\n")
             if command[0] == "lspci":
                 output = "Vendor: NVIDIA\nDevice: GeForce GTX 1060\n"
                 return subprocess.CompletedProcess(command, 0, stdout=output)
@@ -122,7 +188,7 @@ class TestLinuxGPU:
         assert gpu.vram.capacity == 6144
         assert gpu.pcie_width == 16
 
-    def test_fetch_gpu_info_amd(self, monkeypatch):
+    def test_fetch_graphics_info_amd(self, monkeypatch):
         monkeypatch.setattr(os.path, "exists", lambda x: True)
         monkeypatch.setattr(os, "listdir", lambda x: ["0000:03:00.0"])
         
@@ -147,7 +213,7 @@ class TestLinuxGPU:
             raise FileNotFoundError(path)
 
         monkeypatch.setattr(builtins, "open", custom_open)
-        monkeypatch.setattr("src.pysysinfo.dumps.linux.gpu.get_pci_path_linux", lambda x: f"/PCI0@0/{x}")
+        monkeypatch.setattr("src.pysysinfo.dumps.linux.graphics.get_pci_path_linux", lambda x: f"/PCI0@0/{x}")
         
         # Mock glob for AMD
         monkeypatch.setattr("glob.glob", lambda x: ["/sys/bus/pci/devices/0000:03:00.0/drm/card0/device/mem_info_vram_total"])
@@ -168,7 +234,7 @@ class TestLinuxGPU:
         assert gpu.vram is not None
         assert gpu.vram.capacity == 8192 # 8GB in MB
 
-    def test_fetch_gpu_info_partial_failure(self, monkeypatch):
+    def test_fetch_graphics_info_partial_failure(self, monkeypatch):
         monkeypatch.setattr(os.path, "exists", lambda x: True)
         monkeypatch.setattr(os, "listdir", lambda x: ["0000:01:00.0"])
         
@@ -200,7 +266,7 @@ class TestLinuxGPU:
         assert gpu.vendor_id is None
         # But we should still have the object
 
-    def test_fetch_gpu_info_skip_non_display(self, monkeypatch):
+    def test_fetch_graphics_info_skip_non_display(self, monkeypatch):
         monkeypatch.setattr(os.path, "exists", lambda x: True)
         monkeypatch.setattr(os, "listdir", lambda x: ["0000:04:00.0"])
         
@@ -223,7 +289,7 @@ class TestLinuxGPU:
         assert len(info.modules) == 0
         assert isinstance(info.status, SuccessStatus)
 
-    def test_fetch_gpu_info_amd_vram_failure(self, monkeypatch):
+    def test_fetch_graphics_info_amd_vram_failure(self, monkeypatch):
         monkeypatch.setattr(os.path, "exists", lambda x: True)
         monkeypatch.setattr(os, "listdir", lambda x: ["0000:03:00.0"])
         
@@ -244,7 +310,7 @@ class TestLinuxGPU:
             raise FileNotFoundError(path)
 
         monkeypatch.setattr(builtins, "open", custom_open)
-        monkeypatch.setattr("src.pysysinfo.dumps.linux.gpu.get_pci_path_linux", lambda x: f"/PCI0@0/{x}")
+        monkeypatch.setattr("src.pysysinfo.dumps.linux.graphics.get_pci_path_linux", lambda x: f"/PCI0@0/{x}")
         
         # Mock glob to return empty list (VRAM file not found)
         monkeypatch.setattr("glob.glob", lambda x: [])
@@ -259,7 +325,7 @@ class TestLinuxGPU:
         # VRAM should be None because fetch failed
         assert gpu.vram is None
 
-    def test_fetch_gpu_info_nvidia_vram_failure(self, monkeypatch):
+    def test_fetch_graphics_info_nvidia_vram_failure(self, monkeypatch):
         monkeypatch.setattr(os.path, "exists", lambda x: True)
         monkeypatch.setattr(os, "listdir", lambda x: ["0000:01:00.0"])
         
@@ -280,7 +346,7 @@ class TestLinuxGPU:
             raise FileNotFoundError(path)
 
         monkeypatch.setattr(builtins, "open", custom_open)
-        monkeypatch.setattr("src.pysysinfo.dumps.linux.gpu.get_pci_path_linux", lambda x: f"/PCI0@0/{x}")
+        monkeypatch.setattr("src.pysysinfo.dumps.linux.graphics.get_pci_path_linux", lambda x: f"/PCI0@0/{x}")
         
         # Mock nvidia-smi failure
         def mock_run(command, *args, **kwargs):
@@ -299,9 +365,9 @@ class TestLinuxGPU:
         assert gpu.vram is None
         # Should have partial status due to vram failure
         assert isinstance(info.status, PartialStatus)
-        assert any("VRAM" in msg for msg in info.status.messages)
+        assert any("Could not get additional GPU info" in msg for msg in info.status.messages)
 
-    def test_fetch_gpu_info_lspci_missing_fields(self, monkeypatch):
+    def test_fetch_graphics_info_lspci_missing_fields(self, monkeypatch):
         monkeypatch.setattr(os.path, "exists", lambda x: True)
         monkeypatch.setattr(os, "listdir", lambda x: ["0000:00:02.0"])
         
@@ -322,7 +388,7 @@ class TestLinuxGPU:
             raise FileNotFoundError(path)
 
         monkeypatch.setattr(builtins, "open", custom_open)
-        monkeypatch.setattr("src.pysysinfo.dumps.linux.gpu.get_pci_path_linux", lambda x: f"/PCI0@0/{x}")
+        monkeypatch.setattr("src.pysysinfo.dumps.linux.graphics.get_pci_path_linux", lambda x: f"/PCI0@0/{x}")
         
         def mock_run(command, *args, **kwargs):
             if command[0] == "lspci":
@@ -347,7 +413,7 @@ class TestLinuxGPU:
         assert gpu.subsystem_manufacturer is None
         assert gpu.subsystem_model is None
 
-    def test_fetch_gpu_info_acpi_path_failure(self, monkeypatch):
+    def test_fetch_graphics_info_acpi_path_failure(self, monkeypatch):
         monkeypatch.setattr(os.path, "exists", lambda x: True)
         monkeypatch.setattr(os, "listdir", lambda x: ["0000:00:02.0"])
         
@@ -368,7 +434,7 @@ class TestLinuxGPU:
             raise FileNotFoundError(path)
 
         monkeypatch.setattr(builtins, "open", custom_open)
-        monkeypatch.setattr("src.pysysinfo.dumps.linux.gpu.get_pci_path_linux", lambda x: f"/PCI0@0/{x}")
+        monkeypatch.setattr("src.pysysinfo.dumps.linux.graphics.get_pci_path_linux", lambda x: f"/PCI0@0/{x}")
         monkeypatch.setattr(subprocess, "run", lambda *args, **kwargs: subprocess.CompletedProcess(args, 0, stdout=""))
         
         info = fetch_graphics_info()
@@ -388,7 +454,7 @@ class TestLinuxGPU:
         from src.pysysinfo.dumps.linux.graphics import fetch_vram_amd
         assert fetch_vram_amd("0000:00:00.0") is None
 
-    def test_fetch_gpu_info_pci_path_failure(self, monkeypatch):
+    def test_fetch_graphics_info_pci_path_failure(self, monkeypatch):
         monkeypatch.setattr(os.path, "exists", lambda x: True)
         monkeypatch.setattr(os, "listdir", lambda x: ["0000:00:02.0"])
         
@@ -414,7 +480,7 @@ class TestLinuxGPU:
         def mock_get_pci_path(device):
             raise Exception("PCI path failed")
             
-        monkeypatch.setattr("src.pysysinfo.dumps.linux.gpu.get_pci_path_linux", mock_get_pci_path)
+        monkeypatch.setattr("src.pysysinfo.dumps.linux.graphics.get_pci_path_linux", mock_get_pci_path)
         monkeypatch.setattr(subprocess, "run", lambda *args, **kwargs: subprocess.CompletedProcess(args, 0, stdout=""))
         
         info = fetch_graphics_info()
