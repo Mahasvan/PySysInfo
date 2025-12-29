@@ -2,8 +2,8 @@ import binascii
 import subprocess
 
 from pysysinfo.dumps.mac.common import construct_pci_path_mac
-from pysysinfo.models.gpu_models import GraphicsInfo, GPUInfo
 from pysysinfo.dumps.mac.ioreg import *
+from pysysinfo.models.gpu_models import GraphicsInfo, GPUInfo
 from pysysinfo.models.size_models import Megabyte
 from pysysinfo.models.status_models import FailedStatus, PartialStatus
 
@@ -13,6 +13,7 @@ def check_arm():
     if "arm" in output.lower():
         return True
     return False
+
 
 def fetch_graphics_info() -> GraphicsInfo:
     graphics_info = GraphicsInfo()
@@ -27,7 +28,6 @@ def fetch_graphics_info() -> GraphicsInfo:
         }
     else:
         device = {"IONameMatched": "gpu*"}
-
 
     interface = ioiterator_to_list(
         IOServiceGetMatchingServices(kIOMasterPortDefault, device, None)[1]
@@ -91,7 +91,7 @@ def fetch_graphics_info() -> GraphicsInfo:
                 memory = subprocess.run(["sysctl", "hw.memsize"], capture_output=True).stdout.decode("utf-8")
                 memory = memory.split(":")[1].strip()
                 if memory.isnumeric():
-                    gpu.vram = Megabyte(capacity=int(memory)//(1024**2))
+                    gpu.vram = Megabyte(capacity=int(memory) // (1024 ** 2))
 
             # Now we get the ACPI path for x86 devices
             if not is_arm:
@@ -106,6 +106,5 @@ def fetch_graphics_info() -> GraphicsInfo:
         except Exception as e:
             graphics_info.status = PartialStatus(messages=graphics_info.status.messages)
             graphics_info.status.messages.append(f"Failed to enumerate GPU: {e}")
-
 
     return graphics_info

@@ -18,7 +18,7 @@ elif platform.system() == "Darwin":
 else:
     print("OS: Linux")
 
-lhm = HardwareManager()
+hm = HardwareManager()
 
 loading_end_time = time.time()
 
@@ -28,16 +28,16 @@ end_times = [0.0, 0.0, 0.0, 0.0, 0,0]
 
 start_times[0] = start_times[-1] = time.time() * 1000
 
-lhm.fetch_cpu_info()
+hm.fetch_cpu_info()
 end_times[0] = start_times[1] = time.time() * 1000
 
-lhm.fetch_memory_info()
+hm.fetch_memory_info()
 end_times[1] = start_times[2] = time.time() * 1000
 
-lhm.fetch_storage_info()
+hm.fetch_storage_info()
 end_times[2] = start_times[3] = time.time() * 1000
 
-lhm.fetch_graphics_info()
+hm.fetch_graphics_info()
 end_times[3] = end_times[-1] = time.time() * 1000
 
 # print(start_times)
@@ -49,7 +49,7 @@ print("Storage:", end_times[2] - start_times[2], "ms")
 print("Graphics:", end_times[3] - start_times[3], "ms")
 print("Total:", end_times[-1]-start_times[-1], "ms")
 #
-json_data = json.loads(lhm.info.model_dump_json())
+json_data = json.loads(hm.info.model_dump_json())
 #
 # with open("response.json", "w") as f:
 #     json.dump(json_data, f, indent=2)

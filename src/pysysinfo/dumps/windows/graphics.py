@@ -155,7 +155,7 @@ def parse_cmd_output(lines: list) -> GraphicsInfo:
             pnp_device_id = line[pnp_device_idx]
             drv_version = line[drv_version_idx]
             start = time.time()
-            acpi_path, pci_root, bus_number, device_address  = fetch_additional_properties(pnp_device_id)
+            acpi_path, pci_root, bus_number, device_address = fetch_additional_properties(pnp_device_id)
             print("Time for additional details:", time.time() - start)
             gpu.acpi_path = format_acpi_path(acpi_path)
             gpu.pci_path = format_pci_path(pci_root)

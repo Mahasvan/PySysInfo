@@ -1,7 +1,7 @@
+import glob
 import os
 import subprocess
-import glob
-from typing import Optional, Tuple
+from typing import Optional
 
 from pysysinfo.dumps.linux.common import get_pci_path_linux
 from pysysinfo.models.gpu_models import GPUInfo, GraphicsInfo
@@ -28,6 +28,7 @@ def fetch_vram_amd(device) -> Optional[int]:
     except:
         return None
 
+
 def get_pcie_gen(device) -> Optional[int]:
     # Path example: /sys/bus/pci/devices/0000:03:00.0/current_link_speed
     path = f"/sys/bus/pci/devices/{device}/current_link_speed"
@@ -37,7 +38,7 @@ def get_pcie_gen(device) -> Optional[int]:
 
     try:
         with open(path, "r") as f:
-            raw_speed = f.read().strip() # e.g., "16.0 GT/s"
+            raw_speed = f.read().strip()  # e.g., "16.0 GT/s"
 
         # Mapping Dictionary
         speed_to_gen = {
@@ -59,6 +60,7 @@ def get_pcie_gen(device) -> Optional[int]:
     except Exception as e:
         print(f"Error: {e}")
         return None
+
 
 def fetch_graphics_info() -> GraphicsInfo:
     graphics_info = GraphicsInfo()

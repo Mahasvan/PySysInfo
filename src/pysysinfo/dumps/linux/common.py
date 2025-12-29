@@ -1,5 +1,3 @@
-import os
-
 # Source: https://github.com/KernelWanderers/OCSysInfo/blob/main/src/util/pci_root.py
 
 

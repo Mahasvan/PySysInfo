@@ -5,7 +5,6 @@ from pysysinfo.dumps.mac.ioreg import *
 
 
 def construct_pci_path_mac(parent_entry, acpi):
-
     data = {
         "pci_path": "",
         "acpi_path": ""
@@ -57,6 +56,5 @@ def construct_pci_path_mac(parent_entry, acpi):
     if acpi:
         data['acpi_path'] = ''.join([("\\" if "sb" in a.lower(
         ) else ".") + a.split("@")[0] for a in acpi.split(':')[1].split('/')[1:]])
-
 
     return data
