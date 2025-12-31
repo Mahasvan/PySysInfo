@@ -3,12 +3,26 @@ Models
 
 PySysInfo exposes Pydantic models for each hardware subsystem plus shared helpers for capacity units and discovery status.
 
+----------------
 Component Models
 ----------------
-.. autoclass:: pysysinfo.models.cpu_models.CPUInfo
-    :members:
-    :undoc-members:
+
+=============
+CPU
+=============
+.. autopydantic_model:: pysysinfo.models.cpu_models.CPUInfo
     :show-inheritance:
+
+=============
+GPU
+=============
+
+.. autopydantic_model:: pysysinfo.models.gpu_models.GraphicsInfo
+    :show-inheritance:
+
+.. autopydantic_model:: pysysinfo.models.gpu_models.GPUInfo
+    :show-inheritance:
+
 
 - ``GraphicsInfo``
 - ``GPUInfo``
