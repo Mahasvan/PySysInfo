@@ -30,7 +30,7 @@ class WindowsHardwareInfo(HardwareInfo):
 class HardwareManagerInterface:
     """The hardware manager of every OS follows this structure."""
 
-    #: Holds all data retrieved. Once any component's data is queried, the data is stored in it.
+    #: When any component's data is queried, the data is stored here.
     info: HardwareInfo
 
     def fetch_cpu_info(self) -> CPUInfo:
