@@ -33,13 +33,17 @@ class GPUInfo(BaseModel):
 
     #: Number of lanes that the GPU occupies on the PCIe bus.
     pcie_width: Optional[int] = None
+
     #: PCIe generation supported by the GPU.
     pcie_gen: Optional[int] = None
+
     #: Total VRAM available on the GPU.
     vram: Optional[StorageSize] = None
+
     #: Only for Apple Silicon GPUs: Number of GPU cores.
     #: ``null`` on all other platforms.
     apple_gpu_core_count: Optional[int] = None
+
     #: Only for Apple Silicon GPUs: Number of Neural Engine Cores.
     #: ``null`` on all other platforms.
     apple_neural_core_count: Optional[int] = None
