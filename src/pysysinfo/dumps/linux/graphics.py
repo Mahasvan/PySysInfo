@@ -132,7 +132,7 @@ def fetch_graphics_info() -> GraphicsInfo:
             # get VRAM for Nvidia GPUs
             try:
                 gpu_name, pcie_width, pcie_gen, vram_total = fetch_gpu_details_nvidia(device)
-                if gpu_name: gpu.model = gpu_name
+                if gpu_name: gpu.name = gpu_name
                 if pcie_width: gpu.pcie_width = pcie_width
                 if pcie_gen: gpu.pcie_gen = pcie_gen
                 if vram_total: gpu.vram = Megabyte(capacity=vram_total)
@@ -157,7 +157,7 @@ def fetch_graphics_info() -> GraphicsInfo:
                     data[key.strip()] = value.strip()
 
             gpu.manufacturer = data.get("Vendor")
-            gpu.model = data.get("Device")
+            gpu.name = data.get("Device")
             gpu.subsystem_manufacturer = data.get("SVendor")
             gpu.subsystem_model = data.get("SDevice")
         except Exception as e:

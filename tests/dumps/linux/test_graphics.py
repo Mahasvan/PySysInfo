@@ -142,7 +142,7 @@ class TestLinuxGraphics:
         assert gpu.device_id == "0x5917"
         assert gpu.acpi_path == "\\_SB.PCI0.GFX0"
         assert gpu.manufacturer == "Intel Corporation"
-        assert gpu.model == "UHD Graphics 620"
+        assert gpu.name == "UHD Graphics 620"
         assert gpu.subsystem_manufacturer == "Lenovo"
 
     def test_fetch_graphics_info_nvidia(self, monkeypatch):
@@ -410,7 +410,7 @@ class TestLinuxGraphics:
         assert len(info.modules) == 1
         gpu = info.modules[0]
         assert gpu.manufacturer == "Intel Corporation"
-        assert gpu.model == "UHD Graphics 620"
+        assert gpu.name == "UHD Graphics 620"
         assert gpu.subsystem_manufacturer is None
         assert gpu.subsystem_model is None
 

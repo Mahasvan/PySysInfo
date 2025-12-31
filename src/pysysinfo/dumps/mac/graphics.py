@@ -63,7 +63,7 @@ def fetch_graphics_info() -> GraphicsInfo:
             continue
 
         gpu = GPUInfo()
-        gpu.model = model
+        gpu.name = model
 
         try:
             gpu.vendor_id = "0x" + (

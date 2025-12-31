@@ -150,7 +150,7 @@ def parse_cmd_output(lines: list) -> GraphicsInfo:
     for line in lines[1:]:
         try:
             gpu = GPUInfo()
-            gpu.model = line[name_idx]
+            gpu.name = line[name_idx]
             gpu.manufacturer = line[manufacturer_idx]
             pnp_device_id = line[pnp_device_idx]
             drv_version = line[drv_version_idx]
@@ -183,7 +183,7 @@ def parse_cmd_output(lines: list) -> GraphicsInfo:
             if vram and int(vram) >= 4_194_304_000:
                 # WMI's VRAM entry is a signed 32-bit integer. The maximum value it can show is 4095MB.
                 # If it is more than 4000 MB, we query the registry instead, for accuracy
-                vram_bytes = fetch_vram_from_registry(gpu.model, drv_version)
+                vram_bytes = fetch_vram_from_registry(gpu.name, drv_version)
                 gpu.vram = Megabyte(capacity=(vram_bytes // 1024 // 1024))
             elif vram:
                 gpu.vram = Megabyte(capacity=(int(vram) // 1024 // 1024))

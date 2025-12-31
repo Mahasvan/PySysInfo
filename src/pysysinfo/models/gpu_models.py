@@ -7,7 +7,7 @@ from pysysinfo.models.size_models import StorageSize
 
 class GPUInfo(BaseModel):
     #: This is the GPU's name
-    model: Optional[str] = None
+    name: Optional[str] = None
 
     #: This is the hexadecimal number that identifies the manufacturer of the GPU.
     #: Format: ``0xPQRS``
