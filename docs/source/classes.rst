@@ -11,8 +11,21 @@ All these classes implement the structure in :class:`pysysinfo.models.info_model
 .. autoclass:: pysysinfo.models.info_models.HardwareManagerInterface
     :members:
 
+=============================
+OS-Specific Hardware Managers
+=============================
 .. autoclass:: pysysinfo.dumps.windows.windows_dump.WindowsHardwareManager
     :show-inheritance:
+    :exclude-members: __init__,__new__
+
+.. autoclass:: pysysinfo.dumps.mac.mac_dump.MacHardwareManager
+    :show-inheritance:
+    :exclude-members: __init__,__new__
+
+.. autoclass:: pysysinfo.dumps.linux.linux_dump.LinuxHardwareManager
+    :show-inheritance:
+    :exclude-members: __init__,__new__
+
 
 
 -------------
@@ -24,7 +37,10 @@ Objects of this type store the retrieved data in their HardwareManager.
     :exclude-members: __new__,__init__,model_config
     :members:
 
-Each OS implements its own HardwareInfo class. As of the latest version, they have no difference in their structure.
+
+===============================
+OS-Specific Info Models
+===============================
 
 .. autoclass:: pysysinfo.models.info_models.WindowsHardwareInfo
     :show-inheritance:
