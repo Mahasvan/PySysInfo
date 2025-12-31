@@ -63,7 +63,7 @@ def fetch_cpu_info() -> CPUInfo:
         cpu_info.status.messages.append("Error when checking CPU Architecture: " + str(e))
 
     if "machdep.cpu.brand_string" in data:
-        cpu_info.model_name = data["machdep.cpu.brand_string"]
+        cpu_info.name = data["machdep.cpu.brand_string"]
     else:
         cpu_info.status = PartialStatus(messages=cpu_info.status.messages)
         cpu_info.status.messages.append("Unable to determine CPU model")

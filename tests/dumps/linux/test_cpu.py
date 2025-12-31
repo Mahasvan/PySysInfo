@@ -53,7 +53,7 @@ class TestLinuxCPU:
         cpu = fetch_arm_cpu_info(raw)
 
         assert cpu.architecture == "ARM"
-        assert cpu.model_name == "BCM2711"
+        assert cpu.name == "BCM2711"
         assert cpu.arch_version == "8"
         assert cpu.threads == 2
         assert cpu.cores == 4
@@ -70,7 +70,7 @@ class TestLinuxCPU:
 
         cpu = fetch_arm_cpu_info(raw)
 
-        assert cpu.model_name == "Raspberry Pi 4"
+        assert cpu.name == "Raspberry Pi 4"
 
     def test_fetch_arm_cpu_info_missing_fields(self, monkeypatch):
         raw = "processor\t: 0\n"
@@ -100,7 +100,7 @@ class TestLinuxCPU:
         cpu = fetch_x86_cpu_info(raw)
 
         assert cpu.architecture == "x86"
-        assert cpu.model_name == "Intel(R) Core(TM) i5-7200U CPU @ 2.50GHz"
+        assert cpu.name == "Intel(R) Core(TM) i5-7200U CPU @ 2.50GHz"
         assert cpu.vendor == "intel"
         assert cpu.bitness == 64
         assert cpu.cores == 2
@@ -135,7 +135,7 @@ class TestLinuxCPU:
 
         cpu = fetch_cpu_info()
         assert cpu.architecture == "x86"
-        assert cpu.model_name == "Intel CPU"
+        assert cpu.name == "Intel CPU"
 
     def test_fetch_cpu_info_arm_success(self, monkeypatch):
         raw = "Hardware\t: BCM2711\nCPU architecture: 8\nprocessor\t: 0\n"
@@ -155,7 +155,7 @@ class TestLinuxCPU:
 
         cpu = fetch_cpu_info()
         assert cpu.architecture == "ARM"
-        assert cpu.model_name == "BCM2711"
+        assert cpu.name == "BCM2711"
 
     def test_fetch_cpu_info_failure_file_open(self, monkeypatch):
         def mock_open(*args, **kwargs):
@@ -200,7 +200,7 @@ class TestLinuxCPURealWorld:
 
         cpu = fetch_cpu_info()
         assert cpu.architecture == "ARM"
-        assert cpu.model_name == "Raspberry Pi 4 Model B Rev 1.5"
+        assert cpu.name == "Raspberry Pi 4 Model B Rev 1.5"
         assert cpu.arch_version == "8"
         assert cpu.threads == 4
         assert cpu.cores == 4
@@ -222,7 +222,7 @@ class TestLinuxCPURealWorld:
 
         cpu = fetch_cpu_info()
         assert cpu.architecture == "x86"
-        assert cpu.model_name == "Intel(R) Core(TM) i5-7200U CPU @ 2.50GHz"
+        assert cpu.name == "Intel(R) Core(TM) i5-7200U CPU @ 2.50GHz"
         assert cpu.vendor == "intel"
         assert cpu.bitness == 64
         assert cpu.cores == 2

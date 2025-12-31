@@ -141,7 +141,7 @@ def fetch_cpu_info() -> CPUInfo:
     cpu_info = CPUInfo()
     try:
         model_name, vendor = parse_registry()
-        cpu_info.model_name = model_name.strip()
+        cpu_info.name = model_name.strip()
         cpu_info.vendor = "AMD" if "amd" in vendor.lower() else "Intel" if "intel" in vendor.lower() else vendor.strip()
 
         features = get_features()

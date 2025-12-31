@@ -27,9 +27,9 @@ def fetch_arm_cpu_info(raw_cpu_info: str) -> CPUInfo:
     model_alt = re.search(r"Model\s+:\s+(.+)", raw_cpu_info)
 
     if model:
-        cpu_info.model_name = model.group(1)
+        cpu_info.name = model.group(1)
     elif model_alt:
-        cpu_info.model_name = model_alt.group(1)
+        cpu_info.name = model_alt.group(1)
     else:
         cpu_info.status = PartialStatus(messages=cpu_info.status.messages)
         cpu_info.status.messages.append("Could not find model name")
@@ -73,7 +73,7 @@ def fetch_x86_cpu_info(raw_cpu_info: str) -> CPUInfo:
     model = re.search(r"model name\s+:\s+(.+)", cpu_lines)
     if model:
         model = model.group(1)
-        cpu_info.model_name = model
+        cpu_info.name = model
         vendor = "intel" if "intel" in model.lower() else "amd" if "amd" in model.lower() else "unknown"
         cpu_info.vendor = vendor
     else:
