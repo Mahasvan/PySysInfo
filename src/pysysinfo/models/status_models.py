@@ -4,18 +4,26 @@ from pydantic import BaseModel, Field
 
 
 class StatusModel(BaseModel):
+    """This is the base class for all status models.
+    Every component will have a ``status`` attribute,
+    which is one of ``SuccessStatus``, ``PartialStatus`` or ``FailedStatus``.
+    This class will not be used by any component as is."""
     string: str
     messages: List[str] = Field(default_factory=list)
 
 
 class SuccessStatus(StatusModel):
+    """StatusModel used when no issues were encountered during the discovery process.
+    Messages may be present, containing information about the discovery process."""
     string: str = "success"
     messages: List[str] = Field(default_factory=list)
 
 
 class PartialStatus(StatusModel):
     """
-    Class to denote a Partially failed discovery of a particular component.
+    StatusModel used when issues were encountered that partially hinder the discovery process.
+    Messages may be present, containing information about the errors encountered.
+    PartialStatus means that one or more attributes of the component were not fetched properly.
     """
     string: str = "partial"
     messages: List[str] = Field(default_factory=list)
@@ -23,11 +31,9 @@ class PartialStatus(StatusModel):
 
 class FailedStatus(StatusModel):
     """
-    Class to denote a the complete failure of discovery for a particular component.
-    A Failed state can be logged like so:
-    ```
-    cpu_info.status = FailedStatus("Failed to open /proc/cpuinfo")
-    ```
+    StatusModel used when a breaking issue was encountered during the discovery process.
+    This means that no data could be discovered about the component.
+    Messages may be present, containing information about the error.
     """
     string: str = "failed"
     messages: List[str] = Field(default_factory=list)
