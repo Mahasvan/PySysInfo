@@ -3,6 +3,18 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path('..', 'src').resolve()))
 
+# Mock Windows-only dependencies so autodoc works on non-Windows hosts
+if sys.platform != "win32":
+    autodoc_mock_imports = [
+        "winreg",
+        "ctypes",
+        "pysysinfo.dumps.windows.cpu",
+        "pysysinfo.dumps.windows.graphics",
+        "pysysinfo.dumps.windows.memory",
+        "pysysinfo.dumps.windows.storage",
+        "pysysinfo.dumps.windows.win_enum",
+    ]
+
 
 # Configuration file for the Sphinx documentation builder.
 #
