@@ -4,7 +4,6 @@ from pydantic import Field
 
 from pysysinfo.models.component_model import ComponentInfo
 
-
 class CPUInfo(ComponentInfo):
     """This is the model that holds CPU information."""
     #: This is the CPU's name

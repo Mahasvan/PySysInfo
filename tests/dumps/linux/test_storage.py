@@ -36,7 +36,7 @@ class TestLinuxStorage:
                 content = "0x144d"
             elif "nvme0n1/size" in path:
                 content = "1953525168" # 1TB in 512-byte blocks
-            
+
             mock_file.read.return_value = content
             mock_file.__enter__.return_value = mock_file
             return mock_file
@@ -75,7 +75,7 @@ class TestLinuxStorage:
                 content = "ATA"
             elif "sda/size" in path:
                 content = "1953525168"
-            
+
             mock_file.read.return_value = content
             mock_file.__enter__.return_value = mock_file
             return mock_file
@@ -112,7 +112,7 @@ class TestLinuxStorage:
                 content = "ATA"
             elif "sda/size" in path:
                 content = "1000"
-            
+
             mock_file.read.return_value = content
             mock_file.__enter__.return_value = mock_file
             return mock_file

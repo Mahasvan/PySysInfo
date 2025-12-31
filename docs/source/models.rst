@@ -14,7 +14,7 @@ CPU
     :show-inheritance:
     :inherited-members: ComponentInfo
     :exclude-members: __init__
-    
+
 
 =============
 GPU

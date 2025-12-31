@@ -1,7 +1,6 @@
 from typing import List, Optional
 
 from pydantic import BaseModel, Field
-
 from pysysinfo.models.component_model import ComponentInfo
 from pysysinfo.models.size_models import StorageSize
 
