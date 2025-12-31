@@ -17,6 +17,8 @@ copyright = '2025, Mahasvan Mohan'
 author = 'Mahasvan Mohan'
 release = '0.0.1'
 
+autodoc_class_signature = "separated"
+
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
 
@@ -26,7 +28,6 @@ extensions = [
 
 templates_path = ['_templates']
 exclude_patterns = []
-
 
 
 # -- Options for HTML output -------------------------------------------------
