@@ -1,13 +1,13 @@
 import builtins
 import subprocess
 
-from src.pysysinfo.dumps.linux.cpu import (
+from pysysinfo.dumps.linux.cpu import (
     fetch_cpu_cores,
     fetch_arm_cpu_info,
     fetch_x86_cpu_info,
     fetch_cpu_info,
 )
-from src.pysysinfo.models.status_models import PartialStatus, FailedStatus
+from pysysinfo.models.status_models import PartialStatus, FailedStatus
 
 
 class TestLinuxCPU:
@@ -46,7 +46,7 @@ class TestLinuxCPU:
         )
 
         monkeypatch.setattr(
-            "src.pysysinfo.dumps.linux.cpu.fetch_cpu_cores",
+            "pysysinfo.dumps.linux.cpu.fetch_cpu_cores",
             lambda: 4,
         )
 
@@ -66,7 +66,7 @@ class TestLinuxCPU:
             "Model\t: Raspberry Pi 4\n"
         )
 
-        monkeypatch.setattr("src.pysysinfo.dumps.linux.cpu.fetch_cpu_cores", lambda: 4)
+        monkeypatch.setattr("pysysinfo.dumps.linux.cpu.fetch_cpu_cores", lambda: 4)
 
         cpu = fetch_arm_cpu_info(raw)
 
@@ -75,7 +75,7 @@ class TestLinuxCPU:
     def test_fetch_arm_cpu_info_missing_fields(self, monkeypatch):
         raw = "processor\t: 0\n"
 
-        monkeypatch.setattr("src.pysysinfo.dumps.linux.cpu.fetch_cpu_cores", lambda: None)
+        monkeypatch.setattr("pysysinfo.dumps.linux.cpu.fetch_cpu_cores", lambda: None)
 
         cpu = fetch_arm_cpu_info(raw)
 
@@ -151,7 +151,7 @@ class TestLinuxCPU:
 
         monkeypatch.setattr(subprocess, "run", mock_run)
 
-        monkeypatch.setattr("src.pysysinfo.dumps.linux.cpu.fetch_cpu_cores", lambda: 4)
+        monkeypatch.setattr("pysysinfo.dumps.linux.cpu.fetch_cpu_cores", lambda: 4)
 
         cpu = fetch_cpu_info()
         assert cpu.architecture == "ARM"
@@ -196,7 +196,7 @@ class TestLinuxCPURealWorld:
 
         monkeypatch.setattr(subprocess, "run", mock_run)
 
-        monkeypatch.setattr("src.pysysinfo.dumps.linux.cpu.fetch_cpu_cores", lambda: 4)
+        monkeypatch.setattr("pysysinfo.dumps.linux.cpu.fetch_cpu_cores", lambda: 4)
 
         cpu = fetch_cpu_info()
         assert cpu.architecture == "ARM"

@@ -1,10 +1,11 @@
+import builtins
 import os
 import subprocess
-import builtins
 from unittest.mock import mock_open
 
-from src.pysysinfo.dumps.linux.graphics import fetch_graphics_info, get_pcie_gen, fetch_vram_amd
-from src.pysysinfo.models.status_models import FailedStatus, PartialStatus, SuccessStatus
+from pysysinfo.dumps.linux.graphics import fetch_graphics_info, get_pcie_gen, fetch_vram_amd
+from pysysinfo.models.status_models import FailedStatus, PartialStatus, SuccessStatus
+
 
 class TestLinuxGraphics:
 
@@ -91,16 +92,16 @@ class TestLinuxGraphics:
 
         # Mock open
         file_contents = {
-            "class": "0x030000", # Display controller
+            "class": "0x030000",  # Display controller
             "vendor": "0x8086",
             "device": "0x5917",
-            "current_link_width": "0", # Integrated graphics often 0 or not applicable
+            "current_link_width": "0",  # Integrated graphics often 0 or not applicable
             "firmware_node/path": "\\_SB.PCI0.GFX0"
         }
 
         def custom_open(path, *args, **kwargs):
             filename = os.path.basename(path)
-            if filename == "path": # handle firmware_node/path
+            if filename == "path":  # handle firmware_node/path
                 if "firmware_node" in path:
                     return mock_open(read_data=file_contents["firmware_node/path"])()
 
@@ -113,7 +114,7 @@ class TestLinuxGraphics:
         monkeypatch.setattr(builtins, "open", custom_open)
 
         # Mock get_pci_path_linux
-        monkeypatch.setattr("src.pysysinfo.dumps.linux.graphics.get_pci_path_linux", lambda x: f"/PCI0@0/{x}")
+        monkeypatch.setattr("pysysinfo.dumps.linux.graphics.get_pci_path_linux", lambda x: f"/PCI0@0/{x}")
 
         # Mock subprocess.run for lspci
         def mock_run(command, *args, **kwargs):
@@ -134,7 +135,7 @@ class TestLinuxGraphics:
         info = fetch_graphics_info()
 
         assert isinstance(info.status, SuccessStatus)
-        assert len(info.modules) == 2 # We mocked 2 devices, both use same file mocks so both appear as GPUs
+        assert len(info.modules) == 2  # We mocked 2 devices, both use same file mocks so both appear as GPUs
 
         gpu = info.modules[0]
         assert gpu.vendor_id == "0x8086"
@@ -150,7 +151,7 @@ class TestLinuxGraphics:
 
         file_contents = {
             "class": "0x030000",
-            "vendor": "0x10de", # Nvidia
+            "vendor": "0x10de",  # Nvidia
             "device": "0x1c03",
             "current_link_width": "16",
             "firmware_node/path": "\\_SB.PCI0.PEG0.PEGP"
@@ -165,7 +166,7 @@ class TestLinuxGraphics:
             raise FileNotFoundError(path)
 
         monkeypatch.setattr(builtins, "open", custom_open)
-        monkeypatch.setattr("src.pysysinfo.dumps.linux.graphics.get_pci_path_linux", lambda x: f"/PCI0@0/{x}")
+        monkeypatch.setattr("pysysinfo.dumps.linux.graphics.get_pci_path_linux", lambda x: f"/PCI0@0/{x}")
 
         def mock_run(command, *args, **kwargs):
             if command[0] == "nvidia-smi":
@@ -192,7 +193,7 @@ class TestLinuxGraphics:
 
         file_contents = {
             "class": "0x030000",
-            "vendor": "0x1002", # AMD
+            "vendor": "0x1002",  # AMD
             "device": "0x731f",
             "current_link_width": "16",
             "firmware_node/path": "\\_SB.PCI0.PEG0.PEGP"
@@ -206,15 +207,16 @@ class TestLinuxGraphics:
                 return mock_open(read_data=file_contents[filename])()
             # Mock for AMD vram file
             if filename == "mem_info_vram_total":
-                 # 8GB in bytes
+                # 8GB in bytes
                 return mock_open(read_data=str(8 * 1024 * 1024 * 1024))()
             raise FileNotFoundError(path)
 
         monkeypatch.setattr(builtins, "open", custom_open)
-        monkeypatch.setattr("src.pysysinfo.dumps.linux.graphics.get_pci_path_linux", lambda x: f"/PCI0@0/{x}")
+        monkeypatch.setattr("pysysinfo.dumps.linux.graphics.get_pci_path_linux", lambda x: f"/PCI0@0/{x}")
 
         # Mock glob for AMD
-        monkeypatch.setattr("glob.glob", lambda x: ["/sys/bus/pci/devices/0000:03:00.0/drm/card0/device/mem_info_vram_total"])
+        monkeypatch.setattr("glob.glob",
+                            lambda x: ["/sys/bus/pci/devices/0000:03:00.0/drm/card0/device/mem_info_vram_total"])
 
         def mock_run(command, *args, **kwargs):
             if command[0] == "lspci":
@@ -230,7 +232,7 @@ class TestLinuxGraphics:
         gpu = info.modules[0]
         assert gpu.vendor_id == "0x1002"
         assert gpu.vram is not None
-        assert gpu.vram.capacity == 8192 # 8GB in MB
+        assert gpu.vram.capacity == 8192  # 8GB in MB
 
     def test_fetch_graphics_info_partial_failure(self, monkeypatch):
         monkeypatch.setattr(os.path, "exists", lambda x: True)
@@ -253,6 +255,7 @@ class TestLinuxGraphics:
         # Mock lspci failure
         def mock_run(*args, **kwargs):
             raise FileNotFoundError("lspci not found")
+
         monkeypatch.setattr(subprocess, "run", mock_run)
 
         info = fetch_graphics_info()
@@ -293,7 +296,7 @@ class TestLinuxGraphics:
 
         file_contents = {
             "class": "0x030000",
-            "vendor": "0x1002", # AMD
+            "vendor": "0x1002",  # AMD
             "device": "0x731f",
             "current_link_width": "16",
             "firmware_node/path": "\\_SB.PCI0.PEG0.PEGP"
@@ -308,7 +311,7 @@ class TestLinuxGraphics:
             raise FileNotFoundError(path)
 
         monkeypatch.setattr(builtins, "open", custom_open)
-        monkeypatch.setattr("src.pysysinfo.dumps.linux.graphics.get_pci_path_linux", lambda x: f"/PCI0@0/{x}")
+        monkeypatch.setattr("pysysinfo.dumps.linux.graphics.get_pci_path_linux", lambda x: f"/PCI0@0/{x}")
 
         # Mock glob to return empty list (VRAM file not found)
         monkeypatch.setattr("glob.glob", lambda x: [])
@@ -329,7 +332,7 @@ class TestLinuxGraphics:
 
         file_contents = {
             "class": "0x030000",
-            "vendor": "0x10de", # Nvidia
+            "vendor": "0x10de",  # Nvidia
             "device": "0x1c03",
             "current_link_width": "16",
             "firmware_node/path": "\\_SB.PCI0.PEG0.PEGP"
@@ -344,7 +347,7 @@ class TestLinuxGraphics:
             raise FileNotFoundError(path)
 
         monkeypatch.setattr(builtins, "open", custom_open)
-        monkeypatch.setattr("src.pysysinfo.dumps.linux.graphics.get_pci_path_linux", lambda x: f"/PCI0@0/{x}")
+        monkeypatch.setattr("pysysinfo.dumps.linux.graphics.get_pci_path_linux", lambda x: f"/PCI0@0/{x}")
 
         # Mock nvidia-smi failure
         def mock_run(command, *args, **kwargs):
@@ -386,7 +389,7 @@ class TestLinuxGraphics:
             raise FileNotFoundError(path)
 
         monkeypatch.setattr(builtins, "open", custom_open)
-        monkeypatch.setattr("src.pysysinfo.dumps.linux.graphics.get_pci_path_linux", lambda x: f"/PCI0@0/{x}")
+        monkeypatch.setattr("pysysinfo.dumps.linux.graphics.get_pci_path_linux", lambda x: f"/PCI0@0/{x}")
 
         def mock_run(command, *args, **kwargs):
             if command[0] == "lspci":
@@ -432,7 +435,7 @@ class TestLinuxGraphics:
             raise FileNotFoundError(path)
 
         monkeypatch.setattr(builtins, "open", custom_open)
-        monkeypatch.setattr("src.pysysinfo.dumps.linux.graphics.get_pci_path_linux", lambda x: f"/PCI0@0/{x}")
+        monkeypatch.setattr("pysysinfo.dumps.linux.graphics.get_pci_path_linux", lambda x: f"/PCI0@0/{x}")
         monkeypatch.setattr(subprocess, "run", lambda *args, **kwargs: subprocess.CompletedProcess(args, 0, stdout=""))
 
         info = fetch_graphics_info()
@@ -449,7 +452,7 @@ class TestLinuxGraphics:
         # Directly test the helper function
         monkeypatch.setattr("glob.glob", lambda x: (_ for _ in ()).throw(Exception("Glob failed")))
 
-        from src.pysysinfo.dumps.linux.graphics import fetch_vram_amd
+        from pysysinfo.dumps.linux.graphics import fetch_vram_amd
         assert fetch_vram_amd("0000:00:00.0") is None
 
     def test_fetch_graphics_info_pci_path_failure(self, monkeypatch):
@@ -478,7 +481,7 @@ class TestLinuxGraphics:
         def mock_get_pci_path(device):
             raise Exception("PCI path failed")
 
-        monkeypatch.setattr("src.pysysinfo.dumps.linux.graphics.get_pci_path_linux", mock_get_pci_path)
+        monkeypatch.setattr("pysysinfo.dumps.linux.graphics.get_pci_path_linux", mock_get_pci_path)
         monkeypatch.setattr(subprocess, "run", lambda *args, **kwargs: subprocess.CompletedProcess(args, 0, stdout=""))
 
         info = fetch_graphics_info()

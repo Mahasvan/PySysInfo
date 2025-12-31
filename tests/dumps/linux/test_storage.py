@@ -2,9 +2,8 @@ import builtins
 import os
 from unittest.mock import MagicMock
 
-from src.pysysinfo.dumps.linux.storage import fetch_storage_info
-from src.pysysinfo.models.status_models import FailedStatus, PartialStatus, SuccessStatus
-from src.pysysinfo.models.size_models import Megabyte
+from pysysinfo.dumps.linux.storage import fetch_storage_info
+from pysysinfo.models.status_models import FailedStatus, PartialStatus, SuccessStatus
 
 
 class TestLinuxStorage:
@@ -35,7 +34,7 @@ class TestLinuxStorage:
             elif "nvme0n1/device/device/vendor" in path:
                 content = "0x144d"
             elif "nvme0n1/size" in path:
-                content = "1953525168" # 1TB in 512-byte blocks
+                content = "1953525168"  # 1TB in 512-byte blocks
 
             mock_file.read.return_value = content
             mock_file.__enter__.return_value = mock_file
@@ -103,7 +102,7 @@ class TestLinuxStorage:
             mock_file = MagicMock()
             content = ""
             if "sda/device/model" in path:
-                content = "" # Empty model
+                content = ""  # Empty model
             elif "sda/queue/rotational" in path:
                 content = "1"
             elif "sda/removable" in path:

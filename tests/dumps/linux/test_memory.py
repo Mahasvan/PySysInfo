@@ -2,9 +2,9 @@ import builtins
 import os
 from unittest.mock import MagicMock
 
-from src.pysysinfo.dumps.linux.memory import fetch_memory_info
-from src.pysysinfo.models.size_models import Megabyte, Kilobyte
-from src.pysysinfo.models.status_models import FailedStatus, PartialStatus, SuccessStatus
+from pysysinfo.dumps.linux.memory import fetch_memory_info
+from pysysinfo.models.size_models import Megabyte, Kilobyte
+from pysysinfo.models.status_models import FailedStatus, PartialStatus, SuccessStatus
 
 
 class TestLinuxMemory:
@@ -359,7 +359,7 @@ class TestLinuxMemory:
         def mock_megabyte(**kwargs):
             raise ValueError("Capacity Error")
 
-        monkeypatch.setattr("src.pysysinfo.dumps.linux.memory.Megabyte", mock_megabyte)
+        monkeypatch.setattr("pysysinfo.dumps.linux.memory.Megabyte", mock_megabyte)
 
         memory_info = fetch_memory_info()
         assert isinstance(memory_info.status, PartialStatus)
