@@ -6,11 +6,11 @@ A Python Library to simplify retrieval of hardware components of your computer.
 
 ### macOS / Linux
 ```bash
-pip3 install PySysInfo
+pip3 install -i https://test.pypi.org/simple/ PySysInfo
 ```
 ### Windows
 ```bash
-pip install PySysInfo
+pip install -i https://test.pypi.org/simple/ PySysInfo
 ```
 
 ## Usage

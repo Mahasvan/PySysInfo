@@ -13,7 +13,7 @@ class StatusModel(BaseModel):
 
 
 class SuccessStatus(StatusModel):
-    """StatusModel used when no issues were encountered during the discovery process.
+    """No issues were encountered during the discovery process.
     Messages may be present, containing information about the discovery process."""
     string: str = "success"
     messages: List[str] = Field(default_factory=list)
@@ -21,9 +21,10 @@ class SuccessStatus(StatusModel):
 
 class PartialStatus(StatusModel):
     """
-    StatusModel used when issues were encountered that partially hinder the discovery process.
+    Issues were encountered that partially hindered the discovery process.
+    One or more attributes of the component were not fetched properly.
     Messages may be present, containing information about the errors encountered.
-    PartialStatus means that one or more attributes of the component were not fetched properly.
+
     """
     string: str = "partial"
     messages: List[str] = Field(default_factory=list)
@@ -31,8 +32,8 @@ class PartialStatus(StatusModel):
 
 class FailedStatus(StatusModel):
     """
-    StatusModel used when a breaking issue was encountered during the discovery process.
-    This means that no data could be discovered about the component.
+    A breaking issue was encountered during the discovery process.
+    No data could be discovered about the component.
     Messages may be present, containing information about the error.
     """
     string: str = "failed"
