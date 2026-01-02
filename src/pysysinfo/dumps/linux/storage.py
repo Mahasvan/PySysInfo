@@ -1,7 +1,7 @@
 import os
 
 from pysysinfo.models.size_models import Megabyte
-from pysysinfo.models.status_models import Status, StatusType
+from pysysinfo.models.status_models import StatusType
 from pysysinfo.models.storage_models import StorageInfo, DiskInfo
 
 

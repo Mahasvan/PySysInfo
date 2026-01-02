@@ -6,7 +6,7 @@ from typing import List
 
 from pysysinfo.dumps.windows.win_enum import FEATURE_ID_MAP
 from pysysinfo.models.cpu_models import CPUInfo
-from pysysinfo.models.status_models import StatusType, Status
+from pysysinfo.models.status_models import StatusType
 
 kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
 kernel32.IsProcessorFeaturePresent.argtypes = [wintypes.DWORD]

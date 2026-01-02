@@ -11,7 +11,7 @@ from pysysinfo.dumps.windows.common import format_acpi_path, format_pci_path
 from pysysinfo.models.gpu_models import GPUInfo
 from pysysinfo.models.gpu_models import GraphicsInfo
 from pysysinfo.models.size_models import Megabyte
-from pysysinfo.models.status_models import StatusType, Status
+from pysysinfo.models.status_models import StatusType
 from pysysinfo.util.nvidia import fetch_gpu_details_nvidia
 
 

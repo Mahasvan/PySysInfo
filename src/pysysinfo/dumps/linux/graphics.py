@@ -6,7 +6,7 @@ from typing import Optional
 from pysysinfo.dumps.linux.common import get_pci_path_linux
 from pysysinfo.models.gpu_models import GPUInfo, GraphicsInfo
 from pysysinfo.models.size_models import Megabyte
-from pysysinfo.models.status_models import Status, StatusType
+from pysysinfo.models.status_models import StatusType
 from pysysinfo.util.nvidia import fetch_gpu_details_nvidia
 
 

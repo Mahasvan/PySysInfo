@@ -35,6 +35,7 @@ class HardwareManagerInterface:
 
     def fetch_hardware_info(self) -> HardwareInfo:
         """Fetches all hardware Information."""
+
     pass
 
     def fetch_cpu_info(self) -> CPUInfo:

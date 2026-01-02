@@ -1,13 +1,14 @@
-from typing import List, Optional
+from enum import Enum
+from typing import List
 
 from pydantic import BaseModel, Field
 
-from enum import Enum
 
 class StatusType(Enum):
     SUCCESS = "success"
     PARTIAL = "partial"
     FAILED = "failed"
+
 
 class Status(BaseModel):
     """This is the base class for all status models.

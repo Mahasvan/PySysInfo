@@ -3,7 +3,7 @@ import os
 from pysysinfo.dumps.linux.dmi_decode import get_string_entry, MEMORY_TYPE
 from pysysinfo.models.memory_models import MemoryInfo, MemoryModuleSlot, MemoryModuleInfo
 from pysysinfo.models.size_models import Megabyte, Kilobyte
-from pysysinfo.models.status_models import Status, StatusType
+from pysysinfo.models.status_models import StatusType
 
 
 def fetch_memory_info() -> MemoryInfo:

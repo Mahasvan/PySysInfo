@@ -5,7 +5,7 @@ from pysysinfo.dumps.mac.common import construct_pci_path_mac
 from pysysinfo.dumps.mac.ioreg import *
 from pysysinfo.models.gpu_models import GraphicsInfo, GPUInfo
 from pysysinfo.models.size_models import Megabyte
-from pysysinfo.models.status_models import Status, StatusType
+from pysysinfo.models.status_models import StatusType
 
 
 def check_arm():

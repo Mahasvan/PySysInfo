@@ -4,7 +4,7 @@ from typing import List
 from pysysinfo.dumps.windows.win_enum import MEMORY_TYPE
 from pysysinfo.models.memory_models import MemoryInfo, MemoryModuleInfo, MemoryModuleSlot
 from pysysinfo.models.size_models import Megabyte
-from pysysinfo.models.status_models import StatusType, Status
+from pysysinfo.models.status_models import StatusType
 
 """
 the WMIC command-line utility is deprecated, and is replaced by PowerShell cmdlets.

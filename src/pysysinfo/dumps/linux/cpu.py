@@ -3,7 +3,7 @@ import subprocess
 from typing import Optional
 
 from pysysinfo.models.cpu_models import CPUInfo
-from pysysinfo.models.status_models import Status, StatusType
+from pysysinfo.models.status_models import StatusType
 
 
 def fetch_cpu_cores() -> Optional[int]:

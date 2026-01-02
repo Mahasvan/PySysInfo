@@ -1,7 +1,7 @@
 import subprocess
 
 from pysysinfo.models.cpu_models import CPUInfo
-from pysysinfo.models.status_models import Status, StatusType
+from pysysinfo.models.status_models import StatusType
 
 
 def fetch_cpu_info() -> CPUInfo:

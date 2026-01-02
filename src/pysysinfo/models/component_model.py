@@ -1,6 +1,6 @@
 from pydantic import BaseModel, Field
 
-from pysysinfo.models.status_models import Status, StatusType
+from pysysinfo.models.status_models import Status
 
 
 class ComponentInfo(BaseModel):

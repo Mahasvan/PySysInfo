@@ -4,7 +4,7 @@ from typing import List
 
 from pysysinfo.models.memory_models import MemoryInfo, MemoryModuleInfo, MemoryModuleSlot
 from pysysinfo.models.size_models import Megabyte, StorageSize, Gigabyte
-from pysysinfo.models.status_models import Status, StatusType
+from pysysinfo.models.status_models import StatusType
 
 
 def get_ram_size_from_reg(reg) -> List[StorageSize]:
