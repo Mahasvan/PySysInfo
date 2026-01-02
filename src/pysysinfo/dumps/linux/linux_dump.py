@@ -15,8 +15,7 @@ from pysysinfo.models.storage_models import StorageInfo
 
 class LinuxHardwareManager(HardwareManagerInterface):
     """
-    Implements :class:`pysysinfo.models.info_models.HardwareManagerInterface`, for extracting system information
-    from Linux using the `sysfs` pseudo file system.
+    Uses the `sysfs` pseudo file system to extract info.
     """
 
     def __init__(self):

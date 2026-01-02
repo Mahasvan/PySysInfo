@@ -13,8 +13,7 @@ from pysysinfo.models.storage_models import StorageInfo
 
 class WindowsHardwareManager(HardwareManagerInterface):
     """
-    Implements :class:`pysysinfo.models.info_models.HardwareManagerInterface`, for extracting system information
-    from Windows using the Registry and WMI
+    Uses Registry and WMI to extract info.
     """
 
     def __init__(self):
