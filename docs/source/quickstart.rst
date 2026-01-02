@@ -4,15 +4,15 @@ Quickstart
 Prerequisites
 -------------
 - Python 3.9 or newer.
-- On macOS, `pyobjc` is required; it is pulled in automatically via the project dependencies.
+- On macOS, `pyobjc` is required; it is installed automatically as a dependency.
 
 Install
 -------
-Use an editable install while developing locally:
+Currently, the project is hosted on TestPyPI. To install, run:
 
 .. code-block:: bash
 
-   pip install -e .
+   pip3 install -i https://test.pypi.org/simple/ PySysInfo
 
 Basic usage
 -----------
@@ -43,4 +43,6 @@ Fetch individual components when you only need one subsystem:
 
 Serialization
 -------------
-All component models are Pydantic models, so they support `.model_dump()` for dictionaries and `.model_dump_json()` for JSON-ready strings. Status fields indicate whether each subsystem succeeded, partially succeeded, or failed.
+All component models are Pydantic models, so they support `.model_dump()` for dictionaries and `.model_dump_json()` for JSON-ready strings. 
+
+Status fields indicate whether each subsystem succeeded, partially succeeded, or failed. Refer to :ref:`errors-during-hardware-discovery` for more information.

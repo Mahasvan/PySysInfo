@@ -197,9 +197,10 @@ Output:
     True
 
 
---------
+.. _errors-during-hardware-discovery:
+--------------------------------
 Errors during Hardware Discovery
---------
+--------------------------------
 Sometimes, errors may be encountered during hardware discovery
 that partially or fatally affect the process.
 
