@@ -6,7 +6,9 @@
 Home
 ====
 
-PySysInfo gathers CPU, memory, storage, and graphics details across Linux, macOS, and Windows into a single set of Pydantic models. The top-level `HardwareManager` picks the right platform manager at import time, so usage stays the same everywhere.
+PySysInfo gathers CPU, memory, storage, and graphics details across Linux, macOS, and Windows 
+into well-defined Pydantic models with a consistent structure. 
+The top-level `HardwareManager` picks the right platform manager at import time, so usage stays the same everywhere.
 
 Highlights
 ----------
