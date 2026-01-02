@@ -3,9 +3,11 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path('..', 'src').resolve()))
 
-# Mock Windows-only dependencies so autodoc works on non-Windows hosts
+# Mock platform-specific dependencies so autodoc works off-host
+autodoc_mock_imports = []
+
 if sys.platform != "win32":
-    autodoc_mock_imports = [
+    autodoc_mock_imports += [
         "winreg",
         "ctypes",
         "pysysinfo.dumps.windows.cpu",
@@ -13,6 +15,18 @@ if sys.platform != "win32":
         "pysysinfo.dumps.windows.memory",
         "pysysinfo.dumps.windows.storage",
         "pysysinfo.dumps.windows.win_enum",
+    ]
+
+if sys.platform != "darwin":
+    autodoc_mock_imports += [
+        "objc",
+        "pysysinfo.dumps.mac.common",
+        "pysysinfo.dumps.mac.graphics",
+        "pysysinfo.dumps.mac.ioreg",
+        "pysysinfo.dumps.mac.mac_dump",
+        "pysysinfo.dumps.mac.storage",
+        "pysysinfo.dumps.mac.memory",
+        "pysysinfo.dumps.mac.cpu",
     ]
 
 
