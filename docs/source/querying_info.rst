@@ -1,13 +1,14 @@
 .. _querying-info:
+
 =============
 Querying Info
 =============
 
 Information about the computer can be queried on a per-component basis, or all components at once.
 
-----------------------
+-----------------------
 Complete Info Retrieval
-----------------------
+-----------------------
 
 In the following example, we query all available information from the system.
 
@@ -82,9 +83,9 @@ Output:
     <class 'pysysinfo.models.cpu_models.CPUInfo'>
     Apple M3
 
--------------
+------------------------
 Accessing Retrieved Data
--------------
+------------------------
 
 There are two ways to access the data retrieved from PySysInfo.
 

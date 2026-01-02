@@ -10,7 +10,7 @@ Platform data sources
 - macOS: uses `sysctl` and IORegistry via helpers in `pysysinfo.dumps.mac`.
 
 Per-component collection (placeholder)
--------------------------------------
+-------------------------------------------
 The sections below outline where data comes from per component and platform. Detailed prose will follow; placeholder text is provided for now.
 
 CPU

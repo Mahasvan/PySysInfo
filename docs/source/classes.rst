@@ -9,6 +9,7 @@ Depending on the OS present, PySysInfo can automatically load one of the followi
 All these classes implement the structure in :class:`pysysinfo.models.info_models.HardwareManagerInterface`.
 
 .. autoclass:: pysysinfo.models.info_models.HardwareManagerInterface
+    :noindex:
     :members:
 
 =============================
@@ -36,6 +37,7 @@ Objects of this type store the retrieved data in their HardwareManager.
 .. autoclass:: pysysinfo.models.info_models.HardwareInfo
     :exclude-members: __new__,__init__,model_config
     :members:
+    :noindex:
 
 
 ===============================
