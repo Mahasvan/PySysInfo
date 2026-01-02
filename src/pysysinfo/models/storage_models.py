@@ -24,4 +24,4 @@ class DiskInfo(BaseModel):
 
 
 class StorageInfo(ComponentInfo):
-    disks: List[DiskInfo] = Field(default_factory=list)
+    modules: List[DiskInfo] = Field(default_factory=list)

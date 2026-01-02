@@ -76,6 +76,6 @@ def fetch_storage_info() -> StorageInfo:
             storage_info.status = PartialStatus(messages=storage_info.status.messages)
             storage_info.status.messages.append("Disk Info: " + str(e))
 
-        storage_info.disks.append(disk)
+        storage_info.modules.append(disk)
 
     return storage_info

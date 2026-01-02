@@ -124,7 +124,7 @@ def fetch_storage_info() -> StorageInfo:
             if size:
                 disk.size = Megabyte(capacity=size // (1024 * 1024))
 
-            storage_info.disks.append(disk)
+            storage_info.modules.append(disk)
         except Exception as e:
             storage_info.status = PartialStatus(messages=storage_info.status.messages)
             storage_info.status.messages.append("Error while enumerating storage: " + str(e))

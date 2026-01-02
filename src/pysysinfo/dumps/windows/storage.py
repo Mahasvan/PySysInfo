@@ -84,7 +84,7 @@ def parse_cmd_output(lines: List[List[str]]) -> StorageInfo:
             if conn_type and "nvme" in conn_type.lower():
                 disk.type = MEDIA_TYPE[4]  # Solid State Drive (SSD)
 
-            storage_info.disks.append(disk)
+            storage_info.modules.append(disk)
 
         except Exception as e:
             storage_info.status = PartialStatus(messages=storage_info.status.messages)

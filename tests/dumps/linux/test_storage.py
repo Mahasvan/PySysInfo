@@ -45,8 +45,8 @@ class TestLinuxStorage:
         storage_info = fetch_storage_info()
 
         assert isinstance(storage_info.status, SuccessStatus)
-        assert len(storage_info.disks) == 1
-        disk = storage_info.disks[0]
+        assert len(storage_info.modules) == 1
+        disk = storage_info.modules[0]
         assert disk.model == "Samsung SSD 970 EVO Plus 1TB"
         assert disk.type == "Non-Volatile Memory Express (NVMe)"
         assert disk.location == "Internal"
@@ -84,8 +84,8 @@ class TestLinuxStorage:
         storage_info = fetch_storage_info()
 
         assert isinstance(storage_info.status, SuccessStatus)
-        assert len(storage_info.disks) == 1
-        disk = storage_info.disks[0]
+        assert len(storage_info.modules) == 1
+        disk = storage_info.modules[0]
         assert disk.model == "WDC WD10EZEX-08W"
         assert disk.type == "Hard Disk Drive (HDD)"
         assert disk.location == "Internal"
@@ -122,7 +122,7 @@ class TestLinuxStorage:
 
         assert isinstance(storage_info.status, PartialStatus)
         assert "Disk Model could not be found" in storage_info.status.messages
-        assert len(storage_info.disks) == 1
+        assert len(storage_info.modules) == 1
 
     def test_fetch_storage_info_exception(self, monkeypatch):
         monkeypatch.setattr(os.path, "isdir", lambda x: True)
@@ -137,4 +137,4 @@ class TestLinuxStorage:
 
         assert isinstance(storage_info.status, PartialStatus)
         assert any("Disk Info: Access denied" in msg for msg in storage_info.status.messages)
-        assert len(storage_info.disks) == 1
+        assert len(storage_info.modules) == 1
