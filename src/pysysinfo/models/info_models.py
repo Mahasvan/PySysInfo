@@ -33,6 +33,10 @@ class HardwareManagerInterface:
     #: When any component's data is queried, the data is stored here.
     info: HardwareInfo
 
+    def fetch_hardware_info(self) -> HardwareInfo:
+        """Fetches all hardware Information."""
+    pass
+
     def fetch_cpu_info(self) -> CPUInfo:
         """Fetches CPU Information."""
         pass
@@ -47,8 +51,4 @@ class HardwareManagerInterface:
 
     def fetch_storage_info(self) -> StorageInfo:
         """Fetches Disk Information."""
-        pass
-
-    def fetch_hardware_info(self) -> HardwareInfo:
-        """Fetches all hardware Information."""
         pass
