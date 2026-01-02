@@ -5,16 +5,21 @@ from pydantic import BaseModel, Field
 
 
 class StatusType(Enum):
+    """Types of statuses possible."""
+
+    #: There were no errors encountered.
     SUCCESS = "success"
+    #: There were errors encountered, but only some parts of the data could not be retrieved.
     PARTIAL = "partial"
+    #: Fatal error occurred, no data was able to be retrieved.
     FAILED = "failed"
 
 
 class Status(BaseModel):
-    """This is the base class for all status models.
-    Every component will have a ``status`` attribute,
-    which is one of ``SuccessStatus``, ``PartialStatus`` or ``FailedStatus``.
-    This class will not be used by any component as is."""
+    """
+    Describes the status of an individual component.
+    If the status is ``PARTIAL`` or ``FAILED``, there may be messages that describe the error(s).
+    """
     type: StatusType = Field(default_factory=lambda: StatusType.SUCCESS)
     messages: List[str] = Field(default_factory=list)
 

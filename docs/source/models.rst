@@ -120,35 +120,23 @@ Every component's :class:`ComponentInfo <pysysinfo.models.component_model.Compon
 a :attr:`status <pysysinfo.models.component_model.ComponentInfo.status>` property,
 which contains information on the errors encountered while retrieving data.
 
-This property will be a subclass of :class:`StatusInfo <pysysinfo.models.status_models.StatusModel>`,
-which will be one of the following three.
+This property will be of the :class:`Status <pysysinfo.models.status_models.Status>` class.
 
 ---------
 
-.. autopydantic_model:: pysysinfo.models.status_models.SuccessStatus
+.. autopydantic_model:: pysysinfo.models.status_models.Status
     :exclude-members: __init__
-    :show-inheritance:
-    :model-show-field-summary: False
-
----------
-
-.. autopydantic_model:: pysysinfo.models.status_models.PartialStatus
-    :exclude-members: __init__
-    :show-inheritance:
     :model-show-field-summary: False
 
 ---------
 
-.. autopydantic_model:: pysysinfo.models.status_models.FailedStatus
-    :exclude-members: __init__
-    :show-inheritance:
-    :model-show-field-summary: False
+The ``type`` property of the status indicates whether there were errors during the discovery process.
 
----------
+This is an Enum, with three possible values.
 
-.. autopydantic_model:: pysysinfo.models.status_models.StatusModel
-    :exclude-members: __init__
-    :model-show-field-summary: False
+.. autoclass:: pysysinfo.models.status_models.StatusType
+    :members:
+
 
 =============
 Size Models
