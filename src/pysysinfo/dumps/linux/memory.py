@@ -3,14 +3,15 @@ import os
 from pysysinfo.dumps.linux.dmi_decode import get_string_entry, MEMORY_TYPE
 from pysysinfo.models.memory_models import MemoryInfo, MemoryModuleSlot, MemoryModuleInfo
 from pysysinfo.models.size_models import Megabyte, Kilobyte
-from pysysinfo.models.status_models import PartialStatus, FailedStatus
+from pysysinfo.models.status_models import Status, StatusType
 
 
 def fetch_memory_info() -> MemoryInfo:
     memory_info = MemoryInfo()
 
     if not os.path.isdir("/sys/firmware/dmi/entries"):
-        memory_info.status = FailedStatus("The /sys/firmware/dmi/entries directory doesn't exist")
+        memory_info.status.type = StatusType.FAILED
+        memory_info.status.messages.append("The /sys/firmware/dmi/entries directory doesn't exist")
         return memory_info
 
     """
@@ -51,11 +52,12 @@ def fetch_memory_info() -> MemoryInfo:
                 module.part_number = part_no
         except PermissionError:
             # todo: Need SUDO for this. Mention this in the Log
-            memory_info.status = FailedStatus("Unable to open /sys/firmware/dmi/entries. Are you root?")
+            memory_info.status.type = StatusType.FAILED
+            memory_info.status.messages.append("Unable to open /sys/firmware/dmi/entries. Are you root?")
             return memory_info
 
         except Exception as e:
-            memory_info.status = PartialStatus(messages=memory_info.status.messages)
+            memory_info.status.type = StatusType.PARTIAL
             memory_info.status.messages.append("Error Reading DMI Entries: " + str(e))
             continue
 
@@ -68,7 +70,7 @@ def fetch_memory_info() -> MemoryInfo:
             # DIMM type value is stored at offset 12h
             module.type = MEMORY_TYPE[value[0x12]]
         except Exception as e:
-            memory_info.status = PartialStatus(messages=memory_info.status.messages)
+            memory_info.status.type = StatusType.PARTIAL
             memory_info.status.messages.append("Error getting DIMM Type: " + str(e))
             continue
 
@@ -79,7 +81,7 @@ def fetch_memory_info() -> MemoryInfo:
                 bank=get_string_entry(strings, value[0x11])
             )
         except Exception as e:
-            memory_info.status = PartialStatus(messages=memory_info.status.messages)
+            memory_info.status.type = StatusType.PARTIAL
             memory_info.status.messages.append("Error getting DIMM Location: " + str(e))
             continue
 
@@ -87,7 +89,7 @@ def fetch_memory_info() -> MemoryInfo:
         try:
             module.manufacturer = get_string_entry(strings, value[0x17])
         except Exception as e:
-            memory_info.status = PartialStatus(messages=memory_info.status.messages)
+            memory_info.status.type = StatusType.PARTIAL
             memory_info.status.messages.append("Error getting DIMM Manufacturer: " + str(e))
             continue
 
@@ -126,7 +128,7 @@ def fetch_memory_info() -> MemoryInfo:
             size = int.from_bytes(value[0x0C:0x0E], "little")
             if size == 0xFFFF:
                 # Unknown size
-                memory_info.status = PartialStatus(messages=memory_info.status.messages)
+                memory_info.status.type = StatusType.PARTIAL
                 memory_info.status.messages.append("Unknown DIMM Size")
                 continue
 
@@ -142,7 +144,7 @@ def fetch_memory_info() -> MemoryInfo:
                 module.capacity = Kilobyte(capacity=size)
 
         except Exception as e:
-            memory_info.status = PartialStatus(messages=memory_info.status.messages)
+            memory_info.status.type = StatusType.PARTIAL
             memory_info.status.messages.append("DIMM Capacity: " + str(e))
             continue
 

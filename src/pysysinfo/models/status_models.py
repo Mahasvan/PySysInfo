@@ -2,49 +2,20 @@ from typing import List, Optional
 
 from pydantic import BaseModel, Field
 
+from enum import Enum
 
-class StatusModel(BaseModel):
+class StatusType(Enum):
+    SUCCESS = "success"
+    PARTIAL = "partial"
+    FAILED = "failed"
+
+class Status(BaseModel):
     """This is the base class for all status models.
     Every component will have a ``status`` attribute,
     which is one of ``SuccessStatus``, ``PartialStatus`` or ``FailedStatus``.
     This class will not be used by any component as is."""
-    string: str
+    type: StatusType = Field(default_factory=lambda: StatusType.SUCCESS)
     messages: List[str] = Field(default_factory=list)
-
-
-class SuccessStatus(StatusModel):
-    """No issues were encountered during the discovery process.
-    Messages may be present, containing information about the discovery process."""
-    string: str = "success"
-    messages: List[str] = Field(default_factory=list)
-
-
-class PartialStatus(StatusModel):
-    """
-    Issues were encountered that partially hindered the discovery process.
-    One or more attributes of the component were not fetched properly.
-    Messages may be present, containing information about the errors encountered.
-
-    """
-    string: str = "partial"
-    messages: List[str] = Field(default_factory=list)
-
-
-class FailedStatus(StatusModel):
-    """
-    A breaking issue was encountered during the discovery process.
-    No data could be discovered about the component.
-    Messages may be present, containing information about the error.
-    """
-    string: str = "failed"
-    messages: List[str] = Field(default_factory=list)
-
-    def __init__(self, message: Optional[str] = None, messages: Optional[List[str]] = None):
-        # Ensure each instance gets its own list
-        base_messages = list(messages) if messages else []
-        if message:
-            base_messages.append(message)
-        super().__init__(string="failed", messages=base_messages)
 
 
 """

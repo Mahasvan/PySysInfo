@@ -6,7 +6,7 @@ from typing import Optional
 from pysysinfo.dumps.linux.common import get_pci_path_linux
 from pysysinfo.models.gpu_models import GPUInfo, GraphicsInfo
 from pysysinfo.models.size_models import Megabyte
-from pysysinfo.models.status_models import FailedStatus, PartialStatus
+from pysysinfo.models.status_models import Status, StatusType
 from pysysinfo.util.nvidia import fetch_gpu_details_nvidia
 
 
@@ -68,7 +68,8 @@ def fetch_graphics_info() -> GraphicsInfo:
     ROOT_PATH = "/sys/bus/pci/devices/"
 
     if not os.path.exists(ROOT_PATH):
-        graphics_info.status = FailedStatus("/sys/bus/pci/devices/ not found")
+        graphics_info.status.type = StatusType.FAILED
+        graphics_info.status.messages.append("/sys/bus/pci/devices/ not found")
         return graphics_info
 
     for device in os.listdir(ROOT_PATH):
@@ -86,7 +87,7 @@ def fetch_graphics_info() -> GraphicsInfo:
             if base_class != 3:
                 continue
         except Exception as e:
-            graphics_info.status = PartialStatus(messages=graphics_info.status.messages)
+            graphics_info.status.type = StatusType.PARTIAL
             graphics_info.status.messages.append(f"Could not open file for {device}: {e}")
             continue
 
@@ -99,19 +100,19 @@ def fetch_graphics_info() -> GraphicsInfo:
             if width.isnumeric() and int(width) > 0:
                 gpu.pcie_width = int(width)
         except Exception as e:
-            graphics_info.status = PartialStatus(messages=graphics_info.status.messages)
+            graphics_info.status.type = StatusType.PARTIAL
             graphics_info.status.messages.append(f"Could not get GPU properties: {e}")
         try:
             acpi_path = open(os.path.join(path, "firmware_node", "path")).read().strip()
             gpu.acpi_path = acpi_path
         except Exception as e:
-            graphics_info.status = PartialStatus(messages=graphics_info.status.messages)
+            graphics_info.status.type = StatusType.PARTIAL
             graphics_info.status.messages.append(f"Could not get ACPI path: {e}")
         try:
             pci_path = get_pci_path_linux(device)
             gpu.pci_path = pci_path
         except Exception as e:
-            graphics_info.status = PartialStatus(messages=graphics_info.status.messages)
+            graphics_info.status.type = StatusType.PARTIAL
             graphics_info.status.messages.append(f"Could not get PCI path: {e}")
 
         try:
@@ -119,7 +120,7 @@ def fetch_graphics_info() -> GraphicsInfo:
             if pcie_gen:
                 gpu.pcie_gen = pcie_gen
         except Exception as e:
-            graphics_info.status = PartialStatus(messages=graphics_info.status.messages)
+            graphics_info.status.type = StatusType.PARTIAL
             graphics_info.status.messages.append(f"Could not get PCI gen: {e}")
 
         if gpu.vendor_id == "0x1002":
@@ -137,14 +138,14 @@ def fetch_graphics_info() -> GraphicsInfo:
                 if pcie_gen: gpu.pcie_gen = pcie_gen
                 if vram_total: gpu.vram = Megabyte(capacity=vram_total)
             except Exception as e:
-                graphics_info.status = PartialStatus(messages=graphics_info.status.messages)
+                graphics_info.status.type = StatusType.PARTIAL
                 graphics_info.status.messages.append(f"Could not get additional GPU info for NVIDIA GPU {device}: {e}")
         try:
             lspci_output = subprocess.run(["lspci", "-s", device, "-vmm"], capture_output=True, text=True).stdout
             # We gather all data here and parse whatever data we have. Subsystem data may not be returned.
         except Exception as e:
             # lspci may not be available in some distros
-            graphics_info.status = PartialStatus(messages=graphics_info.status.messages)
+            graphics_info.status.type = StatusType.PARTIAL
             graphics_info.status.messages.append(f"Could not get lspci output for {device}: {e}")
             graphics_info.modules.append(gpu)
             continue
@@ -161,7 +162,7 @@ def fetch_graphics_info() -> GraphicsInfo:
             gpu.subsystem_manufacturer = data.get("SVendor")
             gpu.subsystem_model = data.get("SDevice")
         except Exception as e:
-            graphics_info.status = PartialStatus(messages=graphics_info.status.messages)
+            graphics_info.status.type = StatusType.PARTIAL
             graphics_info.status.messages.append(f"Could not parse LSPCI output for GPU {device}: {e}")
 
         graphics_info.modules.append(gpu)

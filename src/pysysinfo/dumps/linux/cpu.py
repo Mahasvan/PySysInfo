@@ -3,7 +3,7 @@ import subprocess
 from typing import Optional
 
 from pysysinfo.models.cpu_models import CPUInfo
-from pysysinfo.models.status_models import FailedStatus, PartialStatus
+from pysysinfo.models.status_models import Status, StatusType
 
 
 def fetch_cpu_cores() -> Optional[int]:
@@ -31,26 +31,26 @@ def fetch_arm_cpu_info(raw_cpu_info: str) -> CPUInfo:
     elif model_alt:
         cpu_info.name = model_alt.group(1)
     else:
-        cpu_info.status = PartialStatus(messages=cpu_info.status.messages)
+        cpu_info.status.type = StatusType.PARTIAL
         cpu_info.status.messages.append("Could not find model name")
 
     arm_version = re.search(r"CPU architecture:\s+(.+)", raw_cpu_info)
     if arm_version:
         cpu_info.arch_version = arm_version.group(1)
     else:
-        cpu_info.status = PartialStatus(messages=cpu_info.status.messages)
+        cpu_info.status.type = StatusType.PARTIAL
         cpu_info.status.messages.append("Could not find architecture")
 
     try:
         threads = len(re.findall(r"^processor\s+:", raw_cpu_info, re.MULTILINE))
         cpu_info.threads = threads
     except Exception as e:
-        cpu_info.status = PartialStatus(messages=cpu_info.status.messages)
+        cpu_info.status.type = StatusType.PARTIAL
         cpu_info.status.messages.append(str(e))
 
     cores = fetch_cpu_cores()
     if not cores:
-        cpu_info.status = PartialStatus(messages=cpu_info.status.messages)
+        cpu_info.status.type = StatusType.PARTIAL
         cpu_info.status.messages.append("Could not find CPU cores")
     else:
         cpu_info.cores = cores
@@ -77,7 +77,7 @@ def fetch_x86_cpu_info(raw_cpu_info: str) -> CPUInfo:
         vendor = "intel" if "intel" in model.lower() else "amd" if "amd" in model.lower() else "unknown"
         cpu_info.vendor = vendor
     else:
-        cpu_info.status = PartialStatus(messages=cpu_info.status.messages)
+        cpu_info.status.type = StatusType.PARTIAL
         cpu_info.status.messages.append("Could not find model name")
 
     # The CPU flags are in the format of "flags : sse sse2 sse3 ssse3 sse4_1 sse4_2 lm"
@@ -86,7 +86,7 @@ def fetch_x86_cpu_info(raw_cpu_info: str) -> CPUInfo:
         flags = flags.group(1)
     else:
         flags = ""
-        cpu_info.status = PartialStatus(messages=cpu_info.status.messages)
+        cpu_info.status.type = StatusType.PARTIAL
         cpu_info.status.messages.append("Could not find feature flags")
 
     flags = [x.lower().strip() for x in flags.split(" ")]
@@ -99,7 +99,7 @@ def fetch_x86_cpu_info(raw_cpu_info: str) -> CPUInfo:
     if sse_flags:
         cpu_info.sse_flags = sse_flags
     else:
-        cpu_info.status = PartialStatus(messages=cpu_info.status.messages)
+        cpu_info.status.type = StatusType.PARTIAL
         cpu_info.status.messages.append("Could not find SSE flags")
 
     """
@@ -119,10 +119,10 @@ def fetch_x86_cpu_info(raw_cpu_info: str) -> CPUInfo:
         if cores:
             cpu_info.cores = int(cores.group(1))
         else:
-            cpu_info.status = PartialStatus(messages=cpu_info.status.messages)
+            cpu_info.status.type = StatusType.PARTIAL
             cpu_info.status.messages.append("Could not find cpu cores")
     except Exception as e:
-        cpu_info.status = PartialStatus(messages=cpu_info.status.messages)
+        cpu_info.status.type = StatusType.PARTIAL
         cpu_info.status.messages.append("Could not find cpu cores")
 
     # The number of CPU Threads is the number of times the processor data is enumerated.
@@ -139,12 +139,14 @@ def fetch_cpu_info() -> CPUInfo:
         raw_cpu_info = open('/proc/cpuinfo').read()
     except Exception as e:
         # todo: handle error using logger, dont interrupt execution
-        cpu_info.status = FailedStatus("Could not open /proc/cpuinfo")
+        cpu_info.status.type = StatusType.FAILED
+        cpu_info.status.messages.append("Could not open /proc/cpuinfo")
         # raise e
         return cpu_info
 
     if not raw_cpu_info:
-        cpu_info.status = FailedStatus("/proc/cpuinfo has no content")
+        cpu_info.status.type = StatusType.FAILED
+        cpu_info.status.messages.append("/proc/cpuinfo has no content")
         return cpu_info
 
     architecture = subprocess.run(['uname', '-m'], capture_output=True, text=True)

@@ -5,7 +5,7 @@ from pysysinfo.dumps.mac.common import construct_pci_path_mac
 from pysysinfo.dumps.mac.ioreg import *
 from pysysinfo.models.gpu_models import GraphicsInfo, GPUInfo
 from pysysinfo.models.size_models import Megabyte
-from pysysinfo.models.status_models import FailedStatus, PartialStatus
+from pysysinfo.models.status_models import Status, StatusType
 
 
 def check_arm():
@@ -34,7 +34,8 @@ def fetch_graphics_info() -> GraphicsInfo:
     )
 
     if not interface:
-        graphics_info.status = FailedStatus("Could not enumerate GPUs")
+        graphics_info.status.type = StatusType.FAILED
+        graphics_info.status.messages.append("Could not enumerate GPUs")
         return graphics_info
 
     for i in interface:
@@ -104,7 +105,7 @@ def fetch_graphics_info() -> GraphicsInfo:
             graphics_info.modules.append(gpu)
 
         except Exception as e:
-            graphics_info.status = PartialStatus(messages=graphics_info.status.messages)
+            graphics_info.status.type = StatusType.PARTIAL
             graphics_info.status.messages.append(f"Failed to enumerate GPU: {e}")
 
     return graphics_info

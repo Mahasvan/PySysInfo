@@ -3,7 +3,7 @@ from typing import List
 
 from pysysinfo.dumps.windows.win_enum import MEDIA_TYPE, BUS_TYPE
 from pysysinfo.models.size_models import Megabyte
-from pysysinfo.models.status_models import PartialStatus, FailedStatus
+from pysysinfo.models.status_models import StatusType, Status
 from pysysinfo.models.storage_models import StorageInfo, DiskInfo
 
 
@@ -18,7 +18,8 @@ def fetch_wmic_storage_info() -> StorageInfo:
         This means the WMIC command failed - possibly because it is not available on this system.
         We mark the status as failed and return an empty StorageInfo object, so that we can fallback to the PowerShell cmdlet.
         """
-        storage_info.status = FailedStatus(f"WMIC Command failed: {e}")
+        storage_info.status.type = StatusType.FAILED
+        storage_info.status.messages.append(f"WMIC Command failed: {e}")
         return storage_info
 
     lines = result.strip().splitlines()
@@ -39,7 +40,8 @@ def fetch_wmi_cmdlet_storage_info() -> StorageInfo:
         This should not happen on modern Windows systems, where the wmic command is not available.
         In this case, mark status as failed and return an empty object
         """
-        storage_info.status = FailedStatus(f"WMI Powershell cmdlet failed: {e}")
+        storage_info.status.type = StatusType.FAILED
+        storage_info.status.messages.append(f"WMI Powershell cmdlet failed: {e}")
         return storage_info
 
     lines = [x.split(",") for x in result.strip().splitlines()]
@@ -87,7 +89,7 @@ def parse_cmd_output(lines: List[List[str]]) -> StorageInfo:
             storage_info.modules.append(disk)
 
         except Exception as e:
-            storage_info.status = PartialStatus(messages=storage_info.status.messages)
+            storage_info.status.type = StatusType.PARTIAL
             storage_info.status.messages.append(f"Error processing disk info: {e}")
     return storage_info
 
@@ -98,7 +100,7 @@ def fetch_storage_info() -> StorageInfo:
     If that fails, falls back to using the PowerShell cmdlet.
     """
     response = fetch_wmic_storage_info()
-    if isinstance(response.status, FailedStatus):
+    if response.status.type == StatusType.FAILED:
         response = fetch_wmi_cmdlet_storage_info()
 
     return response
