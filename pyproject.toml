@@ -8,19 +8,21 @@ version = {attr = "pysysinfo.__version__"}
 [project]
 name = "PySysInfo"
 dynamic = ["version"]
-
 description = "A cross-platform system information gatherer"
 readme = "README.md"
 requires-python = ">=3.9"
-license = {text = "BSD-3-Clause"}
+license = "BSD-3-Clause"
+license-files = ["LICEN[CS]E*"]
+
 authors = [
     {name = "Mahasvan", email = "mahasvan@gmail.com"}
 ]
+
 classifiers = [
     "Programming Language :: Python :: 3",
-    "License :: OSI Approved :: BSD License",
     "Operating System :: OS Independent",
 ]
+
 dependencies = [
     "pydantic",
     "pyobjc; sys_platform == 'darwin'",
@@ -28,3 +30,8 @@ dependencies = [
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+
+[project.urls]
+Homepage = "https://github.com/Mahasvan/PySysInfo"
+Issues = "https://github.com/Mahasvan/PySysInfo/issues"

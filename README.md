@@ -6,20 +6,13 @@ A Python Library to simplify retrieval of hardware components of your computer.
 
 ### macOS / Linux
 ```bash
-git clone https://github.com/mahasvan/pysysinfo
-cd pysysinfo
-pip3 install build
-python3 -m build
-pip3 install -e .
+pip3 install PySysInfo
 ```
 ### Windows
 ```bash
-git clone https://github.com/mahasvan/pysysinfo
-cd pysysinfo
-pip install build
-python -m build
-pip install -e .
+pip install PySysInfo
 ```
+
 ## Usage
 
 ```python
@@ -53,7 +46,7 @@ print(json.dumps(json_data, indent=2))
   - [x] Storage
 - macOS
   - [x] CPU
-  - [x] GPU* [could get more info than what is currently discovered]
+  - [x] GPU - _Incomplete, could get more info_
   - [x] Memory
   - [ ] Network
   - [ ] Audio
