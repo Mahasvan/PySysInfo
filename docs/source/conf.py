@@ -20,13 +20,9 @@ if sys.platform != "win32":
 if sys.platform != "darwin":
     autodoc_mock_imports += [
         "objc",
-        # "pysysinfo.dumps.mac.common",
-        # "pysysinfo.dumps.mac.graphics",
-        # "pysysinfo.dumps.mac.ioreg",
-        # "pysysinfo.dumps.mac.mac_dump",
-        # "pysysinfo.dumps.mac.storage",
-        # "pysysinfo.dumps.mac.memory",
-        # "pysysinfo.dumps.mac.cpu",
+        "CoreFoundation",
+        "Foundation",
+        "PyObjCTools"
     ]
 
 
