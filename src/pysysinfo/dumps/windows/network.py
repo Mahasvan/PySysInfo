@@ -5,8 +5,7 @@ from typing import List
 from pysysinfo.dumps.windows.interops.get_location_paths import get_location_paths
 from pysysinfo.models.network_models import NICInfo, NetworkInfo
 from pysysinfo.dumps.windows.common import format_acpi_path, format_pci_path
-from pysysinfo.models.status_models import PartialStatus
-
+from pysysinfo.models.status_models import Status, StatusType
 
 def fetch_wmi_cmdlet_network_info() -> NetworkInfo:
     """
@@ -23,7 +22,7 @@ def fetch_wmi_cmdlet_network_info() -> NetworkInfo:
     try:
         result = subprocess.check_output(command, shell=True, text=True)
     except Exception as e:
-        return NetworkInfo(status=f"Powershell WMI cmdlet failed: {e}")
+        return NetworkInfo(status=Status(message=f"Powershell WMI cmdlet failed: {e}", type=StatusType.FAILED))
 
     lines = [x.split(",") for x in result.strip().splitlines()]
     lines = [[x.strip('"') for x in line] for line in lines]
@@ -37,7 +36,7 @@ def parse_cmd_output(lines: List[List[str]]) -> NetworkInfo:
     manuf_idx = header.index("Manufacturer")
     name_idx = header.index("Name")
 
-    network_info = NetworkInfo()
+    network_info = NetworkInfo(status=Status(type=StatusType.SUCCESS))
         
     for data in lines[1:]:
         module = NICInfo()
