@@ -24,9 +24,9 @@ hm = pysysinfo.HardwareManager()
 
 loading_end_time = time.time()
 
-start_times = [0.0, 0.0, 0.0, 0.0, 0,0]
-# CPU, Memory, Storage, Graphics, Total
-end_times = [0.0, 0.0, 0.0, 0.0, 0,0]
+start_times = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+# CPU, Memory, Storage, Graphics, Network, Total
+end_times = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
 
 start_times[0] = start_times[-1] = time.time() * 1000
 
@@ -39,8 +39,11 @@ end_times[1] = start_times[2] = time.time() * 1000
 hm.fetch_storage_info()
 end_times[2] = start_times[3] = time.time() * 1000
 
+hm.fetch_network_info()
+end_times[3] = start_times[4] = time.time() * 1000
+
 hm.fetch_graphics_info()
-end_times[3] = end_times[-1] = time.time() * 1000
+end_times[-2] = end_times[-1] = time.time() * 1000
 
 # print(start_times)
 # print(end_times)
@@ -48,8 +51,9 @@ end_times[3] = end_times[-1] = time.time() * 1000
 print("CPU:", end_times[0] - start_times[0], "ms")
 print("Memory:", end_times[1] - start_times[1], "ms")
 print("Storage:", end_times[2] - start_times[2], "ms")
-print("Graphics:", end_times[3] - start_times[3], "ms")
-print("Total:", end_times[-1]-start_times[-1], "ms")
+print("Network:", end_times[3] - start_times[3], "ms")
+print("Graphics:", end_times[4] - start_times[4], "ms")
+print("Total:", end_times[-1] - start_times[-1], "ms")
 #
 json_data = json.loads(hm.info.model_dump_json())
 #
