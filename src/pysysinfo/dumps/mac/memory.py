@@ -4,7 +4,7 @@ from typing import List
 
 from pysysinfo.models.memory_models import MemoryInfo, MemoryModuleInfo, MemoryModuleSlot
 from pysysinfo.models.size_models import Megabyte, StorageSize, Gigabyte
-from pysysinfo.models.status_models import FailedStatus, PartialStatus
+from pysysinfo.models.status_models import StatusType
 
 
 def get_ram_size_from_reg(reg) -> List[StorageSize]:
@@ -44,7 +44,8 @@ def get_arm_ram_info() -> MemoryInfo:
         value = subprocess.check_output(["system_profiler", "SPMemoryDataType", "-xml"])
         pl = plistlib.loads(value, fmt=plistlib.FMT_XML)
     except Exception as e:
-        memory_info.status = FailedStatus("Failed to parse SPMemoryDataType: " + str(e))
+        memory_info.status.type = StatusType.FAILED
+        memory_info.status.messages.append("Failed to parse SPMemoryDataType: " + str(e))
         return memory_info
 
     # print(pl)
@@ -67,12 +68,12 @@ def get_arm_ram_info() -> MemoryInfo:
 
                     memory_info.modules.append(module)
                 except Exception as e:
-                    memory_info.status = PartialStatus(messages=memory_info.status.messages)
+                    memory_info.status.type = StatusType.PARTIAL
                     memory_info.status.messages.append("Failed to parse SPMemoryDataType: " + str(e))
 
     except Exception as e:
         # We preserve messages if it was PartialStatus prior to this exception
-        memory_info.status = FailedStatus(messages=memory_info.status.messages)
+        memory_info.status.type = StatusType.PARTIAL
         memory_info.status.messages.append("Failed to parse SPMemoryDataType: " + str(e))
     return memory_info
 
@@ -126,7 +127,8 @@ def fetch_memory_info():
 
         children = pl["IORegistryEntryChildren"]
     except Exception as e:
-        memory_info.status = FailedStatus("Failed to parse ioreg command output: " + str(e))
+        memory_info.status.type = StatusType.FAILED
+        memory_info.status.messages.append("Failed to parse ioreg command output: " + str(e))
         return memory_info
 
     dimm_manufacturer = []
@@ -213,7 +215,7 @@ def fetch_memory_info():
 
 
     except Exception as e:
-        memory_info.status = PartialStatus(messages=memory_info.status.messages)
+        memory_info.status.type = StatusType.PARTIAL
         memory_info.status.messages.append("Error parsing ioreg plist: " + str(e))
 
     n_modules = max([len(dimm_manufacturer), len(dimm_part_numbers), len(dimm_serial_number),
@@ -235,7 +237,7 @@ def fetch_memory_info():
             memory_info.modules.append(module)
 
         except Exception as e:
-            memory_info.status = PartialStatus(messages=memory_info.status.messages)
+            memory_info.status.type = StatusType.PARTIAL
             memory_info.status.messages.append("Failed to parse DIMM info: " + str(e))
 
     return memory_info

@@ -2,7 +2,7 @@ from CoreFoundation import kCFAllocatorDefault
 
 from pysysinfo.dumps.mac.ioreg import *
 from pysysinfo.models.size_models import Megabyte
-from pysysinfo.models.status_models import PartialStatus
+from pysysinfo.models.status_models import StatusType
 from pysysinfo.models.storage_models import StorageInfo, DiskInfo
 
 STORAGE_MAP = {
@@ -59,7 +59,7 @@ def fetch_storage_info() -> StorageInfo:
                 if not media_info:
                     raise ValueError("Media Info is empty")
             except Exception as e:
-                storage_info.status = PartialStatus(messages=storage_info.status.messages)
+                storage_info.status.type = StatusType.PARTIAL
                 storage_info.status.messages.append("Could not fetch media info: " + str(e))
                 media_info = {}
 
@@ -126,7 +126,7 @@ def fetch_storage_info() -> StorageInfo:
 
             storage_info.modules.append(disk)
         except Exception as e:
-            storage_info.status = PartialStatus(messages=storage_info.status.messages)
+            storage_info.status.type = StatusType.PARTIAL
             storage_info.status.messages.append("Error while enumerating storage: " + str(e))
 
     return storage_info

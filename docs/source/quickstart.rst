@@ -14,7 +14,7 @@ Currently, the project is hosted on TestPyPI. To install, run:
 
 .. code-block:: bash
 
-   pip3 install -i https://test.pypi.org/simple/ PySysInfo
+   pip3 install --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple/ PySysInfo
 
 Basic usage
 -----------

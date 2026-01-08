@@ -12,8 +12,7 @@ from pysysinfo.dumps.windows.interops.get_location_paths import fetch_device_pro
 from pysysinfo.models.gpu_models import GPUInfo
 from pysysinfo.models.gpu_models import GraphicsInfo
 from pysysinfo.models.size_models import Megabyte
-from pysysinfo.models.status_models import FailedStatus
-from pysysinfo.models.status_models import PartialStatus
+from pysysinfo.models.status_models import StatusType
 from pysysinfo.util.nvidia import fetch_gpu_details_nvidia
 
 
@@ -85,7 +84,8 @@ def fetch_wmic_graphics_info() -> GraphicsInfo:
         This means the WMIC command failed - possibly because it is not available on this system.
         We mark the status as failed and return an empty MemoryInfo object, so that we can fallback to the PowerShell cmdlet.
         """
-        graphics_info.status = FailedStatus(f"WMIC command failed: {e}")
+        graphics_info.status.type = StatusType.FAILED
+        graphics_info.status.messages.append(f"WMIC command failed: {e}")
         return graphics_info
 
     result = result.replace(", Inc", " Inc")
@@ -96,7 +96,8 @@ def fetch_wmic_graphics_info() -> GraphicsInfo:
     lines = [line.split(",") for line in lines if line.strip()]
     if len(set([len(x) for x in lines])) != 1:
         # If we have errors parsing the csv, we will have uneven lengths across rows.
-        graphics_info.status = FailedStatus("Error parsing output, abnormal CSV structure")
+        graphics_info.status.type = StatusType.FAILED
+        graphics_info.status.messages.append(f"WMIC command failed: {e}")
         return graphics_info
     return parse_cmd_output(lines)
 
@@ -114,7 +115,8 @@ def fetch_wmi_cmdlet_graphics_info() -> GraphicsInfo:
         This should not happen on modern Windows systems, where the wmic command is not available.
         In this case, mark status as failed and return an empty object
         """
-        graphics_info.status = FailedStatus(f"Powershell WMI cmdlet failed: {e}")
+        graphics_info.status.type = StatusType.FAILED
+        graphics_info.status.messages.append(f"Powershell WMI cmdlet failed: {e}")
         return graphics_info
 
     rows = csv.reader(io.StringIO(result))
@@ -125,7 +127,8 @@ def fetch_wmi_cmdlet_graphics_info() -> GraphicsInfo:
 def parse_cmd_output(lines: list) -> GraphicsInfo:
     graphics_info = GraphicsInfo()
     if len(lines) < 2:
-        graphics_info.status = FailedStatus("No data returned from WMI")
+        graphics_info.status.type = StatusType.FAILED
+        graphics_info.status.messages.append("No data returned from WMI")
         return graphics_info
     headers = lines[0]
     name_idx = headers.index("Name")
@@ -197,13 +200,13 @@ def parse_cmd_output(lines: list) -> GraphicsInfo:
             graphics_info.modules.append(gpu)
 
         except Exception as e:
-            graphics_info.status = PartialStatus(messages=graphics_info.status.messages)
+            graphics_info.status.type = StatusType.PARTIAL
             graphics_info.status.messages.append(f"Error parsing GPU info: {e}")
     return graphics_info
 
 
 def fetch_graphics_info() -> GraphicsInfo:
     graphics_info = fetch_wmic_graphics_info()
-    if isinstance(graphics_info.status, FailedStatus):
+    if graphics_info.status.type == StatusType.FAILED:
         graphics_info = fetch_wmi_cmdlet_graphics_info()
     return graphics_info

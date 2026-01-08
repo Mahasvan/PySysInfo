@@ -1,7 +1,7 @@
 # Source: https://github.com/KernelWanderers/OCSysInfo/blob/main/src/util/pci_root.py
 
 
-def get_pci_path_linux(device_slot: str):
+def pci_path_linux(device_slot: str):
     """
     :param device_slot: format: <domain>:<bus>:<slot>.<function>
     :return: PCI Path

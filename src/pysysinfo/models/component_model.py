@@ -1,8 +1,8 @@
 from pydantic import BaseModel, Field
 
-from pysysinfo.models.status_models import SuccessStatus, StatusModel
+from pysysinfo.models.status_models import Status
 
 
 class ComponentInfo(BaseModel):
     # Each component gets its own fresh status object
-    status: StatusModel = Field(default_factory=SuccessStatus)
+    status: Status = Field(default_factory=lambda: Status())

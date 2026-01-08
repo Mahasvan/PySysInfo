@@ -2,9 +2,197 @@ import builtins
 import os
 from unittest.mock import MagicMock
 
-from pysysinfo.dumps.linux.memory import fetch_memory_info
+import pytest
+
+from pysysinfo.dumps.linux.memory import (
+    fetch_memory_info,
+    _part_no,
+    _dimm_type,
+    _dimm_slot,
+    _dimm_capacity,
+    _ecc_support,
+    _dimm_speed,
+)
+from pysysinfo.models.memory_models import MemoryModuleSlot
 from pysysinfo.models.size_models import Megabyte, Kilobyte
-from pysysinfo.models.status_models import FailedStatus, PartialStatus, SuccessStatus
+from pysysinfo.models.status_models import StatusType
+
+
+class TestPartNo:
+    """Tests for the _part_no helper function."""
+
+    def test_part_no_with_dimm_in_value(self):
+        """Part number should be returned when 'dimm' is in the value."""
+        # Create a value with "DIMM" and proper structure
+        value = bytearray(0x1B)
+        value[0x1A] = 1  # String index 1
+        strings = [b"PART-1234"]
+        # Need "dimm" somewhere in the value for the check
+        value[0:4] = b"DIMM"
+        
+        result = _part_no(strings, bytes(value))
+        assert result == "PART-1234"
+
+    def test_part_no_without_dimm_in_value(self):
+        """Part number should be None when 'dimm' is not in the value."""
+        value = bytearray(0x1B)
+        value[0x1A] = 1
+        strings = [b"PART-1234"]
+        # No "dimm" in value
+        value[0:4] = b"TEST"
+        
+        result = _part_no(strings, bytes(value))
+        assert result is None
+
+    def test_part_no_dimm_case_insensitive(self):
+        """The 'dimm' check should be case insensitive."""
+        value = bytearray(0x1B)
+        value[0x1A] = 1
+        strings = [b"PART-5678"]
+        value[0:4] = b"dimm"  # lowercase
+        
+        result = _part_no(strings, bytes(value))
+        assert result == "PART-5678"
+
+
+class TestDimmType:
+    """Tests for the _dimm_type helper function."""
+
+    def test_dimm_type_ddr4(self):
+        value = bytearray(0x13)
+        value[0x12] = 0x1A  # DDR4
+        
+        result = _dimm_type(bytes(value))
+        assert result == "DDR4"
+
+    def test_dimm_type_ddr3(self):
+        value = bytearray(0x13)
+        value[0x12] = 0x18  # DDR3
+        
+        result = _dimm_type(bytes(value))
+        assert result == "DDR3"
+
+    def test_dimm_type_unknown(self):
+        value = bytearray(0x13)
+        value[0x12] = 0xFF  # Not in MEMORY_TYPE
+        
+        result = _dimm_type(bytes(value))
+        assert result is None
+
+
+class TestDimmSlot:
+    """Tests for the _dimm_slot helper function."""
+
+    def test_dimm_slot_valid(self):
+        value = bytearray(0x12)
+        value[0x10] = 1  # Channel string index
+        value[0x11] = 2  # Bank string index
+        strings = [b"Channel A", b"Bank 0"]
+        
+        result = _dimm_slot(strings, bytes(value))
+        assert result is not None
+        assert isinstance(result, MemoryModuleSlot)
+        assert result.channel == "Channel A"
+        assert result.bank == "Bank 0"
+
+    def test_dimm_slot_zero_index_returns_unknown(self):
+        value = bytearray(0x12)
+        value[0x10] = 0  # Zero index means "Unknown"
+        value[0x11] = 0
+        strings = []
+        
+        result = _dimm_slot(strings, bytes(value))
+        assert result is not None
+        assert result.channel == "Unknown"
+        assert result.bank == "Unknown"
+
+
+class TestDimmCapacity:
+    """Tests for the _dimm_capacity helper function."""
+
+    def test_dimm_capacity_megabytes(self):
+        value = bytearray(0x20)
+        size_mb = 8192  # 8 GB
+        value[0x0C:0x0E] = size_mb.to_bytes(2, 'little')
+        
+        result = _dimm_capacity(bytes(value))
+        assert result is not None
+        assert isinstance(result, Megabyte)
+        assert result.capacity == 8192
+
+    def test_dimm_capacity_kilobytes(self):
+        value = bytearray(0x20)
+        # Bit 15 set means kilobytes
+        size_kb = 2048 | 0x8000
+        value[0x0C:0x0E] = size_kb.to_bytes(2, 'little')
+        
+        result = _dimm_capacity(bytes(value))
+        assert result is not None
+        assert isinstance(result, Kilobyte)
+        assert result.capacity == size_kb
+
+    def test_dimm_capacity_extended_size(self):
+        value = bytearray(0x20)
+        value[0x0C:0x0E] = (0x7FFF).to_bytes(2, 'little')  # Use extended size
+        value[0x1C:0x20] = (32768).to_bytes(4, 'little')  # 32 GB
+        
+        result = _dimm_capacity(bytes(value))
+        assert result is not None
+        assert isinstance(result, Megabyte)
+        assert result.capacity == 32768
+
+    def test_dimm_capacity_unknown(self):
+        value = bytearray(0x20)
+        value[0x0C:0x0E] = (0xFFFF).to_bytes(2, 'little')  # Unknown size
+        
+        result = _dimm_capacity(bytes(value))
+        assert result is None
+
+
+class TestEccSupport:
+    """Tests for the _ecc_support helper function."""
+
+    def test_ecc_support_true(self):
+        value = bytearray(0x0C)
+        value[0x08:0x0A] = (72).to_bytes(2, 'little')  # Total width
+        value[0x0A:0x0C] = (64).to_bytes(2, 'little')  # Data width
+        
+        result = _ecc_support(bytes(value))
+        assert result is True
+
+    def test_ecc_support_false(self):
+        value = bytearray(0x0C)
+        value[0x08:0x0A] = (64).to_bytes(2, 'little')  # Total width
+        value[0x0A:0x0C] = (64).to_bytes(2, 'little')  # Data width
+        
+        result = _ecc_support(bytes(value))
+        assert result is False
+
+
+class TestDimmSpeed:
+    """Tests for the _dimm_speed helper function."""
+
+    def test_dimm_speed_normal(self):
+        value = bytearray(0x58)
+        value[0x15:0x17] = (3200).to_bytes(2, 'little')
+        
+        result = _dimm_speed(bytes(value))
+        assert result == 3200
+
+    def test_dimm_speed_extended(self):
+        value = bytearray(0x58)
+        value[0x15:0x17] = (0xFFFF).to_bytes(2, 'little')  # Use extended speed
+        value[0x54:0x58] = (4800).to_bytes(4, 'little')
+        
+        result = _dimm_speed(bytes(value))
+        assert result == 4800
+
+    def test_dimm_speed_unknown(self):
+        value = bytearray(0x58)
+        value[0x15:0x17] = (0).to_bytes(2, 'little')  # Unknown speed
+        
+        result = _dimm_speed(bytes(value))
+        assert result is None
 
 
 class TestLinuxMemory:
@@ -14,7 +202,7 @@ class TestLinuxMemory:
 
         memory_info = fetch_memory_info()
 
-        assert isinstance(memory_info.status, FailedStatus)
+        assert memory_info.status.type == StatusType.FAILED
         assert memory_info.status.messages is not None
 
     def test_fetch_memory_info_permission_error(self, monkeypatch):
@@ -36,7 +224,7 @@ class TestLinuxMemory:
 
         memory_info = fetch_memory_info()
 
-        assert isinstance(memory_info.status, FailedStatus)
+        assert memory_info.status.type == StatusType.FAILED
         assert memory_info.status.messages is not None
 
     def _create_dmi_blob(self,
@@ -58,7 +246,7 @@ class TestLinuxMemory:
         data = bytearray(length)
         data[0x01] = length
 
-        # Strings
+        # Strings - include "DIMM" in the data for _part_no check
         strings_bytes = b''
         string_indices = {}
         current_index = 1
@@ -68,9 +256,6 @@ class TestLinuxMemory:
                 strings_bytes += s.encode('ascii') + b'\0'
                 string_indices[s] = current_index
                 current_index += 1
-            else:
-                # Handle empty strings if needed, though get_string_entry handles 0 index
-                pass
 
         # Set indices
         data[0x10] = string_indices.get(dev_loc, 0)
@@ -88,33 +273,9 @@ class TestLinuxMemory:
         # Set Size
         if extended_size is not None:
             data[0x0C:0x0E] = (0x7FFF).to_bytes(2, 'little')
-            data[0x1C:0x20] = extended_size.to_bytes(4,
-                                                     'little')  # Note: Code reverses hex, so it expects LE in memory?
-            # Code: int("".join(reversed(value.hex()[0x1C: 0x1C + 0x4])), base=16)
-            # value.hex() produces string of hex bytes. 
-            # value[0x1C:0x20] -> bytes. hex() -> "aabbccdd".
-            # reversed -> "ddccbbaa" ? No, reversed reverses the iterator of the string.
-            # value.hex() returns "00112233". reversed -> "33221100".
-            # This looks like it's trying to handle endianness manually from hex string?
-            # Let's look at the code again:
-            # reversed(value.hex()[0x1C: 0x1C + 0x4])
-            # value.hex() returns the whole hex string. Slicing it gives characters.
-            # Wait, value.hex() returns 2 chars per byte.
-            # value.hex()[0x1C: 0x1C + 0x4] slices indices of the STRING.
-            # 0x1C is 28. 28 to 32. That's only 4 characters (2 bytes).
-            # But extended size is 4 bytes (8 hex chars).
-            # The code seems to have a bug or I'm misinterpreting it.
-            # value.hex() returns string length 2*len(value).
-            # If offset is 0x1C (28), in hex string it should be index 28*2 = 56.
-            # The code uses `value.hex()[0x1C: 0x1C + 0x4]`. This looks wrong if it intends to read 4 bytes at offset 0x1C.
-            # It reads 4 characters from the hex string starting at index 28.
-            # Index 28 in hex string corresponds to byte 14 (0x0E).
-            # This seems like a bug in the implementation of `memory.py`.
-            # However, I should test against the current implementation.
-            pass
+            data[0x1C:0x20] = extended_size.to_bytes(4, 'little')
         else:
-            # Normal size
-            # Bit 15 = 0 for MB.
+            # Normal size - Bit 15 = 0 for MB.
             data[0x0C:0x0E] = size_mb.to_bytes(2, 'little')
 
         # Set Speed
@@ -123,6 +284,9 @@ class TestLinuxMemory:
             data[0x54:0x58] = extended_speed.to_bytes(4, 'little')
         else:
             data[0x15:0x17] = speed.to_bytes(2, 'little')
+
+        # Double null terminator at end of strings
+        strings_bytes += b'\0'
 
         return bytes(data) + strings_bytes
 
@@ -148,7 +312,7 @@ class TestLinuxMemory:
 
         memory_info = fetch_memory_info()
 
-        assert isinstance(memory_info.status, SuccessStatus)
+        assert memory_info.status.type == StatusType.SUCCESS
         assert len(memory_info.modules) == 1
         module = memory_info.modules[0]
 
@@ -189,7 +353,7 @@ class TestLinuxMemory:
         mock_entry.name = "17-0"
         monkeypatch.setattr(os, "scandir", lambda x: [mock_entry])
 
-        # Size 0xFFFF
+        # Size 0xFFFF means unknown
         blob = self._create_dmi_blob()
         # Manually overwrite size to 0xFFFF
         data = bytearray(blob)
@@ -203,12 +367,11 @@ class TestLinuxMemory:
         monkeypatch.setattr(builtins, "open", mock_open)
 
         memory_info = fetch_memory_info()
-        # Should skip this module or report partial status?
-        # Code says: memory_info.status.messages.append("Unknown DIMM Size") and continue
-        # So modules list should be empty
-        assert len(memory_info.modules) == 0
-        assert isinstance(memory_info.status, PartialStatus)
-        assert memory_info.status.messages is not None
+        # Module is still added but with None capacity and PARTIAL status
+        assert len(memory_info.modules) == 1
+        assert memory_info.modules[0].capacity is None
+        assert memory_info.status.type == StatusType.PARTIAL
+        assert any("Could not get DIMM Capacity" in msg for msg in memory_info.status.messages)
 
     def test_fetch_memory_info_extended_speed(self, monkeypatch):
         monkeypatch.setattr(os.path, "isdir", lambda x: True)
@@ -243,7 +406,7 @@ class TestLinuxMemory:
         monkeypatch.setattr(builtins, "open", mock_open)
 
         memory_info = fetch_memory_info()
-        assert isinstance(memory_info.status, PartialStatus)
+        assert memory_info.status.type == StatusType.PARTIAL
         # It will fail at value[0x1A] access
         assert memory_info.status.messages is not None
 
@@ -293,8 +456,10 @@ class TestLinuxMemory:
         monkeypatch.setattr(builtins, "open", mock_open)
 
         memory_info = fetch_memory_info()
-        assert isinstance(memory_info.status, PartialStatus)
-        assert memory_info.status.messages is not None
+        assert memory_info.status.type == StatusType.PARTIAL
+        assert any("Could not get DIMM Type" in msg for msg in memory_info.status.messages)
+        assert len(memory_info.modules) == 1
+        assert memory_info.modules[0].type is None
 
     def test_fetch_memory_info_location_error(self, monkeypatch):
         monkeypatch.setattr(os.path, "isdir", lambda x: True)
@@ -305,7 +470,7 @@ class TestLinuxMemory:
 
         blob = self._create_dmi_blob()
         data = bytearray(blob)
-        # Set invalid string index for location (0x10)
+        # Set invalid string index for location (0x10) - this will cause IndexError in get_string_entry
         data[0x10] = 0xFF
 
         def mock_open(*args, **kwargs):
@@ -315,8 +480,9 @@ class TestLinuxMemory:
         monkeypatch.setattr(builtins, "open", mock_open)
 
         memory_info = fetch_memory_info()
-        assert isinstance(memory_info.status, PartialStatus)
-        assert memory_info.status.messages is not None
+        # The invalid index causes an exception in get_string_entry, caught by the outer except
+        assert memory_info.status.type == StatusType.PARTIAL
+        assert len(memory_info.status.messages) > 0
 
     def test_fetch_memory_info_manufacturer_error(self, monkeypatch):
         monkeypatch.setattr(os.path, "isdir", lambda x: True)
@@ -327,7 +493,7 @@ class TestLinuxMemory:
 
         blob = self._create_dmi_blob()
         data = bytearray(blob)
-        # Set invalid string index for manufacturer (0x17)
+        # Set invalid string index for manufacturer (0x17) - causes IndexError
         data[0x17] = 0xFF
 
         def mock_open(*args, **kwargs):
@@ -337,8 +503,9 @@ class TestLinuxMemory:
         monkeypatch.setattr(builtins, "open", mock_open)
 
         memory_info = fetch_memory_info()
-        assert isinstance(memory_info.status, PartialStatus)
-        assert memory_info.status.messages is not None
+        # Invalid index causes exception caught by outer except block
+        assert memory_info.status.type == StatusType.PARTIAL
+        assert len(memory_info.status.messages) > 0
 
     def test_fetch_memory_info_capacity_error(self, monkeypatch):
         monkeypatch.setattr(os.path, "isdir", lambda x: True)
@@ -362,5 +529,6 @@ class TestLinuxMemory:
         monkeypatch.setattr("pysysinfo.dumps.linux.memory.Megabyte", mock_megabyte)
 
         memory_info = fetch_memory_info()
-        assert isinstance(memory_info.status, PartialStatus)
-        assert memory_info.status.messages is not None
+        # The exception is caught by outer except block
+        assert memory_info.status.type == StatusType.PARTIAL
+        assert any("Error while fetching Memory Info" in msg for msg in memory_info.status.messages)

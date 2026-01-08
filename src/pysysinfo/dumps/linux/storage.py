@@ -1,7 +1,7 @@
 import os
 
 from pysysinfo.models.size_models import Megabyte
-from pysysinfo.models.status_models import FailedStatus, PartialStatus
+from pysysinfo.models.status_models import StatusType
 from pysysinfo.models.storage_models import StorageInfo, DiskInfo
 
 
@@ -13,7 +13,8 @@ def fetch_storage_info() -> StorageInfo:
     # https://www.kernel.org/doc/html/latest/admin-guide/sysfs-rules.html#:~:text=Classification%20by%20subsystem
 
     if not os.path.isdir("/sys/block"):
-        storage_info.status = FailedStatus("The /sys/block directory does not exist")
+        storage_info.status.type = StatusType.FAILED
+        storage_info.status.messages.append("The /sys/block directory does not exist")
         return storage_info
 
     for folder in os.listdir("/sys/block"):
@@ -31,7 +32,7 @@ def fetch_storage_info() -> StorageInfo:
             if model:
                 disk.model = model
             else:
-                storage_info.status = PartialStatus(messages=storage_info.status.messages)
+                storage_info.status.type = StatusType.PARTIAL
                 storage_info.status.messages.append("Disk Model could not be found")
 
             rotational = open(f"{path}/queue/rotational", "r").read().strip()
@@ -73,7 +74,7 @@ def fetch_storage_info() -> StorageInfo:
             disk.size = Megabyte(capacity=(size_in_bytes // 1024 ** 2))
 
         except Exception as e:
-            storage_info.status = PartialStatus(messages=storage_info.status.messages)
+            storage_info.status.type = StatusType.PARTIAL
             storage_info.status.messages.append("Disk Info: " + str(e))
 
         storage_info.modules.append(disk)

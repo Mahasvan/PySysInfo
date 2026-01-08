@@ -25,7 +25,6 @@ if sys.platform != "darwin":
         "PyObjCTools"
     ]
 
-
 # Configuration file for the Sphinx documentation builder.
 #
 # For the full list of built-in configuration values, see the documentation:
@@ -36,7 +35,6 @@ if sys.platform != "darwin":
 
 
 import pysysinfo
-
 
 project = 'PySysInfo'
 copyright = '2025, Mahasvan Mohan'
@@ -68,7 +66,6 @@ extensions = [
 
 templates_path = ['_templates']
 exclude_patterns = []
-
 
 # -- Options for HTML output -------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output

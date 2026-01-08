@@ -3,7 +3,7 @@ requires = ["setuptools"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools.dynamic]
-version = {attr = "pysysinfo.__version__"}
+version = { attr = "pysysinfo.__version__" }
 
 [project]
 name = "PySysInfo"
@@ -15,7 +15,7 @@ license = "BSD-3-Clause"
 license-files = ["LICEN[CS]E*"]
 
 authors = [
-    {name = "Mahasvan", email = "mahasvan@gmail.com"}
+    { name = "Mahasvan", email = "mahasvan@gmail.com" }
 ]
 
 classifiers = [

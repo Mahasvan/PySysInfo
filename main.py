@@ -1,8 +1,8 @@
 import json
 import os
+import platform
 import sys
 import time
-import platform
 
 # Add src to path so we can import pysysinfo
 sys.path.append(os.path.join(os.path.dirname(__file__), "src"))

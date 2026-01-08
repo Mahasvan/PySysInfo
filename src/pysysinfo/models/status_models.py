@@ -1,50 +1,27 @@
-from typing import List, Optional
+from enum import Enum
+from typing import List
 
 from pydantic import BaseModel, Field
 
 
-class StatusModel(BaseModel):
-    """This is the base class for all status models.
-    Every component will have a ``status`` attribute,
-    which is one of ``SuccessStatus``, ``PartialStatus`` or ``FailedStatus``.
-    This class will not be used by any component as is."""
-    string: str
-    messages: List[str] = Field(default_factory=list)
+class StatusType(Enum):
+    """Types of statuses possible."""
+
+    #: There were no errors encountered.
+    SUCCESS = "success"
+    #: There were errors encountered, but only some parts of the data could not be retrieved.
+    PARTIAL = "partial"
+    #: Fatal error occurred, no data was able to be retrieved.
+    FAILED = "failed"
 
 
-class SuccessStatus(StatusModel):
-    """No issues were encountered during the discovery process.
-    Messages may be present, containing information about the discovery process."""
-    string: str = "success"
-    messages: List[str] = Field(default_factory=list)
-
-
-class PartialStatus(StatusModel):
+class Status(BaseModel):
     """
-    Issues were encountered that partially hindered the discovery process.
-    One or more attributes of the component were not fetched properly.
-    Messages may be present, containing information about the errors encountered.
-
+    Describes the status of an individual component.
+    If the status is ``PARTIAL`` or ``FAILED``, there may be messages that describe the error(s).
     """
-    string: str = "partial"
+    type: StatusType = Field(default_factory=lambda: StatusType.SUCCESS)
     messages: List[str] = Field(default_factory=list)
-
-
-class FailedStatus(StatusModel):
-    """
-    A breaking issue was encountered during the discovery process.
-    No data could be discovered about the component.
-    Messages may be present, containing information about the error.
-    """
-    string: str = "failed"
-    messages: List[str] = Field(default_factory=list)
-
-    def __init__(self, message: Optional[str] = None, messages: Optional[List[str]] = None):
-        # Ensure each instance gets its own list
-        base_messages = list(messages) if messages else []
-        if message:
-            base_messages.append(message)
-        super().__init__(string="failed", messages=base_messages)
 
 
 """

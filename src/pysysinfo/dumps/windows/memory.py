@@ -4,7 +4,7 @@ from typing import List
 from pysysinfo.dumps.windows.win_enum import MEMORY_TYPE
 from pysysinfo.models.memory_models import MemoryInfo, MemoryModuleInfo, MemoryModuleSlot
 from pysysinfo.models.size_models import Megabyte
-from pysysinfo.models.status_models import PartialStatus, FailedStatus
+from pysysinfo.models.status_models import StatusType
 
 """
 the WMIC command-line utility is deprecated, and is replaced by PowerShell cmdlets.
@@ -24,7 +24,8 @@ def fetch_wmic_memory_info() -> MemoryInfo:
         This means the WMIC command failed - possibly because it is not available on this system.
         We mark the status as failed and return an empty MemoryInfo object, so that we can fallback to the PowerShell cmdlet.
         """
-        memory_info.status = FailedStatus(f"WMIC command failed: {e}")
+        memory_info.status.type = StatusType.FAILED
+        memory_info.status.messages.append(f"WMIC command failed: {e}")
         return memory_info
 
     lines = result.strip().splitlines()
@@ -46,7 +47,8 @@ def fetch_wmi_cmdlet_memory_info() -> MemoryInfo:
         This should not happen on modern Windows systems, where the wmic command is not available.
         In this case, mark status as failed and return an empty object
         """
-        memory_info.status = FailedStatus(f"Powershell WMI cmdlet failed: {e}")
+        memory_info.status.type = StatusType.FAILED
+        memory_info.status.messages.append(f"Powershell WMI cmdlet failed: {e}")
         return memory_info
 
     lines = [x.split(",") for x in result.strip().splitlines()]
@@ -115,14 +117,14 @@ def parse_cmd_output(lines: List[List[str]]):
 
             memory_info.modules.append(module)
         except Exception as e:
-            memory_info.status = PartialStatus(messages=memory_info.status.messages)
+            memory_info.status.type = StatusType.PARTIAL
             memory_info.status.messages.append(f"Error while parsing memory info: {e}")
     return memory_info
 
 
 def fetch_memory_info() -> MemoryInfo:
     memory_info = fetch_wmic_memory_info()
-    if isinstance(memory_info.status, FailedStatus):
+    if memory_info.status.type == StatusType.FAILED:
         memory_info = fetch_wmi_cmdlet_memory_info()
 
     return memory_info

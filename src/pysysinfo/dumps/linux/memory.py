@@ -1,16 +1,101 @@
 import os
+from typing import Optional, List
 
 from pysysinfo.dumps.linux.dmi_decode import get_string_entry, MEMORY_TYPE
 from pysysinfo.models.memory_models import MemoryInfo, MemoryModuleSlot, MemoryModuleInfo
-from pysysinfo.models.size_models import Megabyte, Kilobyte
-from pysysinfo.models.status_models import PartialStatus, FailedStatus
+from pysysinfo.models.size_models import Megabyte, Kilobyte, StorageSize
+from pysysinfo.models.status_models import StatusType
 
+# Thank you to [Quist](https://github.com/nadiaholmquist) for helping with our understanding of this.
+
+
+def _part_no(strings: List[bytes], value: bytes) -> Optional[str]:
+    """
+    Obtains the value at offset 1Ah, which indicates at which index, pre-sanitization,
+    in the `strings` list the real string value is stored.
+
+    Which is: `strings[value[0x1A] - 1]`, after obtaining it, it decodes it to `ascii`.
+    """
+    if not "dimm" in value.upper().decode("latin-1").strip().lower():
+        return None
+
+    part_no = get_string_entry(strings, value[0x1A]).strip()
+    return part_no
+
+def _dimm_type(value: bytes) -> Optional[str]:
+    # DIMM type value is stored at offset 12h
+    return MEMORY_TYPE.get(value[0x12])
+
+def _dimm_slot(strings: List[bytes], value: bytes) -> Optional[MemoryModuleSlot]:
+    return MemoryModuleSlot(
+        channel=get_string_entry(strings, value[0x10]),
+        bank=get_string_entry(strings, value[0x11])
+    )
+
+def _dimm_capacity(value: bytes) -> Optional[StorageSize]:
+    """
+    Looks at the 2 bytes at offset 0Ch to determine its size;
+    in case the value of these 2 bytes is equal to 0x7FFF, it looks at the 4 bytes
+    at the Extended Size, which is at offset 1Ch.
+
+    In case the value at offset 0Ch is equal to 0xFFFF,
+    it would mean that the size is unknown.
+
+    If the 15th bit value is `0`, the size is represented in MB. Otherwise, it is in KB.
+    Note: Extended size (at 0x1C) is always in megabytes per SMBIOS spec.
+    """
+    size = int.from_bytes(value[0x0C:0x0E], "little")
+    if size == 0xFFFF:
+        # Unknown size
+        return None
+
+    if size == 0x7FFF:
+        # Extended size: 4 bytes at offset 1Ch, always in MB per SMBIOS spec
+        size = int.from_bytes(value[0x1C:0x20], "little")
+        return Megabyte(capacity=size)
+
+    if (size >> 15) & 1 == 0:
+        # Size is in Megabytes
+        return Megabyte(capacity=size)
+    else:
+        # Size is in Kilobytes
+        return Kilobyte(capacity=size)
+
+def _ecc_support(value: bytes) -> Optional[bool]:
+    """
+    In a memory module with Data Width 64 bits, there are 8 more bits with an error correcting code.
+    so, the Total Width would be 64+8 = 72 bits.
+
+    We can check if the TotalWidth is greater than DataWidth. If true, it has ECC support
+    """
+    total_width = int.from_bytes(value[0x08:0x0A], "little")
+    data_width = int.from_bytes(value[0x0A:0x0C], "little")
+
+    if total_width > data_width:
+        return True
+    return False
+
+def _dimm_speed(value: bytes) -> Optional[int]:
+    """
+    The speed of the RAM module (in MT/s) is stored in the offset 0x15 to 0x17.
+    if the value of these 4 bytes is 0x0000, then the speed is unknown.
+    If the value is 0xFFFF, then the speed is in the Extended Speed field,
+    which is in the offset 0x54 to 0x58
+    """
+    ram_speed = int.from_bytes(value[0x15:0x17], "little")
+    if ram_speed == 0xFFFF:
+        ram_speed = int.from_bytes(value[0x54:0x58], "little")
+
+    if ram_speed != 0x0000:
+        return ram_speed
+    return None
 
 def fetch_memory_info() -> MemoryInfo:
     memory_info = MemoryInfo()
 
     if not os.path.isdir("/sys/firmware/dmi/entries"):
-        memory_info.status = FailedStatus("The /sys/firmware/dmi/entries directory doesn't exist")
+        memory_info.status.type = StatusType.FAILED
+        memory_info.status.messages.append("The /sys/firmware/dmi/entries directory doesn't exist")
         return memory_info
 
     """
@@ -21,163 +106,62 @@ def fetch_memory_info() -> MemoryInfo:
     - https://android.googlesource.com/kernel/common/+/android-trusty-3.10/Documentation/ABI/testing/sysfs-firmware-dmi
     - https://linux.die.net/man/8/dmidecode
     """
-    # DMI entries relating to memory are of type 5,6,16, or 17
-    # Memory _Module_ entries are of type 17, this is what we want to iterate over
 
+    # Memory Module entries in DMI are of type 17, this is what we want to iterate over
     dmi_entries = os.scandir("/sys/firmware/dmi/entries")
     memory_dmi_types = "17-"
     parent_dirs = [p for p in dmi_entries if p.path.split("/")[-1].startswith(memory_dmi_types)]
+
     for parent_dir in parent_dirs:
         module = MemoryModuleInfo()
-        # Attempt to get Part Number
         try:
             with open(f"{parent_dir.path}/raw", "rb") as f:
                 value = f.read()
-
-            if "dimm" in value.upper().decode("latin-1").strip().lower():
-                length_field = value[0x1]
-                strings = value[length_field:len(value)].split(b'\0')
-
-                """
-                Obtains the value at offset 1Ah, which indicates at which index, pre-sanitization,
-                in the `strings` list the real string value is stored.
-
-                Which is: `strings[value[0x1A] - 1]`, after obtaining it, it decodes it to `ascii`.
-
-                Special thanks to [Quist](https://github.com/nadiaholmquist) for this.
-                """
-
-                part_no = get_string_entry(strings, value[0x1A]).strip()
-                module.part_number = part_no
         except PermissionError:
-            # todo: Need SUDO for this. Mention this in the Log
-            memory_info.status = FailedStatus("Unable to open /sys/firmware/dmi/entries. Are you root?")
+            memory_info.status.type = StatusType.FAILED
+            memory_info.status.messages.append("Unable to open /sys/firmware/dmi/entries. Are you root?")
             return memory_info
 
         except Exception as e:
-            memory_info.status = PartialStatus(messages=memory_info.status.messages)
+            memory_info.status.type = StatusType.PARTIAL
             memory_info.status.messages.append("Error Reading DMI Entries: " + str(e))
             continue
 
-        # Redefining here in case somehow it gets referenced before assignment
-        length_field = value[0x1]
-        strings = value[length_field:len(value)].split(b'\0')
-
-        # Attempt to get DIMM type
         try:
-            # DIMM type value is stored at offset 12h
-            module.type = MEMORY_TYPE[value[0x12]]
-        except Exception as e:
-            memory_info.status = PartialStatus(messages=memory_info.status.messages)
-            memory_info.status.messages.append("Error getting DIMM Type: " + str(e))
-            continue
+            length_field = value[0x1]
+            strings = value[length_field:len(value)].split(b'\0')
 
-        # Attempt to obtain DIMM Location
-        try:
-            module.slot = MemoryModuleSlot(
-                channel=get_string_entry(strings, value[0x10]),
-                bank=get_string_entry(strings, value[0x11])
-            )
-        except Exception as e:
-            memory_info.status = PartialStatus(messages=memory_info.status.messages)
-            memory_info.status.messages.append("Error getting DIMM Location: " + str(e))
-            continue
+            module.part_number = _part_no(strings, value)
 
-        # Attempt to obtain manufacturer
-        try:
-            module.manufacturer = get_string_entry(strings, value[0x17])
-        except Exception as e:
-            memory_info.status = PartialStatus(messages=memory_info.status.messages)
-            memory_info.status.messages.append("Error getting DIMM Manufacturer: " + str(e))
-            continue
-
-        # Attempt to obtain capacity
-
-        """
-        Looks at the 2 bytes at offset 0Ch to determine its size;
-        in case the value of these 2 bytes is equal to 0x7FFF, it looks at the 4 bytes
-        at the Extended Size, which is at offset 1Ch.
-
-        In case the value at offset 0Ch is equal to 0xFFFF,
-        it would mean that the size is unknown.
-        """
-
-        """
-        2 bytes, at offset 0Ch
-        
-        We convert it into an integer from the bytes values, specifying
-        that it is in LE (little endian) format.
-        
-        Meaning, it will properly accommodate the values to represent its BE (big endian)
-        value in the end.
-        
-        For example,
-            (  Little  )  (   Big   )
-            '\x00\x10' -> '\x10\x00'
-            
-        Finally, '\x10\x00' will yield `4096` in decimal (0x1000 in hexadecimal);
-        which is correct. This was done on a system with 4x4GB memory modules.
-        
-        Aka, 4x4096MB modules, in this case--since the 15th bit value is `0`, 
-        meaning it's represented in MB, and not KB.
-        """
-
-        try:
-            size = int.from_bytes(value[0x0C:0x0E], "little")
-            if size == 0xFFFF:
-                # Unknown size
-                memory_info.status = PartialStatus(messages=memory_info.status.messages)
-                memory_info.status.messages.append("Unknown DIMM Size")
-                continue
-
-            if size == 0x7FFF:
-                # 4 bytes, at offset 1Ch
-                size = int.from_bytes(value[0x1C:0x20], "little")
-
-            if (size >> 15) & 1 == 0:
-                # Size is in Megabytes
-                module.capacity = Megabyte(capacity=size)
+            if (t := _dimm_type(value)) is not None:
+                module.type = t
             else:
-                # Size is in Kilobytes
-                module.capacity = Kilobyte(capacity=size)
+                memory_info.status.type = StatusType.PARTIAL
+                memory_info.status.messages.append("Could not get DIMM Type")
+
+            if (slot := _dimm_slot(strings, value)) is not None:
+                module.slot = slot
+            else:
+                memory_info.status.type = StatusType.PARTIAL
+                memory_info.status.messages.append("Could not get DIMM Location")
+
+            module.manufacturer = get_string_entry(strings, value[0x17])
+            if not module.manufacturer:
+                memory_info.status.type = StatusType.PARTIAL
+                memory_info.status.messages.append("Could not get DIMM Manufacturer")
+
+            if (capacity := _dimm_capacity(value)) is not None:
+                module.capacity = capacity
+            else:
+                memory_info.status.type = StatusType.PARTIAL
+                memory_info.status.messages.append("Could not get DIMM Capacity")
+
+            module.supports_ecc = _ecc_support(value)
+            module.frequency_mhz = _dimm_speed(value)
+
+            memory_info.modules.append(module)
 
         except Exception as e:
-            memory_info.status = PartialStatus(messages=memory_info.status.messages)
-            memory_info.status.messages.append("DIMM Capacity: " + str(e))
-            continue
-
-        # Now we attempt to check if the memory has ECC support
-        """
-        In a memory module with Data Width 64 bits, there are 8 more bits with an error correcting code. 
-        so, the Total Width would be 64+8 = 72 bits.
-        
-        We can check the difference between DataWidth and TotalWidth, and equate it to DataWidth/8.
-        This is to account for dual channel memory sometimes being reported as 
-        128 bit DataWidth, and 144 bit TotalWidth.
-        """
-        total_width = int.from_bytes(value[0x08:0x0A], "little")
-        data_width = int.from_bytes(value[0x0A:0x0C], "little")
-
-        if total_width > data_width:
-            module.supports_ecc = True
-        else:
-            module.supports_ecc = False
-
-        # Now we attempt to check the frequency
-        """
-        The speed of the RAM module (in MT/s) is stored in the offset 0x15 to 0x17.
-        if the value of these 4 bytes is 0x0000, then the speed is unknown.
-        If the value is 0xFFFF, then the speed is in the Extended Speed field,
-        which is in the offset 0x54 to 0x58
-        """
-        ram_speed = int.from_bytes(value[0x15:0x17], "little")
-        if ram_speed == 0xFFFF:
-            ram_speed = int.from_bytes(value[0x54:0x58], "little")
-
-        if ram_speed != 0x0000:
-            module.frequency_mhz = ram_speed
-        # Otherwise, we leave it as None
-
-        memory_info.modules.append(module)
-
+            memory_info.status.type = StatusType.PARTIAL
+            memory_info.status.messages.append("Error while fetching Memory Info: " + str(e))
     return memory_info

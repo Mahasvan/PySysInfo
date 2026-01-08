@@ -199,6 +199,7 @@ Output:
 
 
 .. _errors-during-hardware-discovery:
+
 --------------------------------
 Errors during Hardware Discovery
 --------------------------------
@@ -213,13 +214,13 @@ When querying per-component information:
 .. code-block:: python
 
     cpu_info = hm.fetch_cpu_info()
-    print(type(cpu_info.status))
+    print(cpu_info.status.type)
 
 Output:
 
 .. code-block:: shell
 
-    <class 'pysysinfo.models.status_models.SuccessStatus'>
+    StatusType.SUCCESS
 
 When querying complete information:
 
@@ -231,42 +232,34 @@ When querying complete information:
 
     hm.fetch_hardware_info()
 
-    print("CPU:", type(hm.info.cpu.status))
-    print("Graphics:", type(hm.info.graphics.status))
-    print("Storage:", type(hm.info.storage.status))
+    print("CPU:", hm.info.cpu.status.type)
+    print("Graphics:", hm.info.graphics.status.type)
+    print("Storage:", hm.info.storage.status.type)
 
 Output:
 
 .. code-block:: shell
 
-    CPU: <class 'pysysinfo.models.status_models.SuccessStatus'>
-    Graphics: <class 'pysysinfo.models.status_models.SuccessStatus'>
-    Storage: <class 'pysysinfo.models.status_models.SuccessStatus'>
+    CPU: StatusType.SUCCESS
+    Graphics: StatusType.SUCCESS
+    Storage: StatusType.SUCCESS
 
 -------
 
 the ``status`` property follows the following structure:
 
-.. autoclass:: pysysinfo.models.status_models.StatusModel
+.. autoclass:: pysysinfo.models.status_models.Status
     :members:
     :exclude-members: model_config
     :no-index:
 
 --------
 
-Depending on the errors encountered, the ``status`` will be one of the following three subclasses.
+The ``type`` attribute is an Enum.
+Depending on the errors encountered, it can be one of the following three values.
 
-.. autoclass:: pysysinfo.models.status_models.SuccessStatus
-    :exclude-members: model_config,__init__,__new__
-    :no-index:
-
-.. autoclass:: pysysinfo.models.status_models.PartialStatus
-    :exclude-members: model_config,__init__,__new__
-    :no-index:
-
-.. autoclass:: pysysinfo.models.status_models.FailedStatus
-    :exclude-members: model_config,__init__,__new__
-    :no-index:
+.. autoclass:: pysysinfo.models.status_models.StatusType
+    :members:
 
 -------
 
@@ -276,21 +269,21 @@ to handle partial and fatal errors.
 .. code-block:: python
 
     import pysysinfo
-    from pysysinfo.models.status_models import PartialStatus, FailedStatus
+    from pysysinfo.models.status_models import StatusType
 
     hm = pysysinfo.HardwareManager()
 
     cpu = hm.fetch_cpu_info()
 
-    if isinstance(cpu.status, FailedStatus):
-        print("FailedStatus - Fatal issue(s) occurred:")
+    if cpu.status.type == StatusType.FAILED:
+        print("Failed - Fatal issue(s) occurred:")
         for message in cpu.status.messages:
             print(message)
 
         exit(1) # Don't continue executing
 
-    elif isinstance(cpu.status, PartialStatus):
-        print("PartialStatus - Issue(s) occurred:")
+    elif cpu.status.type == StatusType.PARTIAL:
+        print("Partial Error - Issue(s) occurred:")
         for message in cpu.status.messages:
             print(message)
 
@@ -298,7 +291,7 @@ to handle partial and fatal errors.
         print(cpu.name)
 
     else:
-        # It is SuccessStatus
+        # It is StatusType.SUCCESS
         print("Successfully retrieved info!")
         print(cpu.name)
 
@@ -308,3 +301,4 @@ Output:
 
     Successfully retrieved info!
     Apple M3
+

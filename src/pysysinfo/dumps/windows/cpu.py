@@ -6,7 +6,7 @@ from typing import List
 
 from pysysinfo.dumps.windows.win_enum import FEATURE_ID_MAP
 from pysysinfo.models.cpu_models import CPUInfo
-from pysysinfo.models.status_models import PartialStatus, FailedStatus
+from pysysinfo.models.status_models import StatusType
 
 kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
 kernel32.IsProcessorFeaturePresent.argtypes = [wintypes.DWORD]
@@ -147,7 +147,8 @@ def fetch_cpu_info() -> CPUInfo:
         features = get_features()
         cpu_info.sse_flags = features
     except Exception as e:
-        cpu_info.status = FailedStatus(f"Unable to obtain CPU Info: {e}")
+        cpu_info.status.type = StatusType.FAILED
+        cpu_info.status.messages.append(f"Unable to obtain CPU Info: {e}")
         return cpu_info
 
     """
@@ -172,17 +173,17 @@ def fetch_cpu_info() -> CPUInfo:
         cpu_info.architecture = "ARM"
         cpu_info.bitness = 64
     else:
-        cpu_info.status = PartialStatus(messages=cpu_info.status.messages)
+        cpu_info.status.type = StatusType.PARTIAL
         cpu_info.status.messages.append("Unknown architecture: " + architecture)
 
     cpu_info.cores = get_core_count()
     if not cpu_info.cores:
-        cpu_info.status = PartialStatus(messages=cpu_info.status.messages)
+        cpu_info.status.type = StatusType.PARTIAL
         cpu_info.status.messages.append(f"Unable to fetch Core Count: {cpu_info.cores}")
 
     cpu_info.threads = os.cpu_count()
     if not cpu_info.threads:
-        cpu_info.status = PartialStatus(messages=cpu_info.status.messages)
+        cpu_info.status.type = StatusType.PARTIAL
         cpu_info.status.messages.append(f"Unable to fetch Threads: {cpu_info.threads}")
 
     return cpu_info

@@ -5,12 +5,15 @@ A Python Library to simplify retrieval of hardware components of your computer.
 ## Installation
 
 ### macOS / Linux
+
 ```bash
-pip3 install -i https://test.pypi.org/simple/ PySysInfo
+pip3 install --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple/ PySysInfo
 ```
+
 ### Windows
+
 ```bash
-pip install -i https://test.pypi.org/simple/ PySysInfo
+pip install --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple/ PySysInfo
 ```
 
 ## Usage
@@ -36,37 +39,38 @@ print(json.dumps(json_data, indent=2))
 ### Hardware Discovery
 
 - Linux
-  - [x] CPU
-  - [x] GPU
-  - [x] Memory
-  - [ ] Network
-  - [ ] Audio
-  - [ ] Motherboard
-  - [ ] Input
-  - [x] Storage
+    - [x] CPU
+    - [x] GPU
+    - [x] Memory
+    - [ ] Network
+    - [ ] Audio
+    - [ ] Motherboard
+    - [ ] Input
+    - [x] Storage
 - macOS
-  - [x] CPU
-  - [x] GPU - _Incomplete, could get more info_
-  - [x] Memory
-  - [ ] Network
-  - [ ] Audio
-  - [ ] Vendor
-  - [ ] Input
-  - [x] Storage
-  - [ ] Display
+    - [x] CPU
+    - [x] GPU - _Incomplete, could get more info_
+    - [x] Memory
+    - [ ] Network
+    - [ ] Audio
+    - [ ] Vendor
+    - [ ] Input
+    - [x] Storage
+    - [ ] Display
 - Windows
-  - [x] CPU
-  - [x] GPU* [PCIe gen info only for Nvidia GPUs]
-  - [x] Memory
-  - [ ] Network
-  - [ ] Audio
-  - [ ] Motherboard
-  - [ ] Input
-  - [x] Storage
+    - [x] CPU
+    - [x] GPU* [PCIe gen info only for Nvidia GPUs]
+    - [x] Memory
+    - [ ] Network
+    - [ ] Audio
+    - [ ] Motherboard
+    - [ ] Input
+    - [x] Storage
 
 ### Supporting Features
 
 - [ ] PCI Lookup - DeviceHunt
-- [ ] PCI Lookup - [PCI IDs Repository](https://pci-ids.ucw.cz) - [GitHub](https://github.com/pciutils/pciids/blob/master/pci.ids)
+- [ ] PCI
+  Lookup - [PCI IDs Repository](https://pci-ids.ucw.cz) - [GitHub](https://github.com/pciutils/pciids/blob/master/pci.ids)
 - [x] Logging
 - [x] Working Library

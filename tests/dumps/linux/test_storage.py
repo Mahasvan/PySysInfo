@@ -3,7 +3,7 @@ import os
 from unittest.mock import MagicMock
 
 from pysysinfo.dumps.linux.storage import fetch_storage_info
-from pysysinfo.models.status_models import FailedStatus, PartialStatus, SuccessStatus
+from pysysinfo.models.status_models import StatusType
 
 
 class TestLinuxStorage:
@@ -13,7 +13,7 @@ class TestLinuxStorage:
 
         storage_info = fetch_storage_info()
 
-        assert isinstance(storage_info.status, FailedStatus)
+        assert storage_info.status.type == StatusType.FAILED
         assert "does not exist" in storage_info.status.messages[0]
 
     def test_fetch_storage_info_nvme_success(self, monkeypatch):
@@ -44,7 +44,7 @@ class TestLinuxStorage:
 
         storage_info = fetch_storage_info()
 
-        assert isinstance(storage_info.status, SuccessStatus)
+        assert storage_info.status.type == StatusType.SUCCESS
         assert len(storage_info.modules) == 1
         disk = storage_info.modules[0]
         assert disk.model == "Samsung SSD 970 EVO Plus 1TB"
@@ -83,7 +83,7 @@ class TestLinuxStorage:
 
         storage_info = fetch_storage_info()
 
-        assert isinstance(storage_info.status, SuccessStatus)
+        assert storage_info.status.type == StatusType.SUCCESS
         assert len(storage_info.modules) == 1
         disk = storage_info.modules[0]
         assert disk.model == "WDC WD10EZEX-08W"
@@ -120,7 +120,7 @@ class TestLinuxStorage:
 
         storage_info = fetch_storage_info()
 
-        assert isinstance(storage_info.status, PartialStatus)
+        assert storage_info.status.type == StatusType.PARTIAL
         assert "Disk Model could not be found" in storage_info.status.messages
         assert len(storage_info.modules) == 1
 
@@ -135,6 +135,6 @@ class TestLinuxStorage:
 
         storage_info = fetch_storage_info()
 
-        assert isinstance(storage_info.status, PartialStatus)
+        assert storage_info.status.type == StatusType.PARTIAL
         assert any("Disk Info: Access denied" in msg for msg in storage_info.status.messages)
         assert len(storage_info.modules) == 1
