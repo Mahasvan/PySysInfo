@@ -6,6 +6,7 @@ from pysysinfo.models.cpu_models import CPUInfo
 from pysysinfo.models.gpu_models import GraphicsInfo
 from pysysinfo.models.memory_models import MemoryInfo
 from pysysinfo.models.storage_models import StorageInfo
+from pysysinfo.models.network_models import NetworkInfo
 
 
 class HardwareInfo(BaseModel):
@@ -13,6 +14,7 @@ class HardwareInfo(BaseModel):
     memory: Optional[MemoryInfo] = None
     storage: Optional[StorageInfo] = None
     graphics: Optional[GraphicsInfo] = None
+    network: Optional[NetworkInfo] = None
 
 
 class LinuxHardwareInfo(HardwareInfo):
@@ -51,4 +53,8 @@ class HardwareManagerInterface:
 
     def fetch_storage_info(self) -> StorageInfo:
         """Fetches Disk Information."""
+        pass
+
+    def fetch_network_info(self) -> NetworkInfo:
+        """Fetches Network Information."""
         pass
