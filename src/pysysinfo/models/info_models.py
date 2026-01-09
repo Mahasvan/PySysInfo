@@ -3,6 +3,7 @@ from typing import Optional
 from pydantic import BaseModel
 
 from pysysinfo.models.cpu_models import CPUInfo
+from pysysinfo.models.display_models import DisplayInfo
 from pysysinfo.models.gpu_models import GraphicsInfo
 from pysysinfo.models.memory_models import MemoryInfo
 from pysysinfo.models.storage_models import StorageInfo
@@ -13,6 +14,7 @@ class HardwareInfo(BaseModel):
     memory: Optional[MemoryInfo] = None
     storage: Optional[StorageInfo] = None
     graphics: Optional[GraphicsInfo] = None
+    display: Optional[DisplayInfo] = None
 
 
 class LinuxHardwareInfo(HardwareInfo):
@@ -52,4 +54,8 @@ class HardwareManagerInterface:
 
     def fetch_storage_info(self) -> StorageInfo:
         """Fetches Disk Information."""
+        pass
+
+    def fetch_display_info(self) -> DisplayInfo:
+        """Fetches Display Information."""
         pass

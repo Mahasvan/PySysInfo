@@ -1,8 +1,10 @@
 from pysysinfo.dumps.windows.cpu import fetch_cpu_info
+from pysysinfo.dumps.windows.display import fetch_display_info_internal
 from pysysinfo.dumps.windows.graphics import fetch_graphics_info
 from pysysinfo.dumps.windows.memory import fetch_memory_info
 from pysysinfo.dumps.windows.storage import fetch_storage_info
 from pysysinfo.models.cpu_models import CPUInfo
+from pysysinfo.models.display_models import DisplayInfo
 from pysysinfo.models.gpu_models import GraphicsInfo
 from pysysinfo.models.info_models import HardwareInfo
 from pysysinfo.models.info_models import HardwareManagerInterface
@@ -22,6 +24,7 @@ class WindowsHardwareManager(HardwareManagerInterface):
             memory=MemoryInfo(),
             storage=StorageInfo(),
             graphics=GraphicsInfo(),
+            display=DisplayInfo(),
         )
 
     def fetch_cpu_info(self) -> CPUInfo:
@@ -40,9 +43,14 @@ class WindowsHardwareManager(HardwareManagerInterface):
         self.info.graphics = fetch_graphics_info()
         return self.info.graphics
 
+    def fetch_display_info(self) -> DisplayInfo:
+        self.info.display = fetch_display_info_internal()
+        return self.info.display
+
     def fetch_hardware_info(self) -> HardwareInfo:
         self.fetch_cpu_info()
         self.fetch_memory_info()
         self.fetch_storage_info()
         self.fetch_graphics_info()
+        self.fetch_display_info()
         return self.info
