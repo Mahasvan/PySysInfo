@@ -10,9 +10,7 @@ advapi32 = ctypes.WinDLL("advapi32", use_last_error=True)
 # --------------------
 # gpu_helper.dll
 # --------------------
-with resources.path(
-    "pysysinfo.interops.win.dll", "gpu_helper.dll"
-) as dll_path:
+with resources.path("pysysinfo.interops.win.dll", "gpu_helper.dll") as dll_path:
     gpu_helper = ctypes.WinDLL(str(dll_path), use_last_error=True)
 
 gpu_helper.GetGPUForDisplay.argtypes = [ctypes.c_char_p, ctypes.c_char_p, ctypes.c_int]
