@@ -224,7 +224,7 @@ advapi32.RegCloseKey.restype = wintypes.LONG
 # ------------------------------
 
 
-def get_aspect_ratios(width: int, height: int) -> tuple[str, str]:
+def get_aspect_ratios(width: int, height: int) -> tuple[str, str, Optional[str]]:
     """
     Obtains the "friendly" and "real" representation of
     the aspect ratio's given width and height.
@@ -260,6 +260,8 @@ def get_aspect_ratios(width: int, height: int) -> tuple[str, str]:
         friendly = "16:10"
     elif 1.3 <= ratio <= 1.35:
         friendly = "4:3"
+    else:
+        None
 
     # If display is in portrait mode, flip the ratio
     if width < height:
