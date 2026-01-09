@@ -20,6 +20,12 @@ DIREG_DEV = 0x00000001
 KEY_READ = 0x20019
 REG_BINARY = 3
 
+# Orientation values
+DMDO_DEFAULT = 0  # Landscape
+DMDO_90 = 1  # Portrait
+DMDO_180 = 2  # Landscape (flipped)
+DMDO_270 = 3  # Portrait (flipped)
+
 user32 = ctypes.WinDLL("user32", use_last_error=True)
 setupapi = ctypes.WinDLL("setupapi", use_last_error=True)
 advapi32 = ctypes.WinDLL("advapi32", use_last_error=True)
@@ -214,6 +220,56 @@ advapi32.RegCloseKey.argtypes = [wintypes.HKEY]
 advapi32.RegCloseKey.restype = wintypes.LONG
 
 # ------------------------------
+# Utility functions
+# ------------------------------
+
+
+def get_aspect_ratios(width: int, height: int) -> tuple[str, str]:
+    """
+    Obtains the "friendly" and "real" representation of
+    the aspect ratio's given width and height.
+
+    I.e., 3440x1440 -> "21:9" & "43:18"
+
+    Falls back to the mathematical form if unable
+    to compute a friendly ratio.
+    """
+
+    def gcd(a: int, b: int) -> int:
+        while b:
+            a, b = b, a % b
+        return a
+
+    if width == 0 or height == 0:
+        return None
+
+    long_side = max(width, height)
+    short_side = min(width, height)
+    ratio = long_side / short_side
+
+    divisor = gcd(width, height)
+    real = friendly = f"{width // divisor}:{height // divisor}"
+
+    if 3.5 <= ratio <= 3.6:
+        friendly = "32:9"
+    elif 2.3 <= ratio <= 2.4:
+        friendly = "21:9"
+    elif 1.7 <= ratio <= 1.8:
+        friendly = "16:9"
+    elif 1.55 <= ratio <= 1.65:
+        friendly = "16:10"
+    elif 1.3 <= ratio <= 1.35:
+        friendly = "4:3"
+
+    # If display is in portrait mode, flip the ratio
+    if width < height:
+        parts = friendly.split(":")
+        friendly = f"{parts[1]}:{parts[0]}"
+
+    return (ratio, real, friendly)
+
+
+# ------------------------------
 # EDID parsing
 # ------------------------------
 
@@ -231,6 +287,14 @@ def parse_edid(edid: bytes):
     char3 = chr((vendor & 0x1F) + 64)
     manufacturer_code = f"{char1}{char2}{char3}"
 
+    width_cm = edid[21]
+    height_cm = edid[22]
+
+    diag_inch = 0.0
+    if width_cm > 0 and height_cm > 0:
+        diag_cm = (width_cm**2 + height_cm**2) ** 0.5
+        diag_inch = round(diag_cm / 2.54)
+
     name = ""
     for i in range(4):
         off = 54 + i * 18
@@ -244,6 +308,7 @@ def parse_edid(edid: bytes):
         "product_id": product,
         "serial": serial,
         "name": name,
+        "inches": diag_inch,
     }
 
 
@@ -397,6 +462,8 @@ def monitor_enum_proc(hmonitor, hdc, rect, lparam):
     p_gpu = find_monitor_gpu(devid)
     edid = get_edid_by_hwid(target_pnp_id.split("\\")[1])
 
+    orientation = dm.dmDisplayOrientation
+
     monitor_info = DisplayModuleInfo()
     monitor_info.name = edid.get("name", None) if edid else None
     monitor_info.parent_gpu = p_gpu
@@ -405,6 +472,24 @@ def monitor_enum_proc(hmonitor, hdc, rect, lparam):
     monitor_info.resolution.width = dm.dmPelsWidth
     monitor_info.resolution.height = dm.dmPelsHeight
     monitor_info.resolution.refresh_rate = dm.dmDisplayFrequency
+    (
+        monitor_info.resolution.aspect_ratio,
+        monitor_info.resolution.aspect_ratio_real,
+        monitor_info.resolution.aspect_ratio_friendly,
+    ) = get_aspect_ratios(dm.dmPelsWidth, dm.dmPelsHeight)
+
+    if orientation == DMDO_DEFAULT:
+        monitor_info.orientation = "Landscape"
+    elif orientation == DMDO_90:
+        monitor_info.orientation = "Portrait"
+    elif orientation == DMDO_180:
+        monitor_info.orientation = "Landscape (flipped)"
+    elif orientation == DMDO_270:
+        monitor_info.orientation = "Portrait (flipped)"
+    else:
+        monitor_info.orientation = "Unknown"
+
+    monitor_info.inches = edid.get("inches", None) if edid else None
     monitor_info.vendor_id = f"0x{edid['vendor_id']:04X}" if edid else None
     monitor_info.product_id = f"0x{edid['product_id']:04X}" if edid else None
     monitor_info.serial_number = (

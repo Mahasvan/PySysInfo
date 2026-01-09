@@ -7,14 +7,23 @@ from pysysinfo.models.component_model import ComponentInfo
 class ResolutionInfo(BaseModel):
     """Resolution information for a Display."""
 
-    #: Horizontal resolution in pixels.
+    # Horizontal resolution in pixels.
     width: Optional[int] = None
 
-    #: Vertical resolution in pixels.
+    # Vertical resolution in pixels.
     height: Optional[int] = None
 
-    #: Refresh rate in Hz.
+    # Refresh rate in Hz.
     refresh_rate: Optional[int] = None
+    
+    # Aspect ratio as float, e.g., 1.77 for 16:9
+    aspect_ratio: Optional[float] = None
+    
+    # The real aspect ratio as a string, e.g., "16:9", "43:18"
+    aspect_ratio_real: Optional[str] = None
+    
+    # Friendly aspect ratio, e.g., "16:9", "21:9"
+    aspect_ratio_friendly: Optional[str] = None
 
 class DisplayModuleInfo(BaseModel):
     """Information for one Display is stored here"""
@@ -33,6 +42,12 @@ class DisplayModuleInfo(BaseModel):
     
     # The current resolution data
     resolution: Optional[ResolutionInfo] = Field(default_factory=ResolutionInfo)
+    
+    # Diagonal size in inches
+    inches: Optional[int] = None
+    
+    # Orientation (landscape/portrait) (includes FLIPPED)
+    orientation: Optional[str] = None
 
     # Vendor ID
     vendor_id: Optional[str] = None
