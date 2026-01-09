@@ -261,7 +261,7 @@ def get_aspect_ratios(width: int, height: int) -> tuple[str, str, Optional[str]]
     elif 1.3 <= ratio <= 1.35:
         friendly = "4:3"
     else:
-        None
+        friendly = None
 
     # If display is in portrait mode, flip the ratio
     if width < height:
