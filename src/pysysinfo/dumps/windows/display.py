@@ -127,12 +127,6 @@ def find_monitor_gpu(device_name) -> Optional[str]:
 
 
 def get_edid_by_hwid(hwid: str):
-    DIGCF_PRESENT = 0x00000002
-    DIGCF_DEVICEINTERFACE = 0x00000010
-    DICS_FLAG_GLOBAL = 0x00000001
-    DIREG_DEV = 0x00000001
-    KEY_READ = 0x20019
-
     hdev = SetupDiGetClassDevsA(
         ctypes.byref(GUID_DEVINTERFACE_MONITOR),
         None,
