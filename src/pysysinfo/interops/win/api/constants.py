@@ -30,3 +30,9 @@ GUID_DEVINTERFACE_MONITOR = GUID(
     0x4A90,
     (ctypes.c_ubyte * 8)(0xB0, 0x76, 0x33, 0xF5, 0x7B, 0xF4, 0xEA, 0xA7),
 )
+
+# GPU Helper Status Codes
+STATUS_OK           = 0
+STATUS_NOK          = 1
+STATUS_INVALID_ARG  = 2
+STATUS_FAILURE      = 3

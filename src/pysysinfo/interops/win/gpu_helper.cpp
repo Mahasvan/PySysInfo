@@ -12,6 +12,14 @@
 #pragma comment(lib, "comsuppw.lib")
 #pragma comment(lib, "Propsys.lib")
 
+typedef enum gpuHelper_Result_ENUM
+{
+    STATUS_OK = 0u,
+    STATUS_NOK,
+    STATUS_INVALID_ARG,
+    STATUS_FAILURE
+} gpuHelper_RESULT;
+
 // Helper: convert wide string to char buffer
 void ws2s(const WCHAR *wstr, char *buffer, int bufferSize)
 {
@@ -53,14 +61,30 @@ std::string WideToUtf8(PCWSTR src)
 }
 
 // Core function
-void GetGPUForDisplayInternal(const char *deviceName, char *outGPUName, int bufSize)
+gpuHelper_RESULT GetGPUForDisplayInternal(const char *deviceName, char *outGPUName, unsigned int bufSize)
 {
+    if (deviceName == nullptr || strlen(deviceName) == 0)
+    {
+        return STATUS_INVALID_ARG;
+    }
+
+    if (outGPUName == nullptr)
+    {
+        return STATUS_INVALID_ARG;
+    }
+
+    if (bufSize <= 0)
+    {
+        return STATUS_INVALID_ARG;
+    }
+
     IDXGIFactory6 *factory = nullptr;
     if (FAILED(CreateDXGIFactory1(IID_PPV_ARGS(&factory))))
     {
         if (outGPUName && bufSize > 0)
             outGPUName[0] = 0;
-        return;
+
+        return STATUS_FAILURE;
     }
 
     IDXGIAdapter1 *adapter = nullptr;
@@ -99,7 +123,8 @@ void GetGPUForDisplayInternal(const char *deviceName, char *outGPUName, int bufS
                 output->Release();
                 adapter->Release();
                 factory->Release();
-                return;
+
+                return STATUS_OK;
             }
 
             output->Release();
@@ -112,12 +137,15 @@ void GetGPUForDisplayInternal(const char *deviceName, char *outGPUName, int bufS
         factory->Release();
     if (outGPUName && bufSize > 0)
         outGPUName[0] = 0;
+
+    // Parent GPU not found, return failure code
+    return STATUS_FAILURE;
 }
 
 // DLL export
-extern "C" __declspec(dllexport) void GetGPUForDisplay(const char *deviceName, char *outGPUName, int bufSize)
+extern "C" __declspec(dllexport) gpuHelper_RESULT GetGPUForDisplay(const char *deviceName, char *outGPUName, int bufSize)
 {
-    GetGPUForDisplayInternal(deviceName, outGPUName, bufSize);
+    return GetGPUForDisplayInternal(deviceName, outGPUName, bufSize);
 }
 
 extern "C" __declspec(dllexport) void GetWmiInfo(char *wmiQuery, char *cimServer, char *outBuffer, int maxLen)
