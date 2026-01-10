@@ -84,13 +84,16 @@ def fetch_vram_from_registry(device_name: str, driver_version: str) -> Optional[
 
 def fetch_fast_graphics_info() -> GraphicsInfo:
     graphics_info = GraphicsInfo()
-    buffer = ctypes.create_string_buffer(4096)
+
+    # 256 bytes per property, 6 properties, 2 modules
+    buf_size = 256 * 6 * 2
+    buffer = ctypes.create_string_buffer(buf_size)
 
     GetWmiInfo(
         b"SELECT AdapterCompatibility,Name,AdapterRAM,VideoProcessor,PNPDeviceID,DriverVersion FROM Win32_VideoController",
         b"ROOT\\CIMV2",
         buffer,
-        4096,
+        buf_size,
     )
 
     raw_data = buffer.value.decode("utf-8", errors="ignore")
@@ -183,5 +186,4 @@ def fetch_fast_graphics_info() -> GraphicsInfo:
 
 
 def fetch_graphics_info() -> GraphicsInfo:
-    graphics_info = fetch_fast_graphics_info()
-    return graphics_info
+    return fetch_fast_graphics_info()

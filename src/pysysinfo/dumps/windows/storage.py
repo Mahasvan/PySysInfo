@@ -1,106 +1,95 @@
-import subprocess
+import ctypes
 from typing import List
 
 from pysysinfo.dumps.windows.win_enum import MEDIA_TYPE, BUS_TYPE
+from pysysinfo.interops.win.api.signatures import GetWmiInfo
 from pysysinfo.models.size_models import Megabyte
 from pysysinfo.models.status_models import StatusType
 from pysysinfo.models.storage_models import StorageInfo, DiskInfo
 
 
-def fetch_wmic_storage_info() -> StorageInfo:
+def fetch_wmi_storage_info() -> StorageInfo:
+    """
+    Fetch storage information via WMI using the GetWmiInfo interop.
+    Returns a StorageInfo object with all detected disks.
+    """
     storage_info = StorageInfo()
 
-    command = r"wmic /namespace:\\root\Microsoft\Windows\Storage path MSFT_PhysicalDisk get FriendlyName,MediaType,BusType,Size,Manufacturer /format:csv"
-    try:
-        result = subprocess.check_output(command, shell=True, text=True)
-    except Exception as e:
-        """
-        This means the WMIC command failed - possibly because it is not available on this system.
-        We mark the status as failed and return an empty StorageInfo object, so that we can fallback to the PowerShell cmdlet.
-        """
+    # 256 bytes per property, 6 properties, 10 modules (mostly for NAS systems)
+    buf_size = 256 * 6 * 10
+    buffer = ctypes.create_string_buffer(buf_size)
+
+    query = (
+        b"SELECT FriendlyName, MediaType, BusType, Size, Manufacturer, Model FROM "
+        b"MSFT_PhysicalDisk"
+    )
+
+    GetWmiInfo(query, b"ROOT\\Microsoft\\Windows\\Storage", buffer, buf_size)
+
+    raw_data = buffer.value.decode("utf-8", errors="ignore")
+    if not raw_data:
         storage_info.status.type = StatusType.FAILED
-        storage_info.status.messages.append(f"WMIC Command failed: {e}")
+        storage_info.status.messages.append("WMI query returned no data")
         return storage_info
 
-    lines = result.strip().splitlines()
-    lines = [line.split(",") for line in lines if line.strip()]
+    for line in raw_data.split("\n"):
+        if not line or "|" not in line:
+            continue
 
-    return parse_cmd_output(lines)
+        disk = DiskInfo()
+        props = {
+            x.split("=", 1)[0]: x.split("=", 1)[1] for x in line.split("|") if "=" in x
+        }
 
+        friendly_name = props.get("FriendlyName")
+        media_type = props.get("MediaType")
+        bus_type = props.get("BusType")
+        size = props.get("Size")
+        manufacturer = props.get("Manufacturer")
+        model = props.get("Model")
 
-def fetch_wmi_cmdlet_storage_info() -> StorageInfo:
-    storage_info = StorageInfo()
+        print(manufacturer)
 
-    command = r'powershell -Command "Get-CimInstance -Namespace "root/Microsoft/Windows/Storage" -ClassName MSFT_PhysicalDisk | Select-Object FriendlyName, MediaType, BusType, Size, Manufacturer | ConvertTo-Csv -NoTypeInformation"'
-    try:
-        result = subprocess.check_output(command, shell=True, text=True)
-    except Exception as e:
-        """
-        This means the PowerShell command failed.
-        This should not happen on modern Windows systems, where the wmic command is not available.
-        In this case, mark status as failed and return an empty object
-        """
+        disk.model = (
+            model.strip() if model else friendly_name.strip() if friendly_name else None
+        )
+        disk.manufacturer = manufacturer.strip() if manufacturer else None
+        disk.type = (
+            MEDIA_TYPE.get(int(media_type), "Unknown")
+            if media_type and media_type.isdigit()
+            else "Unknown"
+        )
+        disk.size = (
+            Megabyte(capacity=int(size) // (1024 * 1024))
+            if size and size.isdigit()
+            else None
+        )
+
+        # Map bus type
+        conn_type, location = None, None
+        if bus_type and bus_type.isdigit():
+            bt = BUS_TYPE.get(int(bus_type))
+            if bt:
+                conn_type = bt["type"]
+                location = bt["location"]
+
+        disk.connector = conn_type
+        disk.location = location
+
+        if conn_type and "nvme" in conn_type.lower():
+            disk.type = MEDIA_TYPE.get(4)  # SSD
+
+        storage_info.modules.append(disk)
+
+    # If at least one module was parsed, mark as success
+    if storage_info.modules:
+        storage_info.status.type = StatusType.SUCCESS
+    else:
         storage_info.status.type = StatusType.FAILED
-        storage_info.status.messages.append(f"WMI Powershell cmdlet failed: {e}")
-        return storage_info
+        storage_info.status.messages.append("No storage modules found")
 
-    lines = [x.split(",") for x in result.strip().splitlines()]
-    lines = [[x.strip('"') for x in line] for line in lines]
-
-    return parse_cmd_output(lines)
-
-
-def parse_cmd_output(lines: List[List[str]]) -> StorageInfo:
-    header = lines[0]
-
-    size_idx = header.index("Size")
-    media_type_idx = header.index("MediaType")
-    bus_type_idx = header.index("BusType")
-    friendly_name_idx = header.index("FriendlyName")
-    manufacturer_idx = header.index("Manufacturer")
-
-    storage_info = StorageInfo()
-
-    for line in lines[1:]:
-        try:
-            # print("Size:", line[size_idx])
-            # print("Media Type:", line[media_type_idx])
-            # print("Bus Type:", line[bus_type_idx])
-            # print("Friendly Name:", line[friendly_name_idx])
-            disk = DiskInfo()
-
-            disk.model = line[friendly_name_idx]
-            disk.manufacturer = line[manufacturer_idx].strip() if line[manufacturer_idx].strip() else None
-            disk.type = MEDIA_TYPE.get(int(line[media_type_idx]), "Unknown")
-            disk.size = Megabyte(capacity=int(line[size_idx]) // (1024 * 1024)) if line[size_idx].isdigit() else None
-
-            conn_type, location = None, None
-            bus_type = BUS_TYPE.get(int(line[bus_type_idx]), None)
-            if bus_type:
-                conn_type = bus_type["type"]
-                location = bus_type["location"]
-
-            disk.connector = conn_type
-            disk.location = location
-
-            if conn_type and "nvme" in conn_type.lower():
-                disk.type = MEDIA_TYPE[4]  # Solid State Drive (SSD)
-
-            storage_info.modules.append(disk)
-
-        except Exception as e:
-            storage_info.status.type = StatusType.PARTIAL
-            storage_info.status.messages.append(f"Error processing disk info: {e}")
     return storage_info
 
 
 def fetch_storage_info() -> StorageInfo:
-    """
-    First tries to fetch storage info using the WMIC command.
-    If that fails, falls back to using the PowerShell cmdlet.
-    """
-    response = fetch_wmic_storage_info()
-    if response.status.type == StatusType.FAILED:
-        response = fetch_wmi_cmdlet_storage_info()
-
-    return response
+    return fetch_wmi_storage_info()
