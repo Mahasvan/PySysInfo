@@ -31,6 +31,8 @@ dependencies = [
 [tool.setuptools.packages.find]
 where = ["src"]
 
+[tool.setuptools.package-data]
+"pysysinfo" = ["interops/**/dll/*.dll"]
 
 [project.urls]
 Homepage = "https://github.com/Mahasvan/PySysInfo"
