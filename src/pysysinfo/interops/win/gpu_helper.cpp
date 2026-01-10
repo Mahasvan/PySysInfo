@@ -1,16 +1,48 @@
+// Winsock FIRST (must be before windows.h)
+#include <winsock2.h>
+#include <ws2tcpip.h>
+
+// Core Windows
 #include <windows.h>
+
+// IP Helper (depends on winsock + windows)
+#include <iphlpapi.h>
+#include <IPTypes.h>
+
+// Setup / device enumeration
+#include <setupapi.h>
+#include <devguid.h>
+#include <devpkey.h>
+
+#include <cfgmgr32.h>
+
+// DXGI
 #include <dxgi1_6.h>
+
+// COM / WMI
 #include <WbemIdl.h>
 #include <comutil.h>
 #include <propvarutil.h>
+
+// SHLW Api
+#include <shlwapi.h>
+
 #include <iostream>
+#include <sstream>
 #include <string>
 #include <vector>
+#include <algorithm>
+#include <cwctype>
 
 #pragma comment(lib, "dxgi.lib")
 #pragma comment(lib, "wbemuuid.lib")
 #pragma comment(lib, "comsuppw.lib")
 #pragma comment(lib, "Propsys.lib")
+#pragma comment(lib, "iphlpapi.lib")
+#pragma comment(lib, "advapi32.lib")
+#pragma comment(lib, "setupapi.lib")
+#pragma comment(lib, "shlwapi.lib")
+#pragma comment(lib, "cfgmgr32.lib")
 
 typedef enum gpuHelper_Result_ENUM
 {
@@ -253,4 +285,123 @@ extern "C" __declspec(dllexport) void GetWmiInfo(char *wmiQuery, char *cimServer
     pSvc->Release();
     pLoc->Release();
     CoUninitialize();
+}
+
+extern "C" __declspec(dllexport) int GetNetworkHardwareInfo(char *outData, int outDataLen)
+{
+    if (outData == nullptr || outDataLen <= 0)
+        return STATUS_INVALID_ARG;
+
+    ULONG outBufLen = 15000;
+    PIP_ADAPTER_ADDRESSES pAddresses = NULL;
+    DWORD dwRetVal = 0;
+    ULONG iterations = 0;
+
+    do
+    {
+        pAddresses = (PIP_ADAPTER_ADDRESSES)malloc(outBufLen);
+        if (pAddresses == NULL)
+            return STATUS_FAILURE; // OOM
+
+        dwRetVal = GetAdaptersAddresses(AF_UNSPEC, GAA_FLAG_INCLUDE_ALL_INTERFACES, NULL, pAddresses, &outBufLen);
+        if (dwRetVal == ERROR_BUFFER_OVERFLOW)
+        {
+            free(pAddresses);
+            pAddresses = NULL;
+        }
+        else
+        {
+            break;
+        }
+        iterations++;
+    } while ((dwRetVal == ERROR_BUFFER_OVERFLOW) && (iterations < 3));
+
+    if (dwRetVal != NO_ERROR)
+    {
+        if (pAddresses)
+            free(pAddresses);
+        return STATUS_FAILURE;
+    }
+
+    HDEVINFO devInfo = SetupDiGetClassDevs(&GUID_DEVCLASS_NET, NULL, NULL, DIGCF_PRESENT);
+    std::string result = "";
+
+    for (PIP_ADAPTER_ADDRESSES aa = pAddresses; aa; aa = aa->Next)
+    {
+        if (aa->IfType == IF_TYPE_SOFTWARE_LOOPBACK)
+            continue;
+
+        std::wstring wDesc = (const wchar_t *)_bstr_t(aa->Description);
+        std::wstring wFriendly = (const wchar_t *)_bstr_t(aa->FriendlyName);
+        std::wstring wAdapterGuid = (const wchar_t *)_bstr_t(aa->AdapterName);
+
+        std::wstring wManufacturer = L"Unknown";
+        std::wstring wPnpInstanceId = wAdapterGuid; // Fallback to GUID if PnP ID not found
+
+        bool foundInRegistry = false;
+
+        if (devInfo != INVALID_HANDLE_VALUE)
+        {
+            SP_DEVINFO_DATA devData = {sizeof(SP_DEVINFO_DATA)};
+            for (DWORD i = 0; SetupDiEnumDeviceInfo(devInfo, i, &devData); i++)
+            {
+                HKEY hKey = SetupDiOpenDevRegKey(devInfo, &devData, DICS_FLAG_GLOBAL, 0, DIREG_DRV, KEY_READ);
+                if (hKey != INVALID_HANDLE_VALUE)
+                {
+                    WCHAR netCfgId[128];
+                    DWORD dwSize = sizeof(netCfgId);
+
+                    if (RegQueryValueExW(hKey, L"NetCfgInstanceId", NULL, NULL, (LPBYTE)netCfgId, &dwSize) == ERROR_SUCCESS)
+                    {
+                        if (_wcsicmp(netCfgId, wAdapterGuid.c_str()) == 0)
+                        {
+                            WCHAR pnpBuffer[MAX_DEVICE_ID_LEN];
+                            if (SetupDiGetDeviceInstanceIdW(devInfo, &devData, pnpBuffer, MAX_DEVICE_ID_LEN, NULL))
+                            {
+                                wPnpInstanceId = pnpBuffer;
+                            }
+
+                            WCHAR mfgBuffer[256];
+                            if (SetupDiGetDeviceRegistryPropertyW(devInfo, &devData, SPDRP_MFG, NULL, (PBYTE)mfgBuffer, sizeof(mfgBuffer), NULL))
+                            {
+                                wManufacturer = mfgBuffer;
+                            }
+
+                            foundInRegistry = true;
+                        }
+                    }
+                    RegCloseKey(hKey);
+                }
+                if (foundInRegistry)
+                    break;
+            }
+        }
+
+        std::wstring upperPnp = wPnpInstanceId;
+        for (auto &ch : upperPnp)
+            ch = towupper(ch);
+
+        if (upperPnp.find(L"PCI") == std::wstring::npos && upperPnp.find(L"USB") == std::wstring::npos)
+            continue;
+
+        result += "Manufacturer=" + WideToUtf8(wManufacturer.c_str()) + "|";
+        result += "PNPDeviceID=" + WideToUtf8(wPnpInstanceId.c_str()) + "|";
+        result += "Name=" + WideToUtf8(wDesc.c_str()) + "\n";
+    }
+
+    if (devInfo != INVALID_HANDLE_VALUE)
+        SetupDiDestroyDeviceInfoList(devInfo);
+    if (pAddresses)
+        free(pAddresses);
+
+    // Safety: If result is still empty, the machine has no adapters or permissions
+    if (result.empty())
+    {
+        std::string err = "Error: No adapters found. RetVal=" + std::to_string(dwRetVal);
+        strncpy_s(outData, outDataLen, err.c_str(), _TRUNCATE);
+        return STATUS_FAILURE;
+    }
+
+    strncpy_s(outData, outDataLen, result.c_str(), _TRUNCATE);
+    return STATUS_OK;
 }

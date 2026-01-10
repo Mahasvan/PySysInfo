@@ -26,6 +26,10 @@ gpu_helper.GetWmiInfo.argtypes = [
 gpu_helper.GetWmiInfo.restype = None
 GetWmiInfo = gpu_helper.GetWmiInfo
 
+gpu_helper.GetNetworkHardwareInfo.argtypes = [ctypes.c_char_p, ctypes.c_int]
+gpu_helper.GetNetworkHardwareInfo.restype = ctypes.c_uint32
+GetNetworkHardwareInfo = gpu_helper.GetNetworkHardwareInfo
+
 # --------------------
 # User32.dll
 # --------------------
