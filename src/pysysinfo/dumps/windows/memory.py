@@ -13,7 +13,7 @@ from pysysinfo.models.size_models import Megabyte
 from pysysinfo.models.status_models import StatusType
 
 
-def fetch_wmi_cmdlet_memory_info() -> MemoryInfo:
+def fetch_wmi_memory_info() -> MemoryInfo:
     memory_info = MemoryInfo()
 
     # 256 bytes per property, 9 properties, 6 modules
@@ -99,4 +99,4 @@ def fetch_wmi_cmdlet_memory_info() -> MemoryInfo:
 
 
 def fetch_memory_info() -> MemoryInfo:
-    return fetch_wmi_cmdlet_memory_info()
+    return fetch_wmi_memory_info()

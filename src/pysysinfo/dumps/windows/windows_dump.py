@@ -1,9 +1,11 @@
+from pysysinfo.dumps.windows.audio import fetch_audio_info_fast
 from pysysinfo.dumps.windows.cpu import fetch_cpu_info
 from pysysinfo.dumps.windows.display import fetch_display_info_internal
 from pysysinfo.dumps.windows.graphics import fetch_graphics_info
 from pysysinfo.dumps.windows.memory import fetch_memory_info
 from pysysinfo.dumps.windows.storage import fetch_storage_info
 from pysysinfo.dumps.windows.network import fetch_network_info_fast
+from pysysinfo.models.audio_models import AudioInfo
 from pysysinfo.models.cpu_models import CPUInfo
 from pysysinfo.models.display_models import DisplayInfo
 from pysysinfo.models.gpu_models import GraphicsInfo
@@ -28,6 +30,7 @@ class WindowsHardwareManager(HardwareManagerInterface):
             graphics=GraphicsInfo(),
             network=NetworkInfo(),
             display=DisplayInfo(),
+            audio=AudioInfo(),
         )
 
     def fetch_cpu_info(self) -> CPUInfo:
@@ -54,10 +57,15 @@ class WindowsHardwareManager(HardwareManagerInterface):
         self.info.display = fetch_display_info_internal()
         return self.info.display
 
+    def fetch_audio_info(self):
+        self.info.audio = fetch_audio_info_fast()
+        return self.info.audio
+
     def fetch_hardware_info(self) -> HardwareInfo:
         self.fetch_cpu_info()
         self.fetch_memory_info()
         self.fetch_storage_info()
         self.fetch_graphics_info()
         self.fetch_display_info()
+        self.fetch_audio_info()
         return self.info

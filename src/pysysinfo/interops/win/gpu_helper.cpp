@@ -19,6 +19,13 @@
 // DXGI
 #include <dxgi1_6.h>
 
+// Core Audio API
+#include <mmdeviceapi.h>
+#include <audioclient.h>
+#include <functiondiscoverykeys_devpkey.h>
+#include <devicetopology.h>
+#include <endpointvolume.h>
+
 // COM / WMI
 #include <WbemIdl.h>
 #include <comutil.h>
@@ -38,6 +45,7 @@
 #pragma comment(lib, "wbemuuid.lib")
 #pragma comment(lib, "comsuppw.lib")
 #pragma comment(lib, "Propsys.lib")
+#pragma comment(lib, "ole32.lib")
 #pragma comment(lib, "iphlpapi.lib")
 #pragma comment(lib, "advapi32.lib")
 #pragma comment(lib, "setupapi.lib")
@@ -90,6 +98,80 @@ std::string WideToUtf8(PCWSTR src)
         nullptr);
 
     return out;
+}
+
+// Helper: look up endpoint DataFlow from Core Audio API by matching friendly name
+std::string GetEndpointDataFlow(const std::string &endpointName)
+{
+    std::string dataFlow = "Unknown";
+
+    HRESULT hr = CoInitializeEx(NULL, COINIT_MULTITHREADED);
+    if (FAILED(hr) && hr != RPC_E_CHANGED_MODE)
+        return dataFlow;
+
+    IMMDeviceEnumerator *pEnumerator = NULL;
+    if (SUCCEEDED(CoCreateInstance(__uuidof(MMDeviceEnumerator), NULL, CLSCTX_ALL, IID_PPV_ARGS(&pEnumerator))))
+    {
+        EDataFlow flows[] = {eRender, eCapture};
+        const char *flowNames[] = {"Render", "Capture"};
+
+        for (int flow = 0; flow < 2; flow++)
+        {
+            IMMDeviceCollection *pDevices = NULL;
+            if (SUCCEEDED(pEnumerator->EnumAudioEndpoints(flows[flow], DEVICE_STATE_ACTIVE, &pDevices)))
+            {
+                UINT count = 0;
+                pDevices->GetCount(&count);
+
+                for (UINT d = 0; d < count; d++)
+                {
+                    IMMDevice *pDevice = NULL;
+                    if (SUCCEEDED(pDevices->Item(d, &pDevice)))
+                    {
+                        IPropertyStore *pProps = NULL;
+                        if (SUCCEEDED(pDevice->OpenPropertyStore(STGM_READ, &pProps)))
+                        {
+                            PROPVARIANT varName;
+                            PropVariantInit(&varName);
+
+                            if (SUCCEEDED(pProps->GetValue(PKEY_Device_FriendlyName, &varName)))
+                            {
+                                std::string currentName = WideToUtf8(varName.pwszVal);
+
+                                // match by friendly name
+                                if (currentName == endpointName)
+                                {
+                                    dataFlow = flowNames[flow];
+                                    PropVariantClear(&varName);
+                                    pProps->Release();
+                                    pDevice->Release();
+                                    pDevices->Release();
+                                    pEnumerator->Release();
+                                    if (hr == S_OK)
+                                        CoUninitialize();
+                                    return dataFlow;
+                                }
+                            }
+
+                            PropVariantClear(&varName);
+                            pProps->Release();
+                        }
+
+                        pDevice->Release();
+                    }
+                }
+
+                pDevices->Release();
+            }
+        }
+
+        pEnumerator->Release();
+    }
+
+    if (hr == S_OK)
+        CoUninitialize();
+
+    return dataFlow;
 }
 
 // Core function
@@ -394,7 +476,7 @@ extern "C" __declspec(dllexport) int GetNetworkHardwareInfo(char *outData, int o
     if (pAddresses)
         free(pAddresses);
 
-    // Safety: If result is still empty, the machine has no adapters or permissions
+    // Safety: if result is still empty, the machine has no adapters or permissions
     if (result.empty())
     {
         std::string err = "Error: No adapters found. RetVal=" + std::to_string(dwRetVal);
@@ -403,5 +485,182 @@ extern "C" __declspec(dllexport) int GetNetworkHardwareInfo(char *outData, int o
     }
 
     strncpy_s(outData, outDataLen, result.c_str(), _TRUNCATE);
+    return STATUS_OK;
+}
+
+extern "C" __declspec(dllexport) int GetAudioHardwareInfo(char *outData, int outDataLen)
+{
+    if (outData == nullptr || outDataLen <= 0)
+        return STATUS_INVALID_ARG;
+
+    std::string finalResult = "";
+
+    // enumerate audio hardware devices
+    HDEVINFO devInfo = SetupDiGetClassDevs(&GUID_DEVCLASS_MEDIA, NULL, NULL, DIGCF_PRESENT);
+    if (devInfo == INVALID_HANDLE_VALUE)
+        return STATUS_FAILURE;
+
+    SP_DEVINFO_DATA devData = {sizeof(SP_DEVINFO_DATA)};
+
+    for (DWORD i = 0; SetupDiEnumDeviceInfo(devInfo, i, &devData); i++)
+    {
+        // get PNP Device ID
+        WCHAR pnpBuffer[MAX_DEVICE_ID_LEN];
+        if (!SetupDiGetDeviceInstanceIdW(devInfo, &devData, pnpBuffer, MAX_DEVICE_ID_LEN, NULL))
+            continue;
+
+        std::wstring wPnpDeviceID = pnpBuffer;
+
+        // filter: skip virtual/software devices
+        std::wstring upperPnp = wPnpDeviceID;
+        for (auto &ch : upperPnp)
+            ch = towupper(ch);
+
+        // skip software devices (SWD), virtual devices (ROOT), and non-audio buses
+        if (upperPnp.find(L"SWD\\") == 0 ||
+            upperPnp.find(L"ROOT\\") == 0 ||
+            upperPnp.find(L"SCPVBUS\\") != std::wstring::npos)
+            continue;
+
+        // only include real hardware buses
+        if (upperPnp.find(L"HDAUDIO") == std::wstring::npos &&
+            upperPnp.find(L"USB") == std::wstring::npos &&
+            upperPnp.find(L"PCI") == std::wstring::npos)
+            continue;
+
+        // check if device is actually enabled/active
+        DWORD status = 0, problem = 0;
+        if (CM_Get_DevNode_Status(&status, &problem, devData.DevInst, 0) == CR_SUCCESS)
+        {
+            // skip disabled devices
+            if (problem != 0 || !(status & DN_DRIVER_LOADED))
+                continue;
+        }
+
+        // get device description (friendly name)
+        WCHAR nameBuffer[256] = {0};
+        std::wstring wName = L"Unknown";
+        if (SetupDiGetDeviceRegistryPropertyW(devInfo, &devData, SPDRP_DEVICEDESC,
+                                              NULL, (PBYTE)nameBuffer, sizeof(nameBuffer), NULL))
+        {
+            wName = nameBuffer;
+        }
+        else if (SetupDiGetDeviceRegistryPropertyW(devInfo, &devData, SPDRP_FRIENDLYNAME,
+                                                   NULL, (PBYTE)nameBuffer, sizeof(nameBuffer), NULL))
+        {
+            wName = nameBuffer;
+        }
+
+        // get device class
+        WCHAR classBuffer[32] = {0};
+        std::wstring wDeviceClass = L"";
+        if (SetupDiGetDeviceRegistryPropertyW(devInfo, &devData, SPDRP_CLASS,
+                                              NULL, (PBYTE)classBuffer, sizeof(classBuffer), NULL))
+        {
+            wDeviceClass = classBuffer;
+        }
+
+        // only include actual audio codec/controller devices
+        std::wstring upperClass = wDeviceClass;
+        for (auto &ch : upperClass)
+            ch = towupper(ch);
+
+        if (upperClass.find(L"SOFTWAREDEVICE") != std::wstring::npos ||
+            upperClass.find(L"SYSTEM") != std::wstring::npos ||
+            upperClass.find(L"VOLUMESHADOWCOPY") != std::wstring::npos)
+            continue;
+
+        // get Hardware IDs - physical devices have proper hardware IDs
+        WCHAR hwIdBuffer[512] = {0};
+        DWORD hwIdSize = 0;
+        bool hasValidHwId = false;
+        if (SetupDiGetDeviceRegistryPropertyW(devInfo, &devData, SPDRP_HARDWAREID,
+                                              NULL, (PBYTE)hwIdBuffer, sizeof(hwIdBuffer), &hwIdSize))
+        {
+            if (hwIdSize > 0)
+            {
+                std::wstring hwId = hwIdBuffer;
+                if (hwId.find(L"VEN_") != std::wstring::npos ||
+                    hwId.find(L"VID_") != std::wstring::npos)
+                {
+                    hasValidHwId = true;
+                }
+            }
+        }
+
+        // only include devices that have actual hardware vendor IDs
+        if (!hasValidHwId)
+            continue;
+
+        // get manufacturer
+        WCHAR mfgBuffer[256] = {0};
+        std::wstring wManufacturer = L"Unknown";
+        if (SetupDiGetDeviceRegistryPropertyW(devInfo, &devData, SPDRP_MFG,
+                                              NULL, (PBYTE)mfgBuffer, sizeof(mfgBuffer), NULL))
+        {
+            wManufacturer = mfgBuffer;
+        }
+
+        // output hardware device
+        std::string hwLine = "Type=Hardware|Name=" + WideToUtf8(wName.c_str()) + "|";
+        hwLine += "Manufacturer=" + WideToUtf8(wManufacturer.c_str()) + "|";
+        hwLine += "PNPDeviceID=" + WideToUtf8(wPnpDeviceID.c_str());
+        finalResult += hwLine + "\n";
+
+        DEVINST childDevInst = 0;
+        if (CM_Get_Child(&childDevInst, devData.DevInst, 0) == CR_SUCCESS)
+        {
+            // enumerate all children of this hardware device
+            while (true)
+            {
+                WCHAR childPnpBuffer[MAX_DEVICE_ID_LEN];
+                if (CM_Get_Device_IDW(childDevInst, childPnpBuffer, MAX_DEVICE_ID_LEN, 0) == CR_SUCCESS)
+                {
+                    std::wstring childPnpId = childPnpBuffer;
+
+                    // get child device friendly name
+                    WCHAR childNameBuffer[256] = {0};
+                    ULONG childNameSize = sizeof(childNameBuffer);
+                    if (CM_Get_DevNode_Registry_PropertyW(childDevInst, CM_DRP_FRIENDLYNAME,
+                                                          NULL, childNameBuffer, &childNameSize, 0) == CR_SUCCESS)
+                    {
+                        std::string childName = WideToUtf8(childNameBuffer);
+
+                        // lookup dataflow from core audio api by matching endpoint name
+                        std::string dataFlow = GetEndpointDataFlow(childName);
+
+                        // assumption: if the data flown isn't known, the endpoint is not active/usable
+                        if (dataFlow != "Unknown")
+                        {
+                            // output child endpoint
+                            std::string epLine = "Type=Endpoint|Name=" + childName + "|";
+                            epLine += "DataFlow=" + dataFlow + "|";
+                            epLine += "ParentPNPDeviceID=" + WideToUtf8(wPnpDeviceID.c_str());
+                            finalResult += epLine + "\n";
+                        }
+                    }
+                }
+
+                // get next sibling
+                DEVINST nextSiblingDevInst = 0;
+                // no more siblings
+                if (CM_Get_Sibling(&nextSiblingDevInst, childDevInst, 0) != CR_SUCCESS)
+                    break;
+
+                childDevInst = nextSiblingDevInst;
+            }
+        }
+    }
+
+    SetupDiDestroyDeviceInfoList(devInfo);
+
+    if (finalResult.empty())
+    {
+        std::string err = "Error: No audio hardware or endpoints found";
+        strncpy_s(outData, outDataLen, err.c_str(), _TRUNCATE);
+        return STATUS_FAILURE;
+    }
+
+    strncpy_s(outData, outDataLen, finalResult.c_str(), _TRUNCATE);
     return STATUS_OK;
 }

@@ -30,6 +30,10 @@ gpu_helper.GetNetworkHardwareInfo.argtypes = [ctypes.c_char_p, ctypes.c_int]
 gpu_helper.GetNetworkHardwareInfo.restype = ctypes.c_uint32
 GetNetworkHardwareInfo = gpu_helper.GetNetworkHardwareInfo
 
+gpu_helper.GetAudioHardwareInfo.argtypes = [ctypes.c_char_p, ctypes.c_int]
+gpu_helper.GetAudioHardwareInfo.restype = ctypes.c_uint32
+GetAudioHardwareInfo = gpu_helper.GetAudioHardwareInfo
+
 # --------------------
 # User32.dll
 # --------------------
