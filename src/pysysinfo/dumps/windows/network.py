@@ -1,5 +1,6 @@
 import ctypes
 
+from pysysinfo.interops.win.api.constants import STATUS_OK
 from pysysinfo.interops.win.api.signatures import GetNetworkHardwareInfo
 from pysysinfo.util.location_paths import get_location_paths
 from pysysinfo.models.network_models import NICInfo, NetworkInfo
@@ -16,8 +17,17 @@ def fetch_network_info_fast() -> NetworkInfo:
 
     res = GetNetworkHardwareInfo(raw_data, buf_size)
 
+    # the method couldn't execute successfully
+    if res != STATUS_OK:
+        network_info.status.type = StatusType.FAILED
+        network_info.status.messages.append(
+            f"Network HW info query failed with status code: {res}"
+        )
+        return network_info
+
     decoded = raw_data.value.decode("utf-8", errors="ignore").strip()
 
+    # data is empty
     if not decoded:
         network_info.status.type = StatusType.FAILED
         network_info.status.messages.append("Network HW info query returned no data")
@@ -34,17 +44,29 @@ def fetch_network_info_fast() -> NetworkInfo:
         manufacturer = parsed.get("Manufacturer", None)
         name = parsed.get("Name", None)
 
+        if not pnp_device_id or not manufacturer or not name:
+            network_info.status.type = StatusType.PARTIAL
+            network_info.status.messages.append(
+                "Missing PNPDeviceID for network interface; skipping"
+            )
+            continue
+
         if "VEN_" in pnp_device_id and "DEV_" in pnp_device_id:
             module.vendor_id = pnp_device_id.split("VEN_")[1][:4]
             module.device_id = pnp_device_id.split("DEV_")[1][:4]
         elif "VID_" in pnp_device_id and "PID_" in pnp_device_id:
             module.vendor_id = pnp_device_id.split("VID_")[1][:4]
             module.device_id = pnp_device_id.split("PID_")[1][:4]
+        else:
+            network_info.status.type = StatusType.PARTIAL
+            network_info.status.messages.append(
+                f"Could not parse Vendor/Device ID from PNPDeviceID: {pnp_device_id}"
+            )
 
         loc = get_location_paths(pnp_device_id)
 
         if loc is not None:
-            pci, acpi = (loc + ["", ""])[:2]
+            pci, acpi = loc[:2]
 
             module.pci_path = format_pci_path(pci)
             module.acpi_path = format_acpi_path(acpi)
@@ -54,8 +76,8 @@ def fetch_network_info_fast() -> NetworkInfo:
                 f"Could not determine location paths for NIC with PNPDeviceID: {pnp_device_id}"
             )
 
-        module.manufacturer = manufacturer
-        module.name = name
+        module.manufacturer = manufacturer.strip()
+        module.name = name.strip()
         network_info.modules.append(module)
 
     return network_info
