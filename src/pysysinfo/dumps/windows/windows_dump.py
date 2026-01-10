@@ -3,7 +3,7 @@ from pysysinfo.dumps.windows.display import fetch_display_info_internal
 from pysysinfo.dumps.windows.graphics import fetch_graphics_info
 from pysysinfo.dumps.windows.memory import fetch_memory_info
 from pysysinfo.dumps.windows.storage import fetch_storage_info
-from pysysinfo.dumps.windows.network import fetch_wmi_cmdlet_network_info
+from pysysinfo.dumps.windows.network import fetch_network_info_fast
 from pysysinfo.models.cpu_models import CPUInfo
 from pysysinfo.models.display_models import DisplayInfo
 from pysysinfo.models.gpu_models import GraphicsInfo
@@ -47,7 +47,7 @@ class WindowsHardwareManager(HardwareManagerInterface):
         return self.info.graphics
 
     def fetch_network_info(self) -> NetworkInfo:
-        self.info.network = fetch_wmi_cmdlet_network_info()
+        self.info.network = fetch_network_info_fast()
         return self.info.network
 
     def fetch_display_info(self) -> DisplayInfo:

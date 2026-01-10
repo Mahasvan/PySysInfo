@@ -7,7 +7,7 @@ from pysysinfo.dumps.windows.common import format_acpi_path, format_pci_path
 from pysysinfo.models.status_models import Status, StatusType
 
 
-def fetch_wmi_cmdlet_network_info() -> NetworkInfo:
+def fetch_network_info_fast() -> NetworkInfo:
     network_info = NetworkInfo(status=Status(type=StatusType.SUCCESS))
 
     # 256 bytes per property, 3 properties, 5 modules
@@ -16,11 +16,11 @@ def fetch_wmi_cmdlet_network_info() -> NetworkInfo:
 
     res = GetNetworkHardwareInfo(raw_data, buf_size)
 
-    try:
-        decoded = raw_data.value.decode("utf-8", errors="ignore").strip()
-    except Exception:
+    decoded = raw_data.value.decode("utf-8", errors="ignore").strip()
+
+    if not decoded:
         network_info.status.type = StatusType.FAILED
-        network_info.status.messages.append("Failed to decode native network output")
+        network_info.status.messages.append("Network HW info query returned no data")
         return network_info
 
     for line in decoded.split("\n"):
