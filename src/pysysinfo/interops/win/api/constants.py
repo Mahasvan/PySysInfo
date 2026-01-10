@@ -36,3 +36,13 @@ STATUS_OK           = 0
 STATUS_NOK          = 1
 STATUS_INVALID_ARG  = 2
 STATUS_FAILURE      = 3
+
+# ECC Types for Memory Modules
+ECC_RESERVED      = 0
+ECC_OTHER         = 1
+ECC_UNKNOWN       = 2
+ECC_NONE          = 3
+ECC_PARITY        = 4
+ECC_SINGLE_BIT    = 5
+ECC_MULTI_BIT     = 6
+ECC_CRC           = 7

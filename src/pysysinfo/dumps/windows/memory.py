@@ -1,8 +1,9 @@
 import ctypes
 import subprocess
-from typing import List
+from typing import List, Tuple
 
-from pysysinfo.dumps.windows.win_enum import MEMORY_TYPE
+from pysysinfo.dumps.windows.win_enum import ECC_MEMORY_TYPE, MEMORY_TYPE
+from pysysinfo.interops.win.api.constants import ECC_MULTI_BIT, ECC_SINGLE_BIT
 from pysysinfo.interops.win.api.signatures import GetWmiInfo
 from pysysinfo.models.memory_models import (
     MemoryInfo,
@@ -11,6 +12,53 @@ from pysysinfo.models.memory_models import (
 )
 from pysysinfo.models.size_models import Megabyte
 from pysysinfo.models.status_models import StatusType
+
+
+def check_ecc() -> Tuple[bool, str]:
+    """
+    Checks if the system supports ECC memory by querying Win32_PhysicalMemoryArray.
+
+    More specifically, it only returns true if the "MemoryErrorCorrection" property is:
+        5 - Single-bit ECC
+        6 - Multi-bit ECC
+
+    Returns:
+        Tuple[bool, str]: A tuple where the first element indicates if ECC is supported,
+                          and the second element is the ECC type as a string.
+    """
+    query = b"SELECT MemoryErrorCorrection FROM Win32_PhysicalMemoryArray"
+
+    # NOTE[kernel]:
+    #   I don't really know how to implement support for multiple memory arrays,
+    #   so we'll just check the first one for now.
+    buf_size = 256 * 1
+
+    buffer = ctypes.create_string_buffer(buf_size)
+    GetWmiInfo(query, b"ROOT\\CIMV2", buffer, buf_size)
+
+    raw_data = buffer.value.decode("utf-8", errors="ignore")
+
+    if not raw_data:
+        return False, "Unknown"
+
+    first_line = raw_data.split("\n")[0]
+    parsed_data = {
+        x.split("=", 1)[0]: x.split("=", 1)[1]
+        for x in first_line.split("|")
+        if "=" in x
+    }
+    ecc_type = parsed_data.get("MemoryErrorCorrection", "Unknown")
+
+    supported = False
+
+    if ecc_type.isdigit():
+        ecc_type = int(ecc_type)
+        if ecc_type == ECC_SINGLE_BIT or ecc_type == ECC_MULTI_BIT:
+            supported = True
+
+    return supported, (
+        ECC_MEMORY_TYPE[ecc_type] if ecc_type in ECC_MEMORY_TYPE else "Unknown"
+    )
 
 
 def fetch_wmi_memory_info() -> MemoryInfo:
@@ -89,9 +137,17 @@ def fetch_wmi_memory_info() -> MemoryInfo:
                 module.supports_ecc = True
             else:
                 module.supports_ecc = False
-        # Todo: Extract ECC Type
-        # https://learn.microsoft.com/en-us/windows/win32/cimwin32prov/win32-physicalmemoryarray
-        # SMBIOS Specification - Section 7.17.3 - Physical Memory Array (Type 16)
+
+        # NOTE[kernel]:
+        #   I don't know if it's same to assume this,
+        #   but I believe Win32_PhysicalMemoryArray indicates
+        #   towards all memory modules in the system.
+        #
+        #   Apparently, this isn't supposed to be like this,
+        #   but I cannot find a better way to determine ECC support per module.
+        ecc_supported, ecc_type = check_ecc()
+        module.supports_ecc = ecc_supported
+        module.ecc_type = ecc_type
 
         memory_info.modules.append(module)
 
