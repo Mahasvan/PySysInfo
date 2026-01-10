@@ -309,3 +309,7 @@ http-client.private.env.json
 *.exp
 *.lib
 *.obj
+
+# Profiler artifacts / outputs
+*.lprof
+scalene*
