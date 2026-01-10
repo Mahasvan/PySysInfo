@@ -20,6 +20,7 @@ class MemoryModuleInfo(BaseModel):
     frequency_mhz: Optional[int] = None
     slot: Optional[MemoryModuleSlot] = None
     supports_ecc: Optional[bool] = None
+    ecc_type: Optional[str] = None
 
 
 class MemoryInfo(ComponentInfo):

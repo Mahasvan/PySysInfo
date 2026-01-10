@@ -37,6 +37,17 @@ MEDIA_TYPE = {
     5: "Storage Class Memory (SCM)",
 }
 
+ECC_MEMORY_TYPE = {
+    0: "Reserved",
+    1: "Other",
+    2: "Unknown",
+    3: "None",
+    4: "Parity",
+    5: "Single-bit ECC",
+    6: "Multi-bit ECC",
+    7: "CRC"
+}
+
 MEMORY_TYPE = {
     0: "Unknown",
     1: "Other",

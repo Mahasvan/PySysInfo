@@ -14,7 +14,7 @@ with resources.path("pysysinfo.interops.win.dll", "gpu_helper.dll") as dll_path:
     gpu_helper = ctypes.WinDLL(str(dll_path), use_last_error=True)
 
 gpu_helper.GetGPUForDisplay.argtypes = [ctypes.c_char_p, ctypes.c_char_p, ctypes.c_int]
-gpu_helper.GetGPUForDisplay.restype = None
+gpu_helper.GetGPUForDisplay.restype = ctypes.c_uint32
 GetGPUForDisplay = gpu_helper.GetGPUForDisplay
 
 gpu_helper.GetWmiInfo.argtypes = [
@@ -25,6 +25,14 @@ gpu_helper.GetWmiInfo.argtypes = [
 ]
 gpu_helper.GetWmiInfo.restype = None
 GetWmiInfo = gpu_helper.GetWmiInfo
+
+gpu_helper.GetNetworkHardwareInfo.argtypes = [ctypes.c_char_p, ctypes.c_int]
+gpu_helper.GetNetworkHardwareInfo.restype = ctypes.c_uint32
+GetNetworkHardwareInfo = gpu_helper.GetNetworkHardwareInfo
+
+gpu_helper.GetAudioHardwareInfo.argtypes = [ctypes.c_char_p, ctypes.c_int]
+gpu_helper.GetAudioHardwareInfo.restype = ctypes.c_uint32
+GetAudioHardwareInfo = gpu_helper.GetAudioHardwareInfo
 
 # --------------------
 # User32.dll

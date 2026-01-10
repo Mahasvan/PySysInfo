@@ -2,7 +2,9 @@ from typing import Optional
 
 from pydantic import BaseModel
 
+from pysysinfo.models.audio_models import AudioInfo
 from pysysinfo.models.cpu_models import CPUInfo
+from pysysinfo.models.display_models import DisplayInfo
 from pysysinfo.models.gpu_models import GraphicsInfo
 from pysysinfo.models.memory_models import MemoryInfo
 from pysysinfo.models.storage_models import StorageInfo
@@ -15,6 +17,8 @@ class HardwareInfo(BaseModel):
     storage: Optional[StorageInfo] = None
     graphics: Optional[GraphicsInfo] = None
     network: Optional[NetworkInfo] = None
+    display: Optional[DisplayInfo] = None
+    audio: Optional[AudioInfo] = None
 
 
 class LinuxHardwareInfo(HardwareInfo):
@@ -58,4 +62,12 @@ class HardwareManagerInterface:
 
     def fetch_network_info(self) -> NetworkInfo:
         """Fetches Network Information."""
+        pass
+
+    def fetch_display_info(self) -> DisplayInfo:
+        """Fetches Display Information."""
+        pass
+
+    def fetch_audio_info(self) -> AudioInfo:
+        """Fetches Audio Information."""
         pass
