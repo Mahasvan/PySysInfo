@@ -1,9 +1,6 @@
 import ctypes
-import json
-import subprocess
-from typing import List
 
-from pysysinfo.interops.win.api.signatures import GetWmiInfo
+from pysysinfo.interops.win.api.signatures import GetNetworkHardwareInfo
 from pysysinfo.util.location_paths import get_location_paths
 from pysysinfo.models.network_models import NICInfo, NetworkInfo
 from pysysinfo.dumps.windows.common import format_acpi_path, format_pci_path
@@ -13,30 +10,26 @@ from pysysinfo.models.status_models import Status, StatusType
 def fetch_wmi_cmdlet_network_info() -> NetworkInfo:
     network_info = NetworkInfo(status=Status(type=StatusType.SUCCESS))
 
-    raw_data = ctypes.create_string_buffer(1024 * 10)
-    GetWmiInfo(
-        b"SELECT PNPDeviceID, Manufacturer, Name FROM Win32_NetworkAdapter WHERE PhysicalAdapter=True",
-        b"ROOT\\CIMV2",
-        raw_data,
-        1024 * 10,
-    )
+    # 256 bytes per property, 3 properties, 5 modules
+    buf_size = 256 * 3 * 5
+    raw_data = ctypes.create_string_buffer(buf_size)
+
+    res = GetNetworkHardwareInfo(raw_data, buf_size)
 
     try:
-        decoded = raw_data.value.decode("utf-8")
+        decoded = raw_data.value.decode("utf-8", errors="ignore").strip()
     except Exception:
         network_info.status.type = StatusType.FAILED
-        network_info.status.messages.append("Failed to decode WMI output")
+        network_info.status.messages.append("Failed to decode native network output")
         return network_info
 
-    for data in decoded.split("\n"):
-        if not data or "|" not in data:
+    for line in decoded.split("\n"):
+        if not line or "|" not in line:
             continue
 
-        module = NICInfo()
-        parsed = {
-            x.split("=", 1)[0]: x.split("=", 1)[1] for x in data.split("|") if "=" in x
-        }
+        parsed = dict(x.split("=", 1) for x in line.split("|") if "=" in x)
 
+        module = NICInfo()
         pnp_device_id = parsed.get("PNPDeviceID", None)
         manufacturer = parsed.get("Manufacturer", None)
         name = parsed.get("Name", None)
