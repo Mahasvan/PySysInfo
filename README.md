@@ -36,6 +36,10 @@ print(json.dumps(json_data, indent=2))
 
 ## Tracker
 
+### Miscellaneous Tasks / Problems
+
+- [ ] Implement GH actions for compiling modules from `interops/{platform}/*.{c|cpp}` to their respective output directories
+
 ### Hardware Discovery
 
 - Linux
