@@ -9,6 +9,7 @@ from pysysinfo.interops.win.api.constants import *
 from pysysinfo.interops.win.api.structs import *
 from pysysinfo.interops.win.api.signatures import *
 from pysysinfo.models.display_models import DisplayInfo, DisplayModuleInfo
+from pysysinfo.models.status_models import Status, StatusType
 
 # ------------------------------
 # Utility functions
@@ -32,7 +33,7 @@ def get_aspect_ratios(width: int, height: int) -> tuple[str, str, Optional[str]]
         return a
 
     if width == 0 or height == 0:
-        return None
+        return (None, None, None)
 
     long_side = max(width, height)
     short_side = min(width, height)
@@ -69,7 +70,7 @@ def get_aspect_ratios(width: int, height: int) -> tuple[str, str, Optional[str]]
 
 def parse_edid(edid: bytes):
     if len(edid) < 128:
-        return {}
+        return None
 
     vendor = struct.unpack(">H", edid[8:10])[0]
     product = struct.unpack("<H", edid[10:12])[0]
@@ -105,16 +106,23 @@ def parse_edid(edid: bytes):
     }
 
 
-def find_monitor_gpu(device_name) -> Optional[str]:
+def find_monitor_gpu(device_name) -> tuple[str, int]:
     out_buffer = ctypes.create_string_buffer(256)
     encoded_name = device_name.encode("utf-8")
 
-    try:
-        GetGPUForDisplay(encoded_name, out_buffer, 256)
+    res = GetGPUForDisplay(encoded_name, out_buffer, 256)
+    result = (None, res)
+    
+    if res != STATUS_OK:
+        return result
 
-        return out_buffer.value.decode("utf-8")
-    except Exception as e:
-        print(f"Error calling DLL: {e}")
+    val = out_buffer.value.decode("utf-8")
+
+    if val and len(val) > 0:
+        result = (val, res)
+        
+    return result
+    
 
 
 # ------------------------------
@@ -231,12 +239,20 @@ def get_edid_by_hwid(hwid: str):
 
 def monitor_enum_proc(hmonitor, hdc, rect, lparam):
     ptr = ctypes.cast(lparam, ctypes.POINTER(ctypes.py_object))
-    monitor_list = ptr.contents.value
+    monitor_list: DisplayInfo = ptr.contents.value
 
     mi = MONITORINFOEXA()
     mi.cbSize = ctypes.sizeof(mi)
     GetMonitorInfoA(hmonitor, ctypes.byref(mi))
     devid = mi.szDevice.decode()
+
+    if not devid:
+        monitor_list.status = Status(type=StatusType.PARTIAL)
+        monitor_list.status.messages.append(
+            f"Failed to fetch Display device information, DeviceID is empty!"
+        )
+
+        return True  # Continue enumeration
 
     dm = DEVMODEA()
     dm.dmSize = ctypes.sizeof(dm)
@@ -246,14 +262,22 @@ def monitor_enum_proc(hmonitor, hdc, rect, lparam):
     EnumDisplayDevicesA(mi.szDevice, 0, ctypes.byref(dd), 0)
     target_pnp_id = dd.DeviceID.decode()
 
-    p_gpu = find_monitor_gpu(devid)
-    edid = get_edid_by_hwid(target_pnp_id.split("\\")[1])
+    if not target_pnp_id or not len(target_pnp_id):
+        monitor_list.status = Status(type=StatusType.PARTIAL)
+        monitor_list.status.messages.append(
+            f"Failed to fetch Display device information, PNPDeviceID is empty!"
+        )
+
+        return True  # Continue enumeration
+
+    p_gpu, res_code = find_monitor_gpu(devid)
+    edid = get_edid_by_hwid(target_pnp_id.split("\\")[1]) if target_pnp_id else None
 
     orientation = dm.dmDisplayOrientation
 
     monitor_info = DisplayModuleInfo()
     monitor_info.name = edid.get("name", None) if edid else None
-    monitor_info.parent_gpu = p_gpu
+    monitor_info.parent_gpu = p_gpu if res_code == STATUS_OK else None
     monitor_info.device_id = devid
     monitor_info.hardware_id = target_pnp_id
     monitor_info.resolution.width = dm.dmPelsWidth
@@ -288,7 +312,7 @@ def monitor_enum_proc(hmonitor, hdc, rect, lparam):
 
     monitor_list.modules.append(monitor_info)
 
-    return True
+    return True  # Continue enumeration
 
 
 def fetch_display_info_internal() -> DisplayInfo:
@@ -297,5 +321,8 @@ def fetch_display_info_internal() -> DisplayInfo:
 
     enum_proc = MONITORENUMPROC(monitor_enum_proc)
     EnumDisplayMonitors(0, 0, enum_proc, ctypes.addressof(monitors_ptr))
+
+    if len(monitors.modules) == 0:
+        monitors.status.type = StatusType.FAILED
 
     return monitors
