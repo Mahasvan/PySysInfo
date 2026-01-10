@@ -304,3 +304,8 @@ http-client.private.env.json
 
 .idea
 .DS_Store
+
+# Binaries / libs artifacts
+*.exp
+*.lib
+*.obj
