@@ -19,6 +19,7 @@ def fetch_audio_info_fast() -> AudioInfo:
 
     res = GetAudioHardwareInfo(raw_data, buf_size)
 
+    # the method couldn't execute successfully
     if res != STATUS_OK:
         audio_info.status.type = StatusType.FAILED
         audio_info.status.messages.append(
@@ -28,6 +29,7 @@ def fetch_audio_info_fast() -> AudioInfo:
 
     decoded = raw_data.value.decode("utf-8", errors="ignore").strip()
 
+    # data is empty
     if not decoded:
         audio_info.status.type = StatusType.FAILED
         audio_info.status.messages.append("Audio HW info query returned no data")
@@ -42,6 +44,10 @@ def fetch_audio_info_fast() -> AudioInfo:
         parsed = dict(x.split("=", 1) for x in line.split("|") if "=" in x)
         device_type = parsed.get("Type")
 
+        """
+        Device types can be "Hardware" (audio controller) or "Endpoint" (audio device)
+        We group endpoints under their parent hardware controller.
+        """
         if device_type == "Hardware":
             if current_hardware:
                 audio_info.modules.append(current_hardware)
