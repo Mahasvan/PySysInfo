@@ -17,6 +17,15 @@ gpu_helper.GetGPUForDisplay.argtypes = [ctypes.c_char_p, ctypes.c_char_p, ctypes
 gpu_helper.GetGPUForDisplay.restype = None
 GetGPUForDisplay = gpu_helper.GetGPUForDisplay
 
+gpu_helper.GetWmiInfo.argtypes = [
+    ctypes.c_char_p,
+    ctypes.c_char_p,
+    ctypes.c_char_p,
+    ctypes.c_int,
+]
+gpu_helper.GetWmiInfo.restype = None
+GetWmiInfo = gpu_helper.GetWmiInfo
+
 # --------------------
 # User32.dll
 # --------------------

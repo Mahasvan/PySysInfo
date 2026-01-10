@@ -8,6 +8,7 @@ import winreg
 from typing import Optional
 
 from pysysinfo.dumps.windows.common import format_acpi_path, format_pci_path
+from pysysinfo.util.location_paths import fetch_device_properties
 from pysysinfo.models.gpu_models import GPUInfo
 from pysysinfo.models.gpu_models import GraphicsInfo
 from pysysinfo.models.size_models import Megabyte
@@ -15,42 +16,31 @@ from pysysinfo.models.status_models import StatusType
 from pysysinfo.util.nvidia import fetch_gpu_details_nvidia
 
 
-def fetch_additional_properties(pnp_device_id: str):
-    escaped = html.unescape(pnp_device_id)
-    ps_script = (f"Get-PnpDeviceProperty -InstanceId \"{escaped}\"  "
-                 f"-KeyName DEVPKEY_Device_LocationPaths,DEVPKEY_Device_BusNumber,DEVPKEY_Device_Address | "
-                 f"Select-Object -ExpandProperty Data")
-    try:
-        result = subprocess.run(["powershell", "-Command", ps_script], capture_output=True, text=True)
-    except:
-        return None, None, None, None
-    if not result.stdout and not result.stdout.strip():
-        return None, None, None, None
-
-    rows = result.stdout.splitlines()
-    if len(rows) < 2: return None, None, None, None
-
-    paths, bus_number, device_address = rows[:-2], rows[-2], rows[-1]
+def fetch_additional_properties(pnp_device_id: str) -> tuple[str | None, str | None, str | None, str | None]:
+    """
+    Fetch additional device properties using Windows Configuration Manager API.
+    
+    Args:
+        pnp_device_id: The PNP Device ID string
+        
+    Returns:
+        Tuple of (acpi_path, pci_root, bus_number, device_address)
+    """
+    location_paths, bus_number, device_address = fetch_device_properties(pnp_device_id)
+    
+    if not location_paths:
+        return None, None, bus_number, device_address
+    
     acpi_path = None
     pci_root = None
-    for path in paths:
+    
+    for path in location_paths:
         if path.startswith("ACPI"):
             acpi_path = path
         if path.startswith("PCIROOT"):
             pci_root = path
+    
     return acpi_path, pci_root, bus_number, device_address
-
-    paths = result.stdout.splitlines()
-
-    acpi_path = None
-    pciroot = None
-
-    for path in paths:
-        if path.startswith("ACPI"):
-            acpi_path = path
-        if path.startswith("PCIROOT"):
-            pciroot = path
-    return acpi_path, pciroot
 
 
 def fetch_vram_from_registry(device_name: str, driver_version: str) -> Optional[int]:
@@ -202,7 +192,6 @@ def parse_cmd_output(lines: list) -> GraphicsInfo:
                 func_num = int(device_address) & 0xFFFF
                 nvidia_smi_id = f"0000:{int(bus_number):02x}:{device_num:02x}.{func_num:02x}"
                 gpu_name, pci_width, pci_gen, vram_total = fetch_gpu_details_nvidia(nvidia_smi_id)
-                print(gpu_name, pci_width, pci_gen, vram_total)
                 if pci_width: gpu.pcie_width = pci_width
                 if pci_gen: gpu.pcie_gen = pci_gen
             # todo: From what I looked, there is no consistent reliable method to get this additional info for AMD GPUs.
