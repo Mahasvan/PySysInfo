@@ -122,6 +122,10 @@ def fetch_fast_graphics_info() -> GraphicsInfo:
         gpu.manufacturer = parsed_data["AdapterCompatibility"]
         pnp_device_id = parsed_data["PNPDeviceID"]
         drv_version = parsed_data["DriverVersion"]
+        
+        if "PCI" not in pnp_device_id.upper():
+            continue  # Skip non-PCI GPUs (virtual adapters, etc.)
+        
         start = time.time()
         acpi_path, pci_root, bus_number, device_address = fetch_additional_properties(
             pnp_device_id
@@ -150,7 +154,7 @@ def fetch_fast_graphics_info() -> GraphicsInfo:
         # Attempt to get VRAM details
         vram = parsed_data["AdapterRAM"]
 
-        if (vram and int(vram) >= 4_194_304_000) or (int(vram) <= 0):
+        if vram and (int(vram) >= 4_194_304_000 or int(vram) <= 0):
             # WMI's VRAM entry is a signed 32-bit integer. The maximum value it can show is 4095MB.
             # If it is more than 4000 MB, we query the registry instead, for accuracy
             vram_bytes = fetch_vram_from_registry(gpu.name, drv_version)
