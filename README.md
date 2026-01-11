@@ -65,11 +65,12 @@ print(json.dumps(json_data, indent=2))
     - [x] CPU
     - [x] GPU* [PCIe gen info only for Nvidia GPUs]
     - [x] Memory
-    - [ ] Network
-    - [ ] Audio
+    - [x] Network
+    - [x] Audio
     - [ ] Motherboard
     - [ ] Input
     - [x] Storage
+    - [x] Display
 
 ### Supporting Features
 
