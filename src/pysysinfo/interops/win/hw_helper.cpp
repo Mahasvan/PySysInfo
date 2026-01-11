@@ -41,6 +41,8 @@
 #include <algorithm>
 #include <cwctype>
 
+#include "hw_helper.hpp"
+
 #pragma comment(lib, "dxgi.lib")
 #pragma comment(lib, "wbemuuid.lib")
 #pragma comment(lib, "comsuppw.lib")
@@ -52,13 +54,20 @@
 #pragma comment(lib, "shlwapi.lib")
 #pragma comment(lib, "cfgmgr32.lib")
 
-typedef enum gpuHelper_Result_ENUM
+// Helper: get SMBIOS string by index
+static char *GetSMBIOSString(const uint8_t *strings, uint8_t index)
 {
-    STATUS_OK = 0u,
-    STATUS_NOK,
-    STATUS_INVALID_ARG,
-    STATUS_FAILURE
-} gpuHelper_RESULT;
+    if (index == 0)
+        return nullptr;
+
+    const char *p = reinterpret_cast<const char *>(strings);
+    while (--index && *p)
+    {
+        p += std::strlen(p) + 1;
+    }
+
+    return *p ? const_cast<char *>(p) : nullptr;
+}
 
 // Helper: convert wide string to char buffer
 void ws2s(const WCHAR *wstr, char *buffer, int bufferSize)
@@ -110,64 +119,73 @@ std::string GetEndpointDataFlow(const std::string &endpointName)
         return dataFlow;
 
     IMMDeviceEnumerator *pEnumerator = NULL;
-    if (SUCCEEDED(CoCreateInstance(__uuidof(MMDeviceEnumerator), NULL, CLSCTX_ALL, IID_PPV_ARGS(&pEnumerator))))
+    if (FAILED(CoCreateInstance(__uuidof(MMDeviceEnumerator), NULL, CLSCTX_ALL, IID_PPV_ARGS(&pEnumerator))))
     {
-        EDataFlow flows[] = {eRender, eCapture};
-        const char *flowNames[] = {"Render", "Capture"};
-
-        for (int flow = 0; flow < 2; flow++)
-        {
-            IMMDeviceCollection *pDevices = NULL;
-            if (SUCCEEDED(pEnumerator->EnumAudioEndpoints(flows[flow], DEVICE_STATE_ACTIVE, &pDevices)))
-            {
-                UINT count = 0;
-                pDevices->GetCount(&count);
-
-                for (UINT d = 0; d < count; d++)
-                {
-                    IMMDevice *pDevice = NULL;
-                    if (SUCCEEDED(pDevices->Item(d, &pDevice)))
-                    {
-                        IPropertyStore *pProps = NULL;
-                        if (SUCCEEDED(pDevice->OpenPropertyStore(STGM_READ, &pProps)))
-                        {
-                            PROPVARIANT varName;
-                            PropVariantInit(&varName);
-
-                            if (SUCCEEDED(pProps->GetValue(PKEY_Device_FriendlyName, &varName)))
-                            {
-                                std::string currentName = WideToUtf8(varName.pwszVal);
-
-                                // match by friendly name
-                                if (currentName == endpointName)
-                                {
-                                    dataFlow = flowNames[flow];
-                                    PropVariantClear(&varName);
-                                    pProps->Release();
-                                    pDevice->Release();
-                                    pDevices->Release();
-                                    pEnumerator->Release();
-                                    if (hr == S_OK)
-                                        CoUninitialize();
-                                    return dataFlow;
-                                }
-                            }
-
-                            PropVariantClear(&varName);
-                            pProps->Release();
-                        }
-
-                        pDevice->Release();
-                    }
-                }
-
-                pDevices->Release();
-            }
-        }
-
-        pEnumerator->Release();
+        if (hr == S_OK)
+            CoUninitialize();
+        return dataFlow;
     }
 
+    EDataFlow flows[] = {eRender, eCapture};
+    const char *flowNames[] = {"Render", "Capture"};
+
+    for (int flow = 0; flow < 2; flow++)
+    {
+        IMMDeviceCollection *pDevices = NULL;
+        if (FAILED(pEnumerator->EnumAudioEndpoints(flows[flow], DEVICE_STATE_ACTIVE, &pDevices)))
+            continue;
+
+        UINT count = 0;
+        pDevices->GetCount(&count);
+
+        for (UINT d = 0; d < count; d++)
+        {
+            IMMDevice *pDevice = NULL;
+            if (FAILED(pDevices->Item(d, &pDevice)))
+                continue;
+
+            IPropertyStore *pProps = NULL;
+            if (FAILED(pDevice->OpenPropertyStore(STGM_READ, &pProps)))
+            {
+                pDevice->Release();
+                continue;
+            }
+
+            PROPVARIANT varName;
+            PropVariantInit(&varName);
+
+            if (FAILED(pProps->GetValue(PKEY_Device_FriendlyName, &varName)))
+            {
+                pProps->Release();
+                pDevice->Release();
+                continue;
+            }
+
+            std::string currentName = WideToUtf8(varName.pwszVal);
+
+            // match by friendly name
+            if (currentName == endpointName)
+            {
+                dataFlow = flowNames[flow];
+                PropVariantClear(&varName);
+                pProps->Release();
+                pDevice->Release();
+                pDevices->Release();
+                pEnumerator->Release();
+                if (hr == S_OK)
+                    CoUninitialize();
+                return dataFlow;
+            }
+
+            PropVariantClear(&varName);
+            pProps->Release();
+            pDevice->Release();
+        }
+
+        pDevices->Release();
+    }
+
+    pEnumerator->Release();
     if (hr == S_OK)
         CoUninitialize();
 
@@ -175,29 +193,22 @@ std::string GetEndpointDataFlow(const std::string &endpointName)
 }
 
 // Core function
-gpuHelper_RESULT GetGPUForDisplayInternal(const char *deviceName, char *outGPUName, unsigned int bufSize)
+HardwareHelper_RESULT GetGPUForDisplayInternal(const char *deviceName, char *outGPUName, unsigned int bufSize)
 {
     if (deviceName == nullptr || strlen(deviceName) == 0)
-    {
         return STATUS_INVALID_ARG;
-    }
 
     if (outGPUName == nullptr)
-    {
         return STATUS_INVALID_ARG;
-    }
 
     if (bufSize <= 0)
-    {
         return STATUS_INVALID_ARG;
-    }
 
     IDXGIFactory6 *factory = nullptr;
     if (FAILED(CreateDXGIFactory1(IID_PPV_ARGS(&factory))))
     {
         if (outGPUName && bufSize > 0)
             outGPUName[0] = 0;
-
         return STATUS_FAILURE;
     }
 
@@ -227,21 +238,22 @@ gpuHelper_RESULT GetGPUForDisplayInternal(const char *deviceName, char *outGPUNa
             char devName[32] = {};
             ws2s(descOutput.DeviceName, devName, sizeof(devName));
 
-            if (strcmp(devName, deviceName) == 0)
+            if (strcmp(devName, deviceName) != 0)
             {
-                if (outGPUName && bufSize > 0)
-                {
-                    strncpy(outGPUName, outName, bufSize - 1);
-                    outGPUName[bufSize - 1] = 0;
-                }
                 output->Release();
-                adapter->Release();
-                factory->Release();
-
-                return STATUS_OK;
+                continue;
             }
 
+            // Found matching device
+            if (outGPUName && bufSize > 0)
+            {
+                strncpy(outGPUName, outName, bufSize - 1);
+                outGPUName[bufSize - 1] = 0;
+            }
             output->Release();
+            adapter->Release();
+            factory->Release();
+            return STATUS_OK;
         }
 
         adapter->Release();
@@ -257,21 +269,17 @@ gpuHelper_RESULT GetGPUForDisplayInternal(const char *deviceName, char *outGPUNa
 }
 
 // DLL export
-extern "C" __declspec(dllexport) gpuHelper_RESULT GetGPUForDisplay(const char *deviceName, char *outGPUName, int bufSize)
+extern "C" __declspec(dllexport) HardwareHelper_RESULT GetGPUForDisplay(const char *deviceName, char *outGPUName, int bufSize)
 {
     return GetGPUForDisplayInternal(deviceName, outGPUName, bufSize);
 }
 
 extern "C" __declspec(dllexport) void GetWmiInfo(char *wmiQuery, char *cimServer, char *outBuffer, int maxLen)
 {
-    HRESULT hr;
-
     if (cimServer == nullptr || strlen(cimServer) == 0)
-    {
         cimServer = "ROOT\\CIMV2";
-    }
 
-    hr = CoInitializeEx(0, COINIT_MULTITHREADED);
+    HRESULT hr = CoInitializeEx(0, COINIT_MULTITHREADED);
     if (FAILED(hr) && hr != RPC_E_CHANGED_MODE)
         return;
 
@@ -303,63 +311,70 @@ extern "C" __declspec(dllexport) void GetWmiInfo(char *wmiQuery, char *cimServer
                          bstr_t(wmiQuery),
                          WBEM_FLAG_FORWARD_ONLY | WBEM_FLAG_RETURN_IMMEDIATELY, NULL, &pEnumerator);
 
-    if (SUCCEEDED(hr))
+    if (FAILED(hr))
     {
-        IWbemClassObject *pclsObj = NULL;
-        ULONG uReturn = 0;
-        std::string result = "";
+        pSvc->Release();
+        pLoc->Release();
+        CoUninitialize();
+        return;
+    }
 
-        while (pEnumerator)
+    IWbemClassObject *pclsObj = NULL;
+    ULONG uReturn = 0;
+    std::string result = "";
+
+    while (pEnumerator)
+    {
+        hr = pEnumerator->Next(WBEM_INFINITE, 1, &pclsObj, &uReturn);
+        if (0 == uReturn)
+            break;
+
+        SAFEARRAY *pNames = nullptr;
+        hr = pclsObj->GetNames(
+            nullptr,
+            WBEM_FLAG_NONSYSTEM_ONLY,
+            nullptr,
+            &pNames);
+
+        if (FAILED(hr) || !pNames)
         {
-            hr = pEnumerator->Next(WBEM_INFINITE, 1, &pclsObj, &uReturn);
-            if (0 == uReturn)
-                break;
-
-            SAFEARRAY *pNames = nullptr;
-            hr = pclsObj->GetNames(
-                nullptr,
-                WBEM_FLAG_NONSYSTEM_ONLY,
-                nullptr,
-                &pNames);
-
-            if (SUCCEEDED(hr) && pNames)
-            {
-                LONG lBound = 0, uBound = -1;
-                SafeArrayGetLBound(pNames, 1, &lBound);
-                SafeArrayGetUBound(pNames, 1, &uBound);
-
-                for (LONG i = lBound; i <= uBound; i++)
-                {
-                    BSTR propName = nullptr;
-                    SafeArrayGetElement(pNames, &i, &propName);
-
-                    VARIANT vtProp;
-                    VariantInit(&vtProp);
-
-                    if (SUCCEEDED(pclsObj->Get(propName, 0, &vtProp, nullptr, nullptr)))
-                    {
-                        WCHAR variantStr[1024] = {};
-                        VariantToString(vtProp, variantStr, 1024);
-
-                        result += (const char *)_bstr_t(propName);
-                        result += "=";
-                        result += WideToUtf8(variantStr);
-                        result += "|";
-                    }
-
-                    VariantClear(&vtProp);
-                    SysFreeString(propName);
-                }
-
-                result += "\n";
-                SafeArrayDestroy(pNames);
-            }
-
             pclsObj->Release();
+            continue;
         }
 
-        strncpy_s(outBuffer, maxLen, result.c_str(), _TRUNCATE);
+        LONG lBound = 0, uBound = -1;
+        SafeArrayGetLBound(pNames, 1, &lBound);
+        SafeArrayGetUBound(pNames, 1, &uBound);
+
+        for (LONG i = lBound; i <= uBound; i++)
+        {
+            BSTR propName = nullptr;
+            SafeArrayGetElement(pNames, &i, &propName);
+
+            VARIANT vtProp;
+            VariantInit(&vtProp);
+
+            if (SUCCEEDED(pclsObj->Get(propName, 0, &vtProp, nullptr, nullptr)))
+            {
+                WCHAR variantStr[1024] = {};
+                VariantToString(vtProp, variantStr, 1024);
+
+                result += (const char *)_bstr_t(propName);
+                result += "=";
+                result += WideToUtf8(variantStr);
+                result += "|";
+            }
+
+            VariantClear(&vtProp);
+            SysFreeString(propName);
+        }
+
+        result += "\n";
+        SafeArrayDestroy(pNames);
+        pclsObj->Release();
     }
+
+    strncpy_s(outBuffer, maxLen, result.c_str(), _TRUNCATE);
 
     // Cleanup
     if (pEnumerator)
@@ -428,34 +443,36 @@ extern "C" __declspec(dllexport) int GetNetworkHardwareInfo(char *outData, int o
             for (DWORD i = 0; SetupDiEnumDeviceInfo(devInfo, i, &devData); i++)
             {
                 HKEY hKey = SetupDiOpenDevRegKey(devInfo, &devData, DICS_FLAG_GLOBAL, 0, DIREG_DRV, KEY_READ);
-                if (hKey != INVALID_HANDLE_VALUE)
+                if (hKey == INVALID_HANDLE_VALUE)
+                    continue;
+
+                WCHAR netCfgId[128];
+                DWORD dwSize = sizeof(netCfgId);
+
+                if (RegQueryValueExW(hKey, L"NetCfgInstanceId", NULL, NULL, (LPBYTE)netCfgId, &dwSize) != ERROR_SUCCESS)
                 {
-                    WCHAR netCfgId[128];
-                    DWORD dwSize = sizeof(netCfgId);
-
-                    if (RegQueryValueExW(hKey, L"NetCfgInstanceId", NULL, NULL, (LPBYTE)netCfgId, &dwSize) == ERROR_SUCCESS)
-                    {
-                        if (_wcsicmp(netCfgId, wAdapterGuid.c_str()) == 0)
-                        {
-                            WCHAR pnpBuffer[MAX_DEVICE_ID_LEN];
-                            if (SetupDiGetDeviceInstanceIdW(devInfo, &devData, pnpBuffer, MAX_DEVICE_ID_LEN, NULL))
-                            {
-                                wPnpInstanceId = pnpBuffer;
-                            }
-
-                            WCHAR mfgBuffer[256];
-                            if (SetupDiGetDeviceRegistryPropertyW(devInfo, &devData, SPDRP_MFG, NULL, (PBYTE)mfgBuffer, sizeof(mfgBuffer), NULL))
-                            {
-                                wManufacturer = mfgBuffer;
-                            }
-
-                            foundInRegistry = true;
-                        }
-                    }
                     RegCloseKey(hKey);
+                    continue;
                 }
-                if (foundInRegistry)
-                    break;
+
+                if (_wcsicmp(netCfgId, wAdapterGuid.c_str()) != 0)
+                {
+                    RegCloseKey(hKey);
+                    continue;
+                }
+
+                // Found matching adapter
+                WCHAR pnpBuffer[MAX_DEVICE_ID_LEN];
+                if (SetupDiGetDeviceInstanceIdW(devInfo, &devData, pnpBuffer, MAX_DEVICE_ID_LEN, NULL))
+                    wPnpInstanceId = pnpBuffer;
+
+                WCHAR mfgBuffer[256];
+                if (SetupDiGetDeviceRegistryPropertyW(devInfo, &devData, SPDRP_MFG, NULL, (PBYTE)mfgBuffer, sizeof(mfgBuffer), NULL))
+                    wManufacturer = mfgBuffer;
+
+                foundInRegistry = true;
+                RegCloseKey(hKey);
+                break;
             }
         }
 
@@ -608,47 +625,44 @@ extern "C" __declspec(dllexport) int GetAudioHardwareInfo(char *outData, int out
         finalResult += hwLine + "\n";
 
         DEVINST childDevInst = 0;
-        if (CM_Get_Child(&childDevInst, devData.DevInst, 0) == CR_SUCCESS)
+        if (CM_Get_Child(&childDevInst, devData.DevInst, 0) != CR_SUCCESS)
+            continue;
+
+        // enumerate all children of this hardware device
+        while (true)
         {
-            // enumerate all children of this hardware device
-            while (true)
+            WCHAR childPnpBuffer[MAX_DEVICE_ID_LEN];
+            if (CM_Get_Device_IDW(childDevInst, childPnpBuffer, MAX_DEVICE_ID_LEN, 0) == CR_SUCCESS)
             {
-                WCHAR childPnpBuffer[MAX_DEVICE_ID_LEN];
-                if (CM_Get_Device_IDW(childDevInst, childPnpBuffer, MAX_DEVICE_ID_LEN, 0) == CR_SUCCESS)
+                // get child device friendly name
+                WCHAR childNameBuffer[256] = {0};
+                ULONG childNameSize = sizeof(childNameBuffer);
+                if (CM_Get_DevNode_Registry_PropertyW(childDevInst, CM_DRP_FRIENDLYNAME,
+                                                      NULL, childNameBuffer, &childNameSize, 0) == CR_SUCCESS)
                 {
-                    std::wstring childPnpId = childPnpBuffer;
+                    std::string childName = WideToUtf8(childNameBuffer);
 
-                    // get child device friendly name
-                    WCHAR childNameBuffer[256] = {0};
-                    ULONG childNameSize = sizeof(childNameBuffer);
-                    if (CM_Get_DevNode_Registry_PropertyW(childDevInst, CM_DRP_FRIENDLYNAME,
-                                                          NULL, childNameBuffer, &childNameSize, 0) == CR_SUCCESS)
+                    // lookup dataflow from core audio api by matching endpoint name
+                    std::string dataFlow = GetEndpointDataFlow(childName);
+
+                    // assumption: if the data flown isn't known, the endpoint is not active/usable
+                    if (dataFlow != "Unknown")
                     {
-                        std::string childName = WideToUtf8(childNameBuffer);
-
-                        // lookup dataflow from core audio api by matching endpoint name
-                        std::string dataFlow = GetEndpointDataFlow(childName);
-
-                        // assumption: if the data flown isn't known, the endpoint is not active/usable
-                        if (dataFlow != "Unknown")
-                        {
-                            // output child endpoint
-                            std::string epLine = "Type=Endpoint|Name=" + childName + "|";
-                            epLine += "DataFlow=" + dataFlow + "|";
-                            epLine += "ParentPNPDeviceID=" + WideToUtf8(wPnpDeviceID.c_str());
-                            finalResult += epLine + "\n";
-                        }
+                        // output child endpoint
+                        std::string epLine = "Type=Endpoint|Name=" + childName + "|";
+                        epLine += "DataFlow=" + dataFlow + "|";
+                        epLine += "ParentPNPDeviceID=" + WideToUtf8(wPnpDeviceID.c_str());
+                        finalResult += epLine + "\n";
                     }
                 }
-
-                // get next sibling
-                DEVINST nextSiblingDevInst = 0;
-                // no more siblings
-                if (CM_Get_Sibling(&nextSiblingDevInst, childDevInst, 0) != CR_SUCCESS)
-                    break;
-
-                childDevInst = nextSiblingDevInst;
             }
+
+            // get next sibling
+            DEVINST nextSiblingDevInst = 0;
+            if (CM_Get_Sibling(&nextSiblingDevInst, childDevInst, 0) != CR_SUCCESS)
+                break;
+
+            childDevInst = nextSiblingDevInst;
         }
     }
 
@@ -662,5 +676,129 @@ extern "C" __declspec(dllexport) int GetAudioHardwareInfo(char *outData, int out
     }
 
     strncpy_s(outData, outDataLen, finalResult.c_str(), _TRUNCATE);
+    return STATUS_OK;
+}
+
+/**
+ * Fetches the following information:
+    - Motherboard Manufacturer
+    - Motherboard Model
+    - Chassis Type
+    - CPU Socket Type
+ */
+extern "C" __declspec(dllexport)
+HardwareHelper_RESULT
+FetchSMBIOSData(SMBIOSHwInfo *outInfo)
+{
+    if (!outInfo)
+        return STATUS_FAILURE;
+
+    memset(outInfo, 0, sizeof(SMBIOSHwInfo));
+
+    DWORD size = GetSystemFirmwareTable('RSMB', 0, nullptr, 0);
+    if (!size)
+        return STATUS_FAILURE;
+
+    std::vector<uint8_t> buffer(size);
+    if (!GetSystemFirmwareTable('RSMB', 0, buffer.data(), size))
+        return STATUS_FAILURE;
+
+    const uint8_t *p = buffer.data() + 8; // Skip SMBIOS entry header
+
+    while (true)
+    {
+        const auto *hdr = reinterpret_cast<const SMBIOSHeader *>(p);
+        if (hdr->Type == 127)
+            break;
+
+        const uint8_t *strings = p + hdr->Length;
+
+        switch (hdr->Type)
+        {
+        case 2: // Baseboard
+        {
+            const auto *bb = reinterpret_cast<const SMBIOSBaseboard *>(p);
+
+            const char *man =
+                GetSMBIOSString(strings, bb->Manufacturer);
+            const char *prod =
+                GetSMBIOSString(strings, bb->Product);
+
+            if (man)
+                strncpy_s(outInfo->motherboardManufacturer,
+                          man, _TRUNCATE);
+
+            if (prod)
+                strncpy_s(outInfo->motherboardModel,
+                          prod, _TRUNCATE);
+            break;
+        }
+
+        case 3: // Chassis
+        {
+            const auto *ch = reinterpret_cast<const SMBIOSChassis *>(p);
+
+            if (ch->ChassisType >= 0x25u)
+            {
+                strncpy_s(outInfo->chassisType,
+                          "Unknown", _TRUNCATE);
+                break;
+            }
+            const char *typeStr = CHASSIS_TYPE_MAPPING[ch->ChassisType];
+
+            if (typeStr != nullptr && strlen(typeStr) > 0)
+                strncpy_s(outInfo->chassisType,
+                          typeStr, _TRUNCATE);
+            break;
+        }
+
+        case 4: // Processor
+        {
+            const auto *cpu = reinterpret_cast<const SMBIOSProcessor *>(p);
+
+            // Are we dealing with SMBIOS 3.6+ structure?
+            if (hdr->Length >= 0x33)
+            {
+                const char *socketType = GetSMBIOSString(strings, cpu->SocketType);
+                if (socketType && strlen(socketType) > 0)
+                {
+                    strncpy_s(outInfo->cpuSocket, socketType, _TRUNCATE);
+                    break;
+                }
+            }
+
+            // If not, try SocketDesignation string
+            const char *socketDesignation = GetSMBIOSString(strings, cpu->SocketDesignation);
+            if (socketDesignation && strlen(socketDesignation) > 0)
+            {
+                strncpy_s(outInfo->cpuSocket, socketDesignation, _TRUNCATE);
+            }
+            // If SocketDesignation is empty, try ProcessorUpgrade field
+            // This enumeration is not the most reliable, but it can be useful as a last resort
+            else if (cpu->ProcessorUpgrade < 0xFFu)
+            {
+                const char *socketStr = PROCESSOR_UPGRADE_MAPPING[cpu->ProcessorUpgrade];
+                strncpy_s(outInfo->cpuSocket, socketStr, _TRUNCATE);
+            }
+
+            // If all enumeration methods fail, set to Unknown
+            else
+            {
+                strncpy_s(outInfo->cpuSocket, "Unknown", _TRUNCATE);
+            }
+            break;
+        }
+
+        default:
+            break;
+        }
+
+        // Advance to next SMBIOS structure
+        const uint8_t *next = strings;
+        while (!(next[0] == 0 && next[1] == 0))
+            ++next;
+        p = next + 2;
+    }
+
     return STATUS_OK;
 }

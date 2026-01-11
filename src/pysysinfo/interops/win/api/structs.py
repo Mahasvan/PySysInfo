@@ -1,6 +1,14 @@
 import ctypes
 from ctypes import wintypes
 
+# Custom structures
+class SMBIOSHwInfo(ctypes.Structure):
+    _fields_ = [
+        ("motherboardManufacturer", ctypes.c_char * 256),
+        ("motherboardModel", ctypes.c_char * 256),
+        ("chassisType", ctypes.c_char * 256),
+        ("cpuSocket", ctypes.c_char * 256),
+    ]
 
 # GUID Structure Helper
 class GUID(ctypes.Structure):
