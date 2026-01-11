@@ -67,7 +67,7 @@ print(json.dumps(json_data, indent=2))
     - [x] Memory
     - [x] Network
     - [x] Audio
-    - [ ] Motherboard
+    - [x] Motherboard
     - [ ] Input
     - [x] Storage
     - [x] Display
