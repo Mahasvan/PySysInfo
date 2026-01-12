@@ -10,7 +10,7 @@ from typing import Optional
 
 from pysysinfo.dumps.windows.common import format_acpi_path, format_pci_path
 from pysysinfo.interops.win.api.signatures import GetWmiInfo
-from pysysinfo.util.location_paths import fetch_device_properties
+from pysysinfo.util.location_paths import fetch_device_properties, fetch_pcie_info
 from pysysinfo.models.gpu_models import GPUInfo
 from pysysinfo.models.gpu_models import GraphicsInfo
 from pysysinfo.models.size_models import Megabyte
@@ -161,26 +161,34 @@ def fetch_fast_graphics_info() -> GraphicsInfo:
             gpu.vram = Megabyte(capacity=(vram_bytes // 1024 // 1024))
         elif vram:
             gpu.vram = Megabyte(capacity=(int(vram) // 1024 // 1024))
+            
+        pcie_info = fetch_pcie_info(pnp_device_id)
+        
+        if pcie_info:
+            gpu.pcie_gen, gpu.pcie_width = pcie_info
+            
 
+        # !!! Leaving this here just in case we need to revert !!!
+        
         # Attempt to get PCIe width and link speed for Nvidia
-        if gpu.vendor_id and gpu.vendor_id.lower() == "0x10de":
-            # device_address is a 32 bit integer, where the high 16 bits are Device number
-            # and the low 16 bits are the function number.
-            # The format of the PCI location string is {domain}:{bus}:{device}.{function}
-            # We can assume domain is 0000
-            # todo: requires testing
-            device_num = (int(device_address) >> 16) & 0xFFFF
-            func_num = int(device_address) & 0xFFFF
-            nvidia_smi_id = (
-                f"0000:{int(bus_number):02x}:{device_num:02x}.{func_num:02x}"
-            )
-            gpu_name, pci_width, pci_gen, vram_total = fetch_gpu_details_nvidia(
-                nvidia_smi_id
-            )
-            if pci_width:
-                gpu.pcie_width = pci_width
-            if pci_gen:
-                gpu.pcie_gen = pci_gen
+        # if gpu.vendor_id and gpu.vendor_id.lower() == "0x10de":
+        #     # device_address is a 32 bit integer, where the high 16 bits are Device number
+        #     # and the low 16 bits are the function number.
+        #     # The format of the PCI location string is {domain}:{bus}:{device}.{function}
+        #     # We can assume domain is 0000
+        #     # todo: requires testing
+        #     device_num = (int(device_address) >> 16) & 0xFFFF
+        #     func_num = int(device_address) & 0xFFFF
+        #     nvidia_smi_id = (
+        #         f"0000:{int(bus_number):02x}:{device_num:02x}.{func_num:02x}"
+        #     )
+        #     gpu_name, pci_width, pci_gen, vram_total = fetch_gpu_details_nvidia(
+        #         nvidia_smi_id
+        #     )
+        #     if pci_width:
+        #         gpu.pcie_width = pci_width
+        #     if pci_gen:
+        #         gpu.pcie_gen = pci_gen
         # todo: From what I looked, there is no consistent reliable method to get this additional info for AMD GPUs.
         # todo: Additional details for Intel ARC GPUs
 
