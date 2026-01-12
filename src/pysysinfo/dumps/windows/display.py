@@ -5,6 +5,7 @@ from ctypes import wintypes
 import struct
 from typing import List, Optional
 
+from pysysinfo.dumps.windows.win_enum import DISPLAY_CON_TYPE
 from pysysinfo.interops.win.api.constants import *
 from pysysinfo.interops.win.api.structs import *
 from pysysinfo.interops.win.api.signatures import *
@@ -14,6 +15,37 @@ from pysysinfo.models.status_models import Status, StatusType
 # ------------------------------
 # Utility functions
 # ------------------------------
+
+
+def parse_connector_info(connector_info: dict) -> Optional[dict]:
+    """
+    Parses the connector info string into a dictionary.
+    The connector info string is in the format of:
+       "DisplayID=\\\\.\\DISPLAYx|DisplayPath=\\\\?\\DISPLAY#<MANUF_CODE><PROD_CODE>#...|ConnectorType=int"
+    """
+
+    result = {}
+
+    try:
+        devices = connector_info.split("\n")
+
+        for device in devices:
+            parts = device.split("|")
+            masterKey = None
+
+            for part in parts:
+                key, value = part.split("=")
+
+                if key == "DisplayID":
+                    result[value] = {}
+                    masterKey = value
+
+                else:
+                    result[masterKey][key] = value
+    except Exception as e:
+        return None
+
+    return result
 
 
 def get_aspect_ratios(width: int, height: int) -> tuple[str, str, Optional[str]]:
@@ -68,6 +100,15 @@ def get_aspect_ratios(width: int, height: int) -> tuple[str, str, Optional[str]]
 # ------------------------------
 
 
+def uniquely_identify_display_path(display_path: str) -> str:
+    """
+    Returns the serial number of the display from its display path string.
+
+    The display path is in the format of: "\\?\DISPLAY#<MANUF_CODE><PROD_CODE>#..."
+    """
+    return get_edid_by_hwid(display_path).get("serial", None)
+
+
 def parse_edid(edid: bytes):
     if len(edid) < 128:
         return None
@@ -112,7 +153,7 @@ def find_monitor_gpu(device_name) -> tuple[str, int]:
 
     res = GetGPUForDisplay(encoded_name, out_buffer, 256)
     result = (None, res)
-    
+
     if res != STATUS_OK:
         return result
 
@@ -120,9 +161,8 @@ def find_monitor_gpu(device_name) -> tuple[str, int]:
 
     if val and len(val) > 0:
         result = (val, res)
-        
+
     return result
-    
 
 
 # ------------------------------
@@ -135,6 +175,9 @@ def find_monitor_gpu(device_name) -> tuple[str, int]:
 
 
 def get_edid_by_hwid(hwid: str):
+    if not hwid or len(hwid) == 0:
+        return None
+
     hdev = SetupDiGetClassDevsA(
         ctypes.byref(GUID_DEVINTERFACE_MONITOR),
         None,
@@ -262,6 +305,10 @@ def monitor_enum_proc(hmonitor, hdc, rect, lparam):
     EnumDisplayDevicesA(mi.szDevice, 0, ctypes.byref(dd), 0)
     target_pnp_id = dd.DeviceID.decode()
 
+    connector_info = getattr(monitor_list, "_connectorInfo", None)
+    connection_type = None
+    device_path = None
+
     if not target_pnp_id or not len(target_pnp_id):
         monitor_list.status = Status(type=StatusType.PARTIAL)
         monitor_list.status.messages.append(
@@ -271,7 +318,21 @@ def monitor_enum_proc(hmonitor, hdc, rect, lparam):
         return True  # Continue enumeration
 
     p_gpu, res_code = find_monitor_gpu(devid)
-    edid = get_edid_by_hwid(target_pnp_id.split("\\")[1]) if target_pnp_id else None
+
+    # It is way more accurate to fetch EDID by the display path
+    # rather than by the PNPDeviceID, as multiple displays
+    # may be identical
+    if connector_info:
+        connector_info = connector_info.get(devid, None)
+        connection_type = DISPLAY_CON_TYPE.get(
+            int(connector_info.get("OutputTechnology", -2)), None
+        )
+        device_path = connector_info.get("DisplayPath", None)
+        edid = get_edid_by_hwid(connector_info.get("DisplayPath", None))
+
+    # Fallback to PNPDeviceID if no display path found
+    else:
+        edid = get_edid_by_hwid(target_pnp_id.split("\\")[1]) if target_pnp_id else None
 
     orientation = dm.dmDisplayOrientation
 
@@ -280,6 +341,7 @@ def monitor_enum_proc(hmonitor, hdc, rect, lparam):
     monitor_info.parent_gpu = p_gpu if res_code == STATUS_OK else None
     monitor_info.device_id = devid
     monitor_info.hardware_id = target_pnp_id
+    monitor_info.device_path = device_path
     monitor_info.resolution.width = dm.dmPelsWidth
     monitor_info.resolution.height = dm.dmPelsHeight
     monitor_info.resolution.refresh_rate = dm.dmDisplayFrequency
@@ -300,6 +362,7 @@ def monitor_enum_proc(hmonitor, hdc, rect, lparam):
     else:
         monitor_info.orientation = "Unknown"
 
+    monitor_info.connection_type = connection_type
     monitor_info.inches = edid.get("inches", None) if edid else None
     monitor_info.vendor_id = f"0x{edid['vendor_id']:04X}" if edid else None
     monitor_info.product_id = f"0x{edid['product_id']:04X}" if edid else None
@@ -318,6 +381,19 @@ def monitor_enum_proc(hmonitor, hdc, rect, lparam):
 def fetch_display_info_internal() -> DisplayInfo:
     monitors = DisplayInfo()
     monitors_ptr = ctypes.py_object(monitors)
+
+    connectorInfo = ctypes.create_string_buffer(4096)
+    res_code = GetDisplayPathInfo(connectorInfo, 4096)
+
+    if res_code != STATUS_OK:
+        monitors.status.type = StatusType.PARTIAL
+        monitors.status.messages.append(
+            f"Failed to fetch Display connector information, error code: {res_code}"
+        )
+    else:
+        monitors._connectorInfo = parse_connector_info(
+            connectorInfo.value.decode("utf-8", errors="ignore").strip()
+        )
 
     enum_proc = MONITORENUMPROC(monitor_enum_proc)
     EnumDisplayMonitors(0, 0, enum_proc, ctypes.addressof(monitors_ptr))

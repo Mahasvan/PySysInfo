@@ -17,6 +17,10 @@ hw_helper.GetGPUForDisplay.argtypes = [ctypes.c_char_p, ctypes.c_char_p, ctypes.
 hw_helper.GetGPUForDisplay.restype = ctypes.c_uint32
 GetGPUForDisplay = hw_helper.GetGPUForDisplay
 
+hw_helper.GetDisplayPathInfo.argtypes = [ctypes.c_char_p, ctypes.c_int]
+hw_helper.GetDisplayPathInfo.restype = ctypes.c_uint32
+GetDisplayPathInfo = hw_helper.GetDisplayPathInfo
+
 hw_helper.GetWmiInfo.argtypes = [
     ctypes.c_char_p,
     ctypes.c_char_p,

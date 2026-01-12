@@ -2,6 +2,7 @@ from typing import Optional, List
 
 from pydantic import BaseModel, Field
 
+from pysysinfo.dumps.windows.win_enum import DISPLAY_CON_TYPE
 from pysysinfo.models.component_model import ComponentInfo
 
 class ResolutionInfo(BaseModel):
@@ -40,6 +41,9 @@ class DisplayModuleInfo(BaseModel):
     # Hardware ID
     hardware_id: Optional[str] = None
     
+    # Device path
+    device_path: Optional[str] = None
+    
     # The current resolution data
     resolution: Optional[ResolutionInfo] = Field(default_factory=ResolutionInfo)
     
@@ -48,6 +52,9 @@ class DisplayModuleInfo(BaseModel):
     
     # Orientation (landscape/portrait) (includes FLIPPED)
     orientation: Optional[str] = None
+    
+    # Connector type (HDMI, DP, VGA, etc) - enum: DISPLAY_CON_TYPE
+    connection_type: Optional[str] = None
 
     # Vendor ID
     vendor_id: Optional[str] = None

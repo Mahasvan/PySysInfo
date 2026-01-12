@@ -274,6 +274,68 @@ extern "C" __declspec(dllexport) HardwareHelper_RESULT GetGPUForDisplay(const ch
     return GetGPUForDisplayInternal(deviceName, outGPUName, bufSize);
 }
 
+extern "C" __declspec(dllexport) HardwareHelper_RESULT GetDisplayPathInfo(char *connectorOut, int bufSize)
+{
+    long retCode;
+    std::string outputStr;
+    uint32_t pathCount, modeCount;
+
+    retCode = GetDisplayConfigBufferSizes(QDC_ONLY_ACTIVE_PATHS, &pathCount, &modeCount);
+    if (retCode != ERROR_SUCCESS)
+        return STATUS_FAILURE;
+
+    DISPLAYCONFIG_PATH_INFO *pathInfo = new DISPLAYCONFIG_PATH_INFO[pathCount];
+    DISPLAYCONFIG_MODE_INFO *modeInfo = new DISPLAYCONFIG_MODE_INFO[modeCount];
+    retCode = QueryDisplayConfig(QDC_ONLY_ACTIVE_PATHS, &pathCount, pathInfo, &modeCount, modeInfo, nullptr);
+    if (retCode != ERROR_SUCCESS)
+        return STATUS_FAILURE;
+
+    for (uint32_t i = 0; i < pathCount; i++)
+    {
+        DISPLAYCONFIG_PATH_INFO &path = pathInfo[i];
+
+        DISPLAYCONFIG_SOURCE_DEVICE_NAME sourceDeviceName = {};
+        sourceDeviceName.header.type = DISPLAYCONFIG_DEVICE_INFO_GET_SOURCE_NAME;
+        sourceDeviceName.header.size = sizeof(sourceDeviceName);
+        sourceDeviceName.header.adapterId = path.sourceInfo.adapterId;
+        sourceDeviceName.header.id = path.sourceInfo.id;
+
+        retCode = DisplayConfigGetDeviceInfo(&sourceDeviceName.header);
+        if (retCode != ERROR_SUCCESS)
+            continue;
+
+        DISPLAYCONFIG_TARGET_DEVICE_NAME targetDeviceName = {};
+        targetDeviceName.header.type = DISPLAYCONFIG_DEVICE_INFO_GET_TARGET_NAME;
+        targetDeviceName.header.size = sizeof(targetDeviceName);
+        targetDeviceName.header.adapterId = path.targetInfo.adapterId;
+        targetDeviceName.header.id = path.targetInfo.id;
+
+        retCode = DisplayConfigGetDeviceInfo(&targetDeviceName.header);
+        if (retCode != ERROR_SUCCESS)
+            continue;
+
+        std::string displayId = WideToUtf8(sourceDeviceName.viewGdiDeviceName);
+        std::string displayPath = WideToUtf8(targetDeviceName.monitorDevicePath);
+        outputStr += "DisplayID=" + displayId + "|" +
+                     "DisplayPath=" + displayPath + "|" +
+                     "OutputTechnology=" + std::to_string(path.targetInfo.outputTechnology) + "\n";
+    }
+
+    if (outputStr.length() > 0)
+    {
+        strncpy_s(connectorOut, bufSize, outputStr.c_str(), _TRUNCATE);
+        retCode = STATUS_OK;
+    }
+    else
+    {
+        retCode = STATUS_FAILURE;
+    }
+
+    delete[] pathInfo;
+    delete[] modeInfo;
+    return static_cast<HardwareHelper_RESULT>(retCode);
+}
+
 extern "C" __declspec(dllexport) void GetWmiInfo(char *wmiQuery, char *cimServer, char *outBuffer, int maxLen)
 {
     if (cimServer == nullptr || strlen(cimServer) == 0)

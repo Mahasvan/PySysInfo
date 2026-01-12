@@ -90,3 +90,27 @@ POINT_DEV_INTERFACE = {
     161: "Bus Mouse micro-DIN",
     162: "USB",
 }
+
+DISPLAY_CON_TYPE = {
+    -1: "Other",
+    0: "VGA (HD15)",
+    1: "S-Video (Y/C) (Mini-DIN)",
+    2: "Composite Video (CVBS)",
+    3: "Component Video (RCA)",
+    4: "DVI",
+    5: "HDMI",
+    6: "LVDS",
+    8: "D Video Connector (D-Tanshi)",
+    9: "SDI",
+    10: "DisplayPort",
+    11: "eDP",
+    12: "UDI",
+    13: "UDI Embedded",
+    14: "SDTV Dongle",
+    15: "Miracast",
+    16: "Indirect Wired",
+    17: "Indirect Wireless",
+    18: "DisplayPort USB Type-C",
+    0x80000000: "INTERNAL",
+    0xFFFFFFFF: "FORCE_UINT32",
+}
