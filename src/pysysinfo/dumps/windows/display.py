@@ -116,16 +116,38 @@ def parse_edid(edid: bytes):
     vendor = struct.unpack(">H", edid[8:10])[0]
     product = struct.unpack("<H", edid[10:12])[0]
     serial = None
+    name = None
 
+    """
+        Iterate through all 3 additional descriptors to find serial number and name
+        
+        Each descriptor starts with a header, followed by 13 bytes of data
+        The display descriptor header with S/N info is: 00 00 00 FF
+        The display descriptor header with Model info is: 00 00 00 FC
+        
+        Note that the first descriptor (at offset 0x36) is required to be
+        --not that this "required" keyword has stopped some vendors before...--
+        the "Preferred Timing Mode" (PTM) descriptor, so we skip it
+    """
     for i in range(3):
         descriptor = edid[0x48 + (i * 18) : 0x48 + ((i + 1) * 18)]
-        if descriptor[0:4] == b"\x00\x00\x00\xff":  # Display Descriptor Header - Serial Number
+        if descriptor[0:4] == b"\x00\x00\x00\xff":
             serial_raw = descriptor[5:18].split(b"\x0a")[0]
 
             try:
                 serial_str = serial_raw.decode(errors="ignore").strip()
                 if len(serial_str) > 0:
                     serial = serial_str
+            except Exception:
+                pass
+
+        elif descriptor[0:4] == b"\x00\x00\x00\xfc":
+            name_raw = descriptor[5:18].split(b"\x0a")[0]
+
+            try:
+                name_str = name_raw.decode(errors="ignore").strip()
+                if len(name_str) > 0:
+                    name = name_str
             except Exception:
                 pass
 
@@ -141,13 +163,6 @@ def parse_edid(edid: bytes):
     if width_cm > 0 and height_cm > 0:
         diag_cm = (width_cm**2 + height_cm**2) ** 0.5
         diag_inch = round(diag_cm / 2.54)
-
-    name = ""
-    for i in range(4):
-        off = 54 + i * 18
-        if edid[off : off + 4] == b"\x00\x00\x00\xfc":
-            raw = edid[off + 5 : off + 18].split(b"\x0a")[0]
-            name = raw.decode(errors="ignore").strip()
 
     return {
         "manufacturer_code": manufacturer_code,
@@ -183,6 +198,7 @@ def find_monitor_gpu(device_name) -> tuple[str, int]:
 # by its HardwareID
 #
 # i.e. "MONITOR\AG326UD\{...}"
+# OR "\\\\?\\DISPLAY#<MANUF_CODE><PROD_CODE>#..."
 # ------------------------------
 
 
