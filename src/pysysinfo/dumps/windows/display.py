@@ -115,7 +115,19 @@ def parse_edid(edid: bytes):
 
     vendor = struct.unpack(">H", edid[8:10])[0]
     product = struct.unpack("<H", edid[10:12])[0]
-    serial = struct.unpack("<I", edid[12:16])[0]
+    serial = None
+
+    for i in range(3):
+        descriptor = edid[0x48 + (i * 18) : 0x48 + ((i + 1) * 18)]
+        if descriptor[0:4] == b"\x00\x00\x00\xff":  # Display Descriptor Header - Serial Number
+            serial_raw = descriptor[5:18].split(b"\x0a")[0]
+
+            try:
+                serial_str = serial_raw.decode(errors="ignore").strip()
+                if len(serial_str) > 0:
+                    serial = serial_str
+            except Exception:
+                pass
 
     char1 = chr(((vendor >> 10) & 0x1F) + 64)
     char2 = chr(((vendor >> 5) & 0x1F) + 64)
