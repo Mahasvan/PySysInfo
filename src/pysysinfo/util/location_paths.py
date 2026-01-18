@@ -3,7 +3,6 @@ from ctypes import (
     WinDLL,
     c_char,
     c_ulong,
-    c_char_p,
     byref,
     c_buffer,
     c_ushort,
@@ -107,11 +106,11 @@ def get_device_instance(pnp_device_id: str) -> c_ulong:
 
 
 def CM_Get_DevNode_PropertyW(
-    dnDevInst=c_ulong(),
-    propKey=None,
-    propType=c_ulong(),
-    propBuff=None,
-    propBuffSize=c_ulong(),
+        dnDevInst=c_ulong(),
+        propKey=None,
+        propType=c_ulong(),
+        propBuff=None,
+        propBuffSize=c_ulong(),
 ):
     if propKey is None:
         return None
@@ -265,7 +264,7 @@ def get_device_address(pnp_device_id: str) -> str | None:
 
 def get_pcie_link_speed(pnp_device_id: str) -> int | None:
     result = _fetch_property(pnp_device_id, pcie_link_speed_key)
-    
+
     if result is None:
         return None
     raw_bytes = result[1].raw
@@ -281,7 +280,7 @@ def get_pcie_link_width(pnp_device_id: str) -> int | None:
 
 
 def fetch_device_properties(
-    pnp_device_id: str,
+        pnp_device_id: str,
 ) -> tuple[list[str] | None, str | None, str | None]:
     """
     Fetch location paths, bus number, and device address in one call.
@@ -297,6 +296,7 @@ def fetch_device_properties(
         get_bus_number(pnp_device_id),
         get_device_address(pnp_device_id),
     )
+
 
 def fetch_pcie_info(pnp_device_id: str) -> Tuple[str] | None:
     """

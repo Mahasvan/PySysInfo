@@ -1,6 +1,5 @@
-import ctypes
-from ctypes import wintypes
 from importlib import resources
+
 from pysysinfo.interops.win.api.structs import *
 
 user32 = ctypes.WinDLL("user32", use_last_error=True)
@@ -142,7 +141,6 @@ SetupDiOpenDevRegKey = setupapi.SetupDiOpenDevRegKey
 setupapi.SetupDiDestroyDeviceInfoList.argtypes = [wintypes.HANDLE]
 setupapi.SetupDiDestroyDeviceInfoList.restype = wintypes.BOOL
 SetupDiDestroyDeviceInfoList = setupapi.SetupDiDestroyDeviceInfoList
-
 
 # --------------------
 # Advapi32.dll

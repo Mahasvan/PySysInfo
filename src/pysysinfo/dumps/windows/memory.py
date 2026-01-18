@@ -1,6 +1,5 @@
 import ctypes
-import subprocess
-from typing import List, Tuple
+from typing import Tuple
 
 from pysysinfo.dumps.windows.win_enum import ECC_MEMORY_TYPE, MEMORY_TYPE
 from pysysinfo.interops.win.api.constants import ECC_MULTI_BIT, ECC_SINGLE_BIT

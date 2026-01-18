@@ -1,5 +1,4 @@
 import ctypes
-from typing import List
 
 from pysysinfo.dumps.windows.win_enum import MEDIA_TYPE, BUS_TYPE
 from pysysinfo.interops.win.api.signatures import GetWmiInfo

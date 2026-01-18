@@ -1,9 +1,7 @@
 import ctypes
-from importlib import resources
-import os
-from ctypes import wintypes
 import struct
-from typing import List, Optional
+from ctypes import wintypes
+from typing import Optional
 
 from pysysinfo.dumps.windows.win_enum import DISPLAY_CON_TYPE
 from pysysinfo.interops.win.api.constants import STATUS_OK, GUID_DEVINTERFACE_MONITOR, DIGCF_PRESENT, \
@@ -16,6 +14,7 @@ from pysysinfo.interops.win.api.structs import SP_DEVICE_INTERFACE_DATA, SP_DEVI
     DISPLAY_DEVICEA, MONITORENUMPROC
 from pysysinfo.models.display_models import DisplayInfo, DisplayModuleInfo
 from pysysinfo.models.status_models import Status, StatusType
+
 
 # ------------------------------
 # Utility functions
@@ -76,7 +75,7 @@ def get_aspect_ratio(width: int, height: int) -> tuple[Optional[int], Optional[i
 
     ratio = gcd(width, height)
 
-    return width//ratio, height//ratio
+    return width // ratio, height // ratio
 
 
 # ------------------------------
@@ -114,7 +113,7 @@ def parse_edid(edid: bytes):
         the "Preferred Timing Mode" (PTM) descriptor, so we skip it
     """
     for i in range(3):
-        descriptor = edid[0x48 + (i * 18) : 0x48 + ((i + 1) * 18)]
+        descriptor = edid[0x48 + (i * 18): 0x48 + ((i + 1) * 18)]
         if descriptor[0:4] == b"\x00\x00\x00\xff":
             serial_raw = descriptor[5:18].split(b"\x0a")[0]
 
@@ -145,7 +144,7 @@ def parse_edid(edid: bytes):
 
     diag_inch = 0.0
     if width_cm > 0 and height_cm > 0:
-        diag_cm = (width_cm**2 + height_cm**2) ** 0.5
+        diag_cm = (width_cm ** 2 + height_cm ** 2) ** 0.5
         diag_inch = round(diag_cm / 2.54)
 
     return {
@@ -208,11 +207,11 @@ def get_edid_by_hwid(hwid: str):
         iface_data.cbSize = ctypes.sizeof(SP_DEVICE_INTERFACE_DATA)
 
         if not SetupDiEnumDeviceInterfaces(
-            hdev,
-            None,
-            ctypes.byref(GUID_DEVINTERFACE_MONITOR),
-            iface_index,
-            ctypes.byref(iface_data),
+                hdev,
+                None,
+                ctypes.byref(GUID_DEVINTERFACE_MONITOR),
+                iface_index,
+                ctypes.byref(iface_data),
         ):
             break
 
@@ -231,12 +230,12 @@ def get_edid_by_hwid(hwid: str):
             dev_data.cbSize = ctypes.sizeof(SP_DEVINFO_DATA)
 
             if SetupDiGetDeviceInterfaceDetailA(
-                hdev,
-                ctypes.byref(iface_data),
-                buf,
-                req_size,
-                None,
-                ctypes.byref(dev_data),
+                    hdev,
+                    ctypes.byref(iface_data),
+                    buf,
+                    req_size,
+                    None,
+                    ctypes.byref(dev_data),
             ):
                 path_offset = wintypes.DWORD
                 raw_path = ctypes.string_at(
@@ -258,22 +257,22 @@ def get_edid_by_hwid(hwid: str):
                         edid_size = wintypes.DWORD()
 
                         if (
-                            RegQueryValueExA(
-                                hkey, b"EDID", None, None, None, ctypes.byref(edid_size)
-                            )
-                            == 0
+                                RegQueryValueExA(
+                                    hkey, b"EDID", None, None, None, ctypes.byref(edid_size)
+                                )
+                                == 0
                         ):
                             edid_buf = (ctypes.c_ubyte * edid_size.value)()
                             if (
-                                RegQueryValueExA(
-                                    hkey,
-                                    b"EDID",
-                                    None,
-                                    None,
-                                    edid_buf,
-                                    ctypes.byref(edid_size),
-                                )
-                                == 0
+                                    RegQueryValueExA(
+                                        hkey,
+                                        b"EDID",
+                                        None,
+                                        None,
+                                        edid_buf,
+                                        ctypes.byref(edid_size),
+                                    )
+                                    == 0
                             ):
                                 parsed_edid = parse_edid(bytes(edid_buf))
 

@@ -17,6 +17,7 @@ def _arm_cpu_cores() -> Optional[int]:
     except Exception as e:
         return None
 
+
 def _x86_cpu_cores(cpu_lines: str) -> Optional[int]:
     cores = re.search(r"cpu cores\s+:\s+(.+)", cpu_lines)
     if cores and cores.group(1).isnumeric():
@@ -36,16 +37,19 @@ def _arm_cpu_model(raw_cpu_info: str) -> Optional[str]:
 
     return name
 
+
 def _x86_cpu_model(cpu_lines: str) -> Optional[str]:
     model = re.search(r"model name\s+:\s+(.+)", cpu_lines)
     if model:
         return model.group(1)
     return None
 
+
 def _arm_version(raw_cpu_info: str) -> Optional[str]:
     if arm_version := re.search(r"CPU architecture:\s+(.+)", raw_cpu_info):
         return arm_version.group(1)
     return None
+
 
 def _cpu_threads(raw_cpu_info: str) -> Optional[int]:
     try:
@@ -53,6 +57,7 @@ def _cpu_threads(raw_cpu_info: str) -> Optional[int]:
         return count if count > 0 else None
     except:
         return None
+
 
 def _x86_flags(cpu_lines: str) -> Optional[List[str]]:
     flags_match = re.search(r"flags\s+:\s+(.+)", cpu_lines)
@@ -65,6 +70,7 @@ def _x86_flags(cpu_lines: str) -> Optional[List[str]]:
         flag.replace("_", ".").upper() for flag in flags if flag
     ]
     return flags
+
 
 def fetch_arm_cpu_info(raw_cpu_info: str) -> CPUInfo:
     cpu_info = CPUInfo()
@@ -93,6 +99,7 @@ def fetch_arm_cpu_info(raw_cpu_info: str) -> CPUInfo:
 
     # nothing more can be retrieved from /proc/cpuinfo for ARM
     return cpu_info
+
 
 def fetch_x86_cpu_info(raw_cpu_info: str) -> CPUInfo:
     cpu_info = CPUInfo()

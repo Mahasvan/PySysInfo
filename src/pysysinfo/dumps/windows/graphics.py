@@ -1,25 +1,20 @@
-import csv
 import ctypes
-import html
-import io
 import re
-import subprocess
 import time
 import winreg
 from typing import Optional
 
 from pysysinfo.dumps.windows.common import format_acpi_path, format_pci_path
 from pysysinfo.interops.win.api.signatures import GetWmiInfo
-from pysysinfo.util.location_paths import fetch_device_properties, fetch_pcie_info
 from pysysinfo.models.gpu_models import GPUInfo
 from pysysinfo.models.gpu_models import GraphicsInfo
 from pysysinfo.models.size_models import Megabyte
 from pysysinfo.models.status_models import StatusType
-from pysysinfo.util.nvidia import fetch_gpu_details_nvidia
+from pysysinfo.util.location_paths import fetch_device_properties, fetch_pcie_info
 
 
 def fetch_additional_properties(
-    pnp_device_id: str,
+        pnp_device_id: str,
 ) -> tuple[str | None, str | None, str | None, str | None]:
     """
     Fetch additional device properties using Windows Configuration Manager API.
@@ -122,10 +117,10 @@ def fetch_fast_graphics_info() -> GraphicsInfo:
         gpu.manufacturer = parsed_data["AdapterCompatibility"]
         pnp_device_id = parsed_data["PNPDeviceID"]
         drv_version = parsed_data["DriverVersion"]
-        
+
         if "PCI" not in pnp_device_id.upper():
             continue  # Skip non-PCI GPUs (virtual adapters, etc.)
-        
+
         start = time.time()
         acpi_path, pci_root, bus_number, device_address = fetch_additional_properties(
             pnp_device_id
@@ -161,15 +156,14 @@ def fetch_fast_graphics_info() -> GraphicsInfo:
             gpu.vram = Megabyte(capacity=(vram_bytes // 1024 // 1024))
         elif vram:
             gpu.vram = Megabyte(capacity=(int(vram) // 1024 // 1024))
-            
+
         pcie_info = fetch_pcie_info(pnp_device_id)
-        
+
         if pcie_info:
             gpu.pcie_gen, gpu.pcie_width = pcie_info
-            
 
         # !!! Leaving this here just in case we need to revert !!!
-        
+
         # Attempt to get PCIe width and link speed for Nvidia
         # if gpu.vendor_id and gpu.vendor_id.lower() == "0x10de":
         #     # device_address is a 32 bit integer, where the high 16 bits are Device number

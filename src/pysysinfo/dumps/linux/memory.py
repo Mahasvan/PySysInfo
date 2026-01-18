@@ -6,6 +6,7 @@ from pysysinfo.models.memory_models import MemoryInfo, MemoryModuleSlot, MemoryM
 from pysysinfo.models.size_models import Megabyte, Kilobyte, StorageSize
 from pysysinfo.models.status_models import StatusType
 
+
 # Thank you to [Quist](https://github.com/nadiaholmquist) for helping with our understanding of this.
 
 
@@ -22,15 +23,18 @@ def _part_no(strings: List[bytes], value: bytes) -> Optional[str]:
     part_no = get_string_entry(strings, value[0x1A]).strip()
     return part_no
 
+
 def _dimm_type(value: bytes) -> Optional[str]:
     # DIMM type value is stored at offset 12h
     return MEMORY_TYPE.get(value[0x12])
+
 
 def _dimm_slot(strings: List[bytes], value: bytes) -> Optional[MemoryModuleSlot]:
     return MemoryModuleSlot(
         channel=get_string_entry(strings, value[0x10]),
         bank=get_string_entry(strings, value[0x11])
     )
+
 
 def _dimm_capacity(value: bytes) -> Optional[StorageSize]:
     """
@@ -61,6 +65,7 @@ def _dimm_capacity(value: bytes) -> Optional[StorageSize]:
         # Size is in Kilobytes
         return Kilobyte(capacity=size)
 
+
 def _ecc_support(value: bytes) -> Optional[bool]:
     """
     In a memory module with Data Width 64 bits, there are 8 more bits with an error correcting code.
@@ -74,6 +79,7 @@ def _ecc_support(value: bytes) -> Optional[bool]:
     if total_width > data_width:
         return True
     return False
+
 
 def _dimm_speed(value: bytes) -> Optional[int]:
     """
@@ -89,6 +95,7 @@ def _dimm_speed(value: bytes) -> Optional[int]:
     if ram_speed != 0x0000:
         return ram_speed
     return None
+
 
 def fetch_memory_info() -> MemoryInfo:
     memory_info = MemoryInfo()

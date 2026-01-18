@@ -1,6 +1,7 @@
 import ctypes
 from ctypes import wintypes
 
+
 # Custom structures
 class SMBIOSHwInfo(ctypes.Structure):
     _fields_ = [
@@ -9,6 +10,7 @@ class SMBIOSHwInfo(ctypes.Structure):
         ("chassisType", ctypes.c_char * 256),
         ("cpuSocket", ctypes.c_char * 256),
     ]
+
 
 # GUID Structure Helper
 class GUID(ctypes.Structure):

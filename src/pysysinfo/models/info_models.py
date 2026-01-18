@@ -8,8 +8,8 @@ from pysysinfo.models.cpu_models import CPUInfo
 from pysysinfo.models.display_models import DisplayInfo
 from pysysinfo.models.gpu_models import GraphicsInfo
 from pysysinfo.models.memory_models import MemoryInfo
-from pysysinfo.models.storage_models import StorageInfo
 from pysysinfo.models.network_models import NetworkInfo
+from pysysinfo.models.storage_models import StorageInfo
 
 
 class HardwareInfo(BaseModel):
@@ -73,7 +73,7 @@ class HardwareManagerInterface:
     def fetch_audio_info(self) -> AudioInfo:
         """Fetches Audio Information."""
         pass
-    
+
     def fetch_baseboard_info(self) -> BaseboardInfo:
         """Fetches Baseboard Information."""
         pass

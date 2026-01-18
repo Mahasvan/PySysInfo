@@ -9,12 +9,12 @@ from pysysinfo.models.size_models import Megabyte
 from pysysinfo.models.status_models import StatusType
 from pysysinfo.util.nvidia import fetch_gpu_details_nvidia
 
-
 # Currently, the info in /sys/class/drm/cardX is being used.
 # todo: Check if lspci and lshw -c display can be used
 # https://unix.stackexchange.com/questions/393/how-to-check-how-many-lanes-are-used-by-the-pcie-card
 
 PCI_ROOT_PATH = "/sys/bus/pci/devices/"
+
 
 def _vram_amd(device) -> Optional[int]:
     ROOT_PATH = "/sys/bus/pci/devices/"
@@ -62,6 +62,7 @@ def _pcie_gen(device) -> Optional[int]:
     except Exception as e:
         return None
 
+
 def _check_gpu_class(device: str) -> bool:
     path = os.path.join(PCI_ROOT_PATH, device)
     with open(os.path.join(path, "class")) as f:
@@ -75,12 +76,14 @@ def _check_gpu_class(device: str) -> bool:
 
     return base_class == 3
 
+
 def _populate_amd_info(gpu: GPUInfo, device: str) -> GPUInfo:
     # get VRAM for AMD GPUs
     vram_capacity = _vram_amd(device)
     if vram_capacity is not None:
         gpu.vram = Megabyte(capacity=vram_capacity)
     return gpu
+
 
 def _populate_nvidia_info(gpu: GPUInfo, device: str) -> GPUInfo:
     gpu_name, pcie_width, pcie_gen, vram_total = fetch_gpu_details_nvidia(device)
@@ -90,6 +93,7 @@ def _populate_nvidia_info(gpu: GPUInfo, device: str) -> GPUInfo:
     if vram_total: gpu.vram = Megabyte(capacity=vram_total)
 
     return gpu
+
 
 def _populate_lspci_info(gpu: GPUInfo, device: str) -> GPUInfo:
     try:

@@ -1,11 +1,11 @@
 import ctypes
 
+from pysysinfo.dumps.windows.common import format_acpi_path, format_pci_path
 from pysysinfo.interops.win.api.constants import STATUS_OK
 from pysysinfo.interops.win.api.signatures import GetNetworkHardwareInfo
-from pysysinfo.util.location_paths import get_location_paths
 from pysysinfo.models.network_models import NICInfo, NetworkInfo
-from pysysinfo.dumps.windows.common import format_acpi_path, format_pci_path
 from pysysinfo.models.status_models import Status, StatusType
+from pysysinfo.util.location_paths import get_location_paths
 
 
 def fetch_network_info_fast() -> NetworkInfo:

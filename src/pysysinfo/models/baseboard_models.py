@@ -2,6 +2,7 @@ from typing import Optional
 
 from pysysinfo.models.component_model import ComponentInfo
 
+
 class BaseboardInfo(ComponentInfo):
     """Baseboard (Motherboard) information model."""
 
