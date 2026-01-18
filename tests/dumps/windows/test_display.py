@@ -63,7 +63,7 @@ class TestAspectRatios:
         ],
     )
     def test_common_ratios(self, width, height, real, friendly):
-        ratio, r, f = display.get_aspect_ratios(width, height)
+        ratio, r, f = display.get_aspect_ratio(width, height)
         assert r == real
         assert f == friendly
         assert ratio > 0
@@ -73,7 +73,7 @@ class TestAspectRatios:
         [(0, 1080), (1920, 0), (0, 0)],
     )
     def test_invalid_dimensions(self, width, height):
-        ratio, real, friendly = display.get_aspect_ratios(width, height)
+        ratio, real, friendly = display.get_aspect_ratio(width, height)
 
         assert ratio is None
         assert real is None

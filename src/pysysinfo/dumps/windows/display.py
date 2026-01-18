@@ -6,9 +6,14 @@ import struct
 from typing import List, Optional
 
 from pysysinfo.dumps.windows.win_enum import DISPLAY_CON_TYPE
-from pysysinfo.interops.win.api.constants import *
-from pysysinfo.interops.win.api.structs import *
-from pysysinfo.interops.win.api.signatures import *
+from pysysinfo.interops.win.api.constants import STATUS_OK, GUID_DEVINTERFACE_MONITOR, DIGCF_PRESENT, \
+    DIGCF_DEVICEINTERFACE, DICS_FLAG_GLOBAL, DIREG_DEV, KEY_READ, ENUM_CURRENT_SETTINGS, DMDO_DEFAULT, DMDO_90, \
+    DMDO_180, DMDO_270
+from pysysinfo.interops.win.api.signatures import GetGPUForDisplay, SetupDiGetClassDevsA, SetupDiEnumDeviceInterfaces, \
+    SetupDiGetDeviceInterfaceDetailA, SetupDiOpenDevRegKey, RegQueryValueExA, RegCloseKey, SetupDiDestroyDeviceInfoList, \
+    GetMonitorInfoA, EnumDisplaySettingsA, EnumDisplayDevicesA, GetDisplayPathInfo, EnumDisplayMonitors
+from pysysinfo.interops.win.api.structs import SP_DEVICE_INTERFACE_DATA, SP_DEVINFO_DATA, MONITORINFOEXA, DEVMODEA, \
+    DISPLAY_DEVICEA, MONITORENUMPROC
 from pysysinfo.models.display_models import DisplayInfo, DisplayModuleInfo
 from pysysinfo.models.status_models import Status, StatusType
 
@@ -48,8 +53,10 @@ def parse_connector_info(connector_info: dict) -> Optional[dict]:
     return result
 
 
-def get_aspect_ratios(width: int, height: int) -> tuple[str, str, Optional[str]]:
+def get_aspect_ratio(width: int, height: int) -> tuple[Optional[int], Optional[int]]:
     """
+    :returns (16, 9)
+
     Obtains the "friendly" and "real" representation of
     the aspect ratio's given width and height.
 
@@ -65,34 +72,11 @@ def get_aspect_ratios(width: int, height: int) -> tuple[str, str, Optional[str]]
         return a
 
     if width == 0 or height == 0:
-        return (None, None, None)
+        return None, None
 
-    long_side = max(width, height)
-    short_side = min(width, height)
-    ratio = long_side / short_side
+    ratio = gcd(width, height)
 
-    divisor = gcd(width, height)
-    real = friendly = f"{width // divisor}:{height // divisor}"
-
-    if 3.5 <= ratio <= 3.6:
-        friendly = "32:9"
-    elif 2.3 <= ratio <= 2.4:
-        friendly = "21:9"
-    elif 1.7 <= ratio <= 1.8:
-        friendly = "16:9"
-    elif 1.55 <= ratio <= 1.65:
-        friendly = "16:10"
-    elif 1.3 <= ratio <= 1.35:
-        friendly = "4:3"
-    else:
-        friendly = None
-
-    # If display is in portrait mode, flip the ratio
-    if width < height:
-        parts = friendly.split(":")
-        friendly = f"{parts[1]}:{parts[0]}"
-
-    return (ratio, real, friendly)
+    return width//ratio, height//ratio
 
 
 # ------------------------------
@@ -332,7 +316,6 @@ def monitor_enum_proc(hmonitor, hdc, rect, lparam):
     dd = DISPLAY_DEVICEA(cb=ctypes.sizeof(DISPLAY_DEVICEA))
     EnumDisplayDevicesA(mi.szDevice, 0, ctypes.byref(dd), 0)
     target_pnp_id = dd.DeviceID.decode()
-
     connector_info = getattr(monitor_list, "_connectorInfo", None)
     connection_type = None
     device_path = None
@@ -373,11 +356,7 @@ def monitor_enum_proc(hmonitor, hdc, rect, lparam):
     monitor_info.resolution.width = dm.dmPelsWidth
     monitor_info.resolution.height = dm.dmPelsHeight
     monitor_info.resolution.refresh_rate = dm.dmDisplayFrequency
-    (
-        monitor_info.resolution.aspect_ratio,
-        monitor_info.resolution.aspect_ratio_real,
-        monitor_info.resolution.aspect_ratio_friendly,
-    ) = get_aspect_ratios(dm.dmPelsWidth, dm.dmPelsHeight)
+    monitor_info.resolution.aspect_ratio = get_aspect_ratio(dm.dmPelsWidth, dm.dmPelsHeight)
 
     if orientation == DMDO_DEFAULT:
         monitor_info.orientation = "Landscape"

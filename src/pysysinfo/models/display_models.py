@@ -1,4 +1,4 @@
-from typing import Optional, List
+from typing import Optional, List, Tuple
 
 from pydantic import BaseModel, Field
 
@@ -16,15 +16,8 @@ class ResolutionInfo(BaseModel):
 
     # Refresh rate in Hz.
     refresh_rate: Optional[int] = None
-    
-    # Aspect ratio as float, e.g., 1.77 for 16:9
-    aspect_ratio: Optional[float] = None
-    
-    # The real aspect ratio as a string, e.g., "16:9", "43:18"
-    aspect_ratio_real: Optional[str] = None
-    
-    # Friendly aspect ratio, e.g., "16:9", "21:9"
-    aspect_ratio_friendly: Optional[str] = None
+
+    aspect_ratio: Optional[Tuple[int, int]] = None
 
 class DisplayModuleInfo(BaseModel):
     """Information for one Display is stored here"""
