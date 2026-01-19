@@ -1,410 +1,777 @@
+"""
+Windows Display Information Module
+
+This module provides functionality to enumerate and collect detailed information
+about display monitors on Windows systems. It uses Windows SetupAPI and display
+enumeration APIs to gather:
+- Display resolution, refresh rate, and orientation
+- EDID (Extended Display Identification Data) information
+- Connection type (HDMI, DisplayPort, etc.)
+- GPU association for each display
+"""
+
 import ctypes
 import struct
 from ctypes import wintypes
 from typing import Optional
 
 from pysysinfo.dumps.windows.win_enum import DISPLAY_CON_TYPE
-from pysysinfo.interops.win.api.constants import STATUS_OK, GUID_DEVINTERFACE_MONITOR, DIGCF_PRESENT, \
-    DIGCF_DEVICEINTERFACE, DICS_FLAG_GLOBAL, DIREG_DEV, KEY_READ, ENUM_CURRENT_SETTINGS, DMDO_DEFAULT, DMDO_90, \
-    DMDO_180, DMDO_270
-from pysysinfo.interops.win.api.signatures import GetGPUForDisplay, SetupDiGetClassDevsA, SetupDiEnumDeviceInterfaces, \
-    SetupDiGetDeviceInterfaceDetailA, SetupDiOpenDevRegKey, RegQueryValueExA, RegCloseKey, SetupDiDestroyDeviceInfoList, \
-    GetMonitorInfoA, EnumDisplaySettingsA, EnumDisplayDevicesA, GetDisplayPathInfo, EnumDisplayMonitors
-from pysysinfo.interops.win.api.structs import SP_DEVICE_INTERFACE_DATA, SP_DEVINFO_DATA, MONITORINFOEXA, DEVMODEA, \
-    DISPLAY_DEVICEA, MONITORENUMPROC
+from pysysinfo.interops.win.api.constants import (
+    STATUS_OK,
+    GUID_DEVINTERFACE_MONITOR,
+    DIGCF_PRESENT,
+    DIGCF_DEVICEINTERFACE,
+    DICS_FLAG_GLOBAL,
+    DIREG_DEV,
+    KEY_READ,
+    ENUM_CURRENT_SETTINGS,
+    DMDO_DEFAULT,
+    DMDO_90,
+    DMDO_180,
+    DMDO_270,
+)
+from pysysinfo.interops.win.api.signatures import (
+    GetGPUForDisplay,
+    SetupDiGetClassDevsA,
+    SetupDiEnumDeviceInterfaces,
+    SetupDiGetDeviceInterfaceDetailA,
+    SetupDiOpenDevRegKey,
+    RegQueryValueExA,
+    RegCloseKey,
+    SetupDiDestroyDeviceInfoList,
+    GetMonitorInfoA,
+    EnumDisplaySettingsA,
+    EnumDisplayDevicesA,
+    GetDisplayPathInfo,
+    EnumDisplayMonitors,
+)
+from pysysinfo.interops.win.api.structs import (
+    SP_DEVICE_INTERFACE_DATA,
+    SP_DEVINFO_DATA,
+    MONITORINFOEXA,
+    DEVMODEA,
+    DISPLAY_DEVICEA,
+    MONITORENUMPROC,
+)
 from pysysinfo.models.display_models import DisplayInfo, DisplayModuleInfo
 from pysysinfo.models.status_models import Status, StatusType
 
 
-# ------------------------------
-# Utility functions
-# ------------------------------
+# =============================================================================
+# Constants
+# =============================================================================
+
+# EDID structure constants
+_EDID_MIN_LENGTH = 128
+_EDID_VENDOR_OFFSET = 8
+_EDID_PRODUCT_OFFSET = 10
+_EDID_DESCRIPTOR_BASE_OFFSET = 0x48
+_EDID_DESCRIPTOR_SIZE = 18
+_EDID_DESCRIPTOR_COUNT = 3
+_EDID_WIDTH_CM_OFFSET = 21
+_EDID_HEIGHT_CM_OFFSET = 22
+
+# EDID descriptor type markers
+_EDID_SERIAL_MARKER = b"\x00\x00\x00\xff"
+_EDID_NAME_MARKER = b"\x00\x00\x00\xfc"
+
+# Orientation display names
+_ORIENTATION_NAMES = {
+    DMDO_DEFAULT: "Landscape",
+    DMDO_90: "Portrait",
+    DMDO_180: "Landscape (flipped)",
+    DMDO_270: "Portrait (flipped)",
+}
+
+# Invalid registry key handle
+_INVALID_HKEY = -1
 
 
-def parse_connector_info(connector_info: dict) -> Optional[dict]:
-    """
-    Parses the connector info string into a dictionary.
-    The connector info string is in the format of:
-       "DisplayID=\\\\.\\DISPLAYx|DisplayPath=\\\\?\\DISPLAY#<MANUF_CODE><PROD_CODE>#...|ConnectorType=int"
-    """
+# =============================================================================
+# Utility Functions
+# =============================================================================
 
-    result = {}
 
-    try:
-        devices = connector_info.split("\n")
-
-        for device in devices:
-            parts = device.split("|")
-            masterKey = None
-
-            for part in parts:
-                key, value = part.split("=")
-
-                if key == "DisplayID":
-                    result[value] = {}
-                    masterKey = value
-
-                else:
-                    result[masterKey][key] = value
-    except Exception as e:
-        return None
-
-    return result
+def _compute_gcd(a: int, b: int) -> int:
+    """Compute the greatest common divisor of two integers using Euclidean algorithm."""
+    while b:
+        a, b = b, a % b
+    return a
 
 
 def get_aspect_ratio(width: int, height: int) -> tuple[Optional[int], Optional[int]]:
     """
-    :returns (16, 9)
+    Calculate the aspect ratio for given dimensions.
 
-    Obtains the "friendly" and "real" representation of
-    the aspect ratio's given width and height.
+    Args:
+        width: Display width in pixels
+        height: Display height in pixels
 
-    I.e., 3440x1440 -> "21:9" & "43:18"
+    Returns:
+        A tuple of (width_ratio, height_ratio), e.g., (16, 9) for 1920x1080.
+        Returns (None, None) if either dimension is zero.
 
-    Falls back to the mathematical form if unable
-    to compute a friendly ratio.
+    Examples:
+        >>> get_aspect_ratio(1920, 1080)
+        (16, 9)
+        >>> get_aspect_ratio(3440, 1440)
+        (43, 18)
     """
-
-    def gcd(a: int, b: int) -> int:
-        while b:
-            a, b = b, a % b
-        return a
-
     if width == 0 or height == 0:
         return None, None
 
-    ratio = gcd(width, height)
-
-    return width // ratio, height // ratio
-
-
-# ------------------------------
-# EDID parsing
-# ------------------------------
+    gcd = _compute_gcd(width, height)
+    return width // gcd, height // gcd
 
 
-def uniquely_identify_display_path(display_path: str) -> str:
+def parse_connector_info(connector_info_string: str) -> Optional[dict]:
     """
-    Returns the serial number of the display from its display path string.
+    Parse connector information string into a structured dictionary.
 
-    The display path is in the format of: "\\?\DISPLAY#<MANUF_CODE><PROD_CODE>#..."
+    The connector info string format (from interop DLL):
+        "DisplayID=\\\\.\\DISPLAY1|DisplayPath=\\\\?\\DISPLAY#...|OutputTechnology=5\\n
+         DisplayID=\\\\.\\DISPLAY2|DisplayPath=\\\\?\\DISPLAY#...|OutputTechnology=10"
+
+    Args:
+        connector_info_string: Raw connector info string with newline-separated devices
+
+    Returns:
+        Dictionary mapping display IDs to their properties:
+        {
+            "\\\\.\\DISPLAY1": {"DisplayPath": "...", "OutputTechnology": "5"},
+            "\\\\.\\DISPLAY2": {"DisplayPath": "...", "OutputTechnology": "10"}
+        }
+        Returns None if parsing fails.
     """
-    return get_edid_by_hwid(display_path).get("serial", None)
+    result = {}
 
+    try:
+        devices = connector_info_string.split("\n")
 
-def parse_edid(edid: bytes):
-    if len(edid) < 128:
+        for device in devices:
+            if not device.strip():
+                continue
+
+            parts = device.split("|")
+            current_display_id = None
+
+            for part in parts:
+                if "=" not in part:
+                    continue
+
+                key, value = part.split("=", 1)
+
+                if key == "DisplayID":
+                    current_display_id = value
+                    result[current_display_id] = {}
+                elif current_display_id is not None:
+                    result[current_display_id][key] = value
+
+    except (ValueError, AttributeError):
         return None
-
-    vendor = struct.unpack(">H", edid[8:10])[0]
-    product = struct.unpack("<H", edid[10:12])[0]
-    serial = None
-    name = None
-
-    """
-        Iterate through all 3 additional descriptors to find serial number and name
-        
-        Each descriptor starts with a header, followed by 13 bytes of data
-        The display descriptor header with S/N info is: 00 00 00 FF
-        The display descriptor header with Model info is: 00 00 00 FC
-        
-        Note that the first descriptor (at offset 0x36) is required to be
-        --not that this "required" keyword has stopped some vendors before...--
-        the "Preferred Timing Mode" (PTM) descriptor, so we skip it
-    """
-    for i in range(3):
-        descriptor = edid[0x48 + (i * 18): 0x48 + ((i + 1) * 18)]
-        if descriptor[0:4] == b"\x00\x00\x00\xff":
-            serial_raw = descriptor[5:18].split(b"\x0a")[0]
-
-            try:
-                serial_str = serial_raw.decode(errors="ignore").strip()
-                if len(serial_str) > 0:
-                    serial = serial_str
-            except Exception:
-                pass
-
-        elif descriptor[0:4] == b"\x00\x00\x00\xfc":
-            name_raw = descriptor[5:18].split(b"\x0a")[0]
-
-            try:
-                name_str = name_raw.decode(errors="ignore").strip()
-                if len(name_str) > 0:
-                    name = name_str
-            except Exception:
-                pass
-
-    char1 = chr(((vendor >> 10) & 0x1F) + 64)
-    char2 = chr(((vendor >> 5) & 0x1F) + 64)
-    char3 = chr((vendor & 0x1F) + 64)
-    manufacturer_code = f"{char1}{char2}{char3}"
-
-    width_cm = edid[21]
-    height_cm = edid[22]
-
-    diag_inch = 0.0
-    if width_cm > 0 and height_cm > 0:
-        diag_cm = (width_cm ** 2 + height_cm ** 2) ** 0.5
-        diag_inch = round(diag_cm / 2.54)
-
-    return {
-        "manufacturer_code": manufacturer_code,
-        "vendor_id": vendor,
-        "product_id": product,
-        "serial": serial,
-        "name": name,
-        "inches": diag_inch,
-    }
-
-
-def find_monitor_gpu(device_name) -> tuple[str, int]:
-    out_buffer = ctypes.create_string_buffer(256)
-    encoded_name = device_name.encode("utf-8")
-
-    res = GetGPUForDisplay(encoded_name, out_buffer, 256)
-    result = (None, res)
-
-    if res != STATUS_OK:
-        return result
-
-    val = out_buffer.value.decode("utf-8")
-
-    if val and len(val) > 0:
-        result = (val, res)
 
     return result
 
 
-# ------------------------------
-# Fetch EDID from registry for
-# specific display device
-# by its HardwareID
-#
-# i.e. "MONITOR\AG326UD\{...}"
-# OR "\\\\?\\DISPLAY#<MANUF_CODE><PROD_CODE>#..."
-# ------------------------------
+# =============================================================================
+# EDID Parsing
+# =============================================================================
 
 
-def get_edid_by_hwid(hwid: str):
-    if not hwid or len(hwid) == 0:
+def _extract_descriptor_text(descriptor: bytes, marker: bytes) -> Optional[str]:
+    """
+    Extract text from an EDID descriptor block if it matches the given marker.
+
+    Args:
+        descriptor: 18-byte EDID descriptor block
+        marker: 4-byte marker identifying the descriptor type
+
+    Returns:
+        Decoded and stripped text, or None if marker doesn't match or text is empty.
+    """
+    if descriptor[0:4] != marker:
         return None
 
-    hdev = SetupDiGetClassDevsA(
+    try:
+        # Text data starts at byte 5, terminated by 0x0A (newline)
+        raw_text = descriptor[5:18].split(b"\x0a")[0]
+        text = raw_text.decode(errors="ignore").strip()
+        return text if text else None
+    except Exception:
+        return None
+
+
+def _decode_manufacturer_code(vendor_id: int) -> str:
+    """
+    Decode the 3-letter manufacturer code from EDID vendor ID.
+
+    EDID vendor IDs encode three 5-bit characters (A=1, B=2, etc.) packed into 16 bits.
+
+    Args:
+        vendor_id: 16-bit vendor identifier from EDID
+
+    Returns:
+        Three-letter manufacturer code (e.g., "SAM" for Samsung, "DEL" for Dell)
+    """
+    char1 = chr(((vendor_id >> 10) & 0x1F) + ord('A') - 1)
+    char2 = chr(((vendor_id >> 5) & 0x1F) + ord('A') - 1)
+    char3 = chr((vendor_id & 0x1F) + ord('A') - 1)
+    return f"{char1}{char2}{char3}"
+
+
+def _calculate_diagonal_inches(width_cm: int, height_cm: int) -> float:
+    """
+    Calculate diagonal screen size in inches from physical dimensions.
+
+    Args:
+        width_cm: Physical width in centimeters
+        height_cm: Physical height in centimeters
+
+    Returns:
+        Diagonal size in inches, rounded to nearest integer. Returns 0 if dimensions invalid.
+    """
+    if width_cm <= 0 or height_cm <= 0:
+        return 0.0
+
+    diagonal_cm = (width_cm ** 2 + height_cm ** 2) ** 0.5
+    return round(diagonal_cm / 2.54)
+
+
+def parse_edid(edid: bytes) -> Optional[dict]:
+    """
+    Parse EDID (Extended Display Identification Data) binary data.
+
+    EDID is a standard data format that displays use to describe their capabilities
+    to connected devices. This function extracts commonly needed identification info.
+
+    Args:
+        edid: Raw EDID bytes (minimum 128 bytes for base EDID block)
+
+    Returns:
+        Dictionary containing:
+        - manufacturer_code: 3-letter PNP ID (e.g., "SAM", "DEL")
+        - vendor_id: Numeric vendor identifier
+        - product_id: Numeric product identifier
+        - serial: Serial number string (if present in descriptors)
+        - name: Display model name (if present in descriptors)
+        - inches: Diagonal screen size in inches
+
+        Returns None if EDID data is too short.
+    """
+    if len(edid) < _EDID_MIN_LENGTH:
+        return None
+
+    # Parse vendor and product IDs
+    vendor_id = struct.unpack(">H", edid[_EDID_VENDOR_OFFSET:_EDID_VENDOR_OFFSET + 2])[0]
+    product_id = struct.unpack("<H", edid[_EDID_PRODUCT_OFFSET:_EDID_PRODUCT_OFFSET + 2])[0]
+
+    serial = None
+    name = None
+
+    # Parse descriptor blocks to find serial number and display name
+    # First descriptor (at 0x36) is reserved for Preferred Timing Mode, so we start at 0x48
+    for i in range(_EDID_DESCRIPTOR_COUNT):
+        offset = _EDID_DESCRIPTOR_BASE_OFFSET + (i * _EDID_DESCRIPTOR_SIZE)
+        descriptor = edid[offset:offset + _EDID_DESCRIPTOR_SIZE]
+
+        if serial is None:
+            serial = _extract_descriptor_text(descriptor, _EDID_SERIAL_MARKER)
+
+        if name is None:
+            name = _extract_descriptor_text(descriptor, _EDID_NAME_MARKER)
+
+    return {
+        "manufacturer_code": _decode_manufacturer_code(vendor_id),
+        "vendor_id": vendor_id,
+        "product_id": product_id,
+        "serial": serial,
+        "name": name,
+        "inches": _calculate_diagonal_inches(edid[_EDID_WIDTH_CM_OFFSET], edid[_EDID_HEIGHT_CM_OFFSET]),
+    }
+
+
+def uniquely_identify_display_path(display_path: str) -> Optional[str]:
+    """
+    Extract the serial number from a display path for unique identification.
+
+    Args:
+        display_path: Display path string (e.g., "\\\\?\\DISPLAY#MANUF#...")
+
+    Returns:
+        Serial number string if found, None otherwise.
+    """
+    edid = get_edid_by_hwid(display_path)
+    return edid.get("serial") if edid else None
+
+
+# =============================================================================
+# GPU and Display Association
+# =============================================================================
+
+
+def find_monitor_gpu(device_name: str) -> tuple[Optional[str], int]:
+    """
+    Find the GPU that a monitor is connected to.
+
+    Args:
+        device_name: Display device name (e.g., "\\\\.\\DISPLAY1")
+
+    Returns:
+        Tuple of (gpu_name, status_code):
+        - gpu_name: Name of the GPU, or None if not found
+        - status_code: API result code (STATUS_OK on success)
+    """
+    buffer = ctypes.create_string_buffer(256)
+    encoded_name = device_name.encode("utf-8")
+
+    result_code = GetGPUForDisplay(encoded_name, buffer, 256)
+
+    if result_code != STATUS_OK:
+        return None, result_code
+
+    gpu_name = buffer.value.decode("utf-8")
+    return (gpu_name if gpu_name else None), result_code
+
+
+# =============================================================================
+# Registry EDID Lookup
+# =============================================================================
+
+
+def _get_device_interface_detail_size() -> int:
+    """Get the correct cbSize value for SP_DEVICE_INTERFACE_DETAIL_DATA based on architecture."""
+    return 8 if ctypes.sizeof(ctypes.c_void_p) == 8 else 6
+
+
+def _read_edid_from_registry(hkey) -> Optional[dict]:
+    """
+    Read and parse EDID data from an open registry key.
+
+    Args:
+        hkey: Open registry key handle for a monitor device
+
+    Returns:
+        Parsed EDID dictionary, or None if read fails.
+    """
+    edid_size = wintypes.DWORD()
+
+    # Query EDID value size first
+    if RegQueryValueExA(hkey, b"EDID", None, None, None, ctypes.byref(edid_size)) != 0:
+        return None
+
+    # Read the actual EDID data
+    edid_buffer = (ctypes.c_ubyte * edid_size.value)()
+    if RegQueryValueExA(hkey, b"EDID", None, None, edid_buffer, ctypes.byref(edid_size)) != 0:
+        return None
+
+    return parse_edid(bytes(edid_buffer))
+
+
+def _extract_device_path(detail_buffer) -> str:
+    """Extract the device path string from a device interface detail buffer."""
+    path_offset = ctypes.sizeof(wintypes.DWORD)
+    raw_path = ctypes.string_at(ctypes.addressof(detail_buffer) + path_offset)
+    return raw_path.decode("ascii", errors="ignore").upper()
+
+
+def get_edid_by_hwid(hwid: str) -> Optional[dict]:
+    """
+    Fetch EDID data from the Windows registry for a specific display device.
+
+    Uses Windows SetupAPI to enumerate monitor device interfaces and find
+    the one matching the given hardware ID, then reads its EDID from registry.
+
+    Args:
+        hwid: Hardware ID to match. Can be in formats like:
+            - "MONITOR\\AG326UD\\{...}"
+            - "\\\\?\\DISPLAY#MANUF#..."
+
+    Returns:
+        Parsed EDID dictionary containing manufacturer_code, vendor_id, product_id,
+        serial, name, and inches. Returns None if not found or on error.
+    """
+    if not hwid:
+        return None
+
+    hwid_upper = hwid.upper()
+
+    # Get device information set for monitor interfaces
+    device_info_set = SetupDiGetClassDevsA(
         ctypes.byref(GUID_DEVINTERFACE_MONITOR),
         None,
         None,
         DIGCF_PRESENT | DIGCF_DEVICEINTERFACE,
     )
 
-    if hdev == -1:
+    if device_info_set == _INVALID_HKEY:
         return None
 
-    iface_index = 0
-    parsed_edid = None
+    try:
+        return _enumerate_and_find_edid(device_info_set, hwid_upper)
+    finally:
+        SetupDiDestroyDeviceInfoList(device_info_set)
+
+
+def _enumerate_and_find_edid(device_info_set, hwid_upper: str) -> Optional[dict]:
+    """
+    Enumerate device interfaces and find EDID for matching hardware ID.
+
+    Args:
+        device_info_set: Handle to device information set
+        hwid_upper: Uppercase hardware ID to match
+
+    Returns:
+        Parsed EDID dictionary if found, None otherwise.
+    """
+    interface_index = 0
 
     while True:
-        iface_data = SP_DEVICE_INTERFACE_DATA()
-        iface_data.cbSize = ctypes.sizeof(SP_DEVICE_INTERFACE_DATA)
+        interface_data = SP_DEVICE_INTERFACE_DATA()
+        interface_data.cbSize = ctypes.sizeof(SP_DEVICE_INTERFACE_DATA)
 
+        # Enumerate next interface
         if not SetupDiEnumDeviceInterfaces(
-                hdev,
-                None,
-                ctypes.byref(GUID_DEVINTERFACE_MONITOR),
-                iface_index,
-                ctypes.byref(iface_data),
+            device_info_set,
+            None,
+            ctypes.byref(GUID_DEVINTERFACE_MONITOR),
+            interface_index,
+            ctypes.byref(interface_data),
         ):
             break
 
-        req_size = wintypes.DWORD(0)
-        SetupDiGetDeviceInterfaceDetailA(
-            hdev, ctypes.byref(iface_data), None, 0, ctypes.byref(req_size), None
-        )
+        edid = _try_get_edid_for_interface(device_info_set, interface_data, hwid_upper)
+        if edid is not None:
+            return edid
 
-        if req_size.value > 0:
-            cb_size = 8 if ctypes.sizeof(ctypes.c_void_p) == 8 else 6
+        interface_index += 1
 
-            buf = ctypes.create_string_buffer(req_size.value)
-            struct.pack_into("I", buf, 0, cb_size)
-
-            dev_data = SP_DEVINFO_DATA()
-            dev_data.cbSize = ctypes.sizeof(SP_DEVINFO_DATA)
-
-            if SetupDiGetDeviceInterfaceDetailA(
-                    hdev,
-                    ctypes.byref(iface_data),
-                    buf,
-                    req_size,
-                    None,
-                    ctypes.byref(dev_data),
-            ):
-                path_offset = wintypes.DWORD
-                raw_path = ctypes.string_at(
-                    ctypes.addressof(buf) + ctypes.sizeof(path_offset)
-                )
-                device_path = raw_path.decode("ascii", errors="ignore").upper()
-
-                if hwid.upper() in device_path:
-                    hkey = SetupDiOpenDevRegKey(
-                        hdev,
-                        ctypes.byref(dev_data),
-                        DICS_FLAG_GLOBAL,
-                        0,
-                        DIREG_DEV,
-                        KEY_READ,
-                    )
-
-                    if hkey != -1 and hkey != 0:
-                        edid_size = wintypes.DWORD()
-
-                        if (
-                                RegQueryValueExA(
-                                    hkey, b"EDID", None, None, None, ctypes.byref(edid_size)
-                                )
-                                == 0
-                        ):
-                            edid_buf = (ctypes.c_ubyte * edid_size.value)()
-                            if (
-                                    RegQueryValueExA(
-                                        hkey,
-                                        b"EDID",
-                                        None,
-                                        None,
-                                        edid_buf,
-                                        ctypes.byref(edid_size),
-                                    )
-                                    == 0
-                            ):
-                                parsed_edid = parse_edid(bytes(edid_buf))
-
-                        RegCloseKey(hkey)
-                        if parsed_edid:
-                            break
-
-        iface_index += 1
-
-    SetupDiDestroyDeviceInfoList(hdev)
-    return parsed_edid
+    return None
 
 
-# ------------------------------
-# Monitor enumeration callback
-# ------------------------------
+def _try_get_edid_for_interface(device_info_set, interface_data, hwid_upper: str) -> Optional[dict]:
+    """
+    Attempt to retrieve EDID for a single device interface if it matches the hardware ID.
+
+    Args:
+        device_info_set: Handle to device information set
+        interface_data: Device interface data structure
+        hwid_upper: Uppercase hardware ID to match
+
+    Returns:
+        Parsed EDID dictionary if this interface matches and EDID is readable, None otherwise.
+    """
+    # Get required buffer size for interface detail
+    required_size = wintypes.DWORD(0)
+    SetupDiGetDeviceInterfaceDetailA(
+        device_info_set,
+        ctypes.byref(interface_data),
+        None,
+        0,
+        ctypes.byref(required_size),
+        None,
+    )
+
+    if required_size.value == 0:
+        return None
+
+    # Prepare detail buffer with correct cbSize
+    detail_buffer = ctypes.create_string_buffer(required_size.value)
+    struct.pack_into("I", detail_buffer, 0, _get_device_interface_detail_size())
+
+    device_data = SP_DEVINFO_DATA()
+    device_data.cbSize = ctypes.sizeof(SP_DEVINFO_DATA)
+
+    # Get interface detail and device info
+    if not SetupDiGetDeviceInterfaceDetailA(
+        device_info_set,
+        ctypes.byref(interface_data),
+        detail_buffer,
+        required_size,
+        None,
+        ctypes.byref(device_data),
+    ):
+        return None
+
+    # Check if this device matches our hardware ID
+    device_path = _extract_device_path(detail_buffer)
+    if hwid_upper not in device_path:
+        return None
+
+    # Open registry key and read EDID
+    registry_key = SetupDiOpenDevRegKey(
+        device_info_set,
+        ctypes.byref(device_data),
+        DICS_FLAG_GLOBAL,
+        0,
+        DIREG_DEV,
+        KEY_READ,
+    )
+
+    if registry_key == _INVALID_HKEY or registry_key == 0:
+        return None
+
+    try:
+        return _read_edid_from_registry(registry_key)
+    finally:
+        RegCloseKey(registry_key)
 
 
-def monitor_enum_proc(hmonitor, hdc, rect, lparam):
-    ptr = ctypes.cast(lparam, ctypes.POINTER(ctypes.py_object))
-    monitor_list: DisplayInfo = ptr.contents.value
+# =============================================================================
+# Monitor Enumeration
+# =============================================================================
 
-    mi = MONITORINFOEXA()
-    mi.cbSize = ctypes.sizeof(mi)
-    GetMonitorInfoA(hmonitor, ctypes.byref(mi))
-    devid = mi.szDevice.decode()
 
-    if not devid:
-        monitor_list.status = Status(type=StatusType.PARTIAL)
-        monitor_list.status.messages.append(
-            f"Failed to fetch Display device information, DeviceID is empty!"
-        )
+def _get_orientation_name(orientation_code: int) -> str:
+    """Convert Windows display orientation code to human-readable name."""
+    return _ORIENTATION_NAMES.get(orientation_code, "Unknown")
 
-        return True  # Continue enumeration
 
-    dm = DEVMODEA()
-    dm.dmSize = ctypes.sizeof(dm)
-    EnumDisplaySettingsA(mi.szDevice, ENUM_CURRENT_SETTINGS, ctypes.byref(dm))
+def _get_connection_type(connector_info: Optional[dict]) -> Optional[str]:
+    """
+    Extract connection type name from connector info.
 
-    dd = DISPLAY_DEVICEA(cb=ctypes.sizeof(DISPLAY_DEVICEA))
-    EnumDisplayDevicesA(mi.szDevice, 0, ctypes.byref(dd), 0)
-    target_pnp_id = dd.DeviceID.decode()
-    connector_info = getattr(monitor_list, "_connectorInfo", None)
-    connection_type = None
+    Args:
+        connector_info: Dictionary containing OutputTechnology value
+
+    Returns:
+        Human-readable connection type (e.g., "HDMI", "DisplayPort"), or None.
+    """
+    if not connector_info:
+        return None
+
+    try:
+        technology_code = int(connector_info.get("OutputTechnology", -2))
+        return DISPLAY_CON_TYPE.get(technology_code)
+    except (ValueError, TypeError):
+        return None
+
+
+def _fetch_edid_for_monitor(
+    connector_info: Optional[dict],
+    pnp_device_id: str
+) -> tuple[Optional[dict], Optional[str]]:
+    """
+    Fetch EDID data for a monitor, preferring display path over PNP ID.
+
+    Args:
+        connector_info: Connector info dict with DisplayPath (may be None)
+        pnp_device_id: PNP device ID as fallback
+
+    Returns:
+        Tuple of (edid_dict, device_path) where device_path may be None.
+    """
     device_path = None
 
-    if not target_pnp_id or not len(target_pnp_id):
-        monitor_list.status = Status(type=StatusType.PARTIAL)
-        monitor_list.status.messages.append(
-            f"Failed to fetch Display device information, PNPDeviceID is empty!"
-        )
-
-        return True  # Continue enumeration
-
-    p_gpu, res_code = find_monitor_gpu(devid)
-
-    # It is way more accurate to fetch EDID by the display path
-    # rather than by the PNPDeviceID, as multiple displays
-    # may be identical
+    # Prefer display path for more accurate EDID matching
     if connector_info:
-        connector_info = connector_info.get(devid, None)
-        connection_type = DISPLAY_CON_TYPE.get(
-            int(connector_info.get("OutputTechnology", -2)), None
-        )
-        device_path = connector_info.get("DisplayPath", None)
-        edid = get_edid_by_hwid(connector_info.get("DisplayPath", None))
+        device_path = connector_info.get("DisplayPath")
+        if device_path:
+            edid = get_edid_by_hwid(device_path)
+            if edid:
+                return edid, device_path
 
-    # Fallback to PNPDeviceID if no display path found
-    else:
-        edid = get_edid_by_hwid(target_pnp_id.split("\\")[1]) if target_pnp_id else None
+    # Fallback to PNP device ID
+    if pnp_device_id:
+        parts = pnp_device_id.split("\\")
+        if len(parts) > 1:
+            edid = get_edid_by_hwid(parts[1])
+            return edid, device_path
 
-    orientation = dm.dmDisplayOrientation
+    return None, device_path
 
-    monitor_info = DisplayModuleInfo()
-    monitor_info.name = edid.get("name", None) if edid else None
-    monitor_info.parent_gpu = p_gpu if res_code == STATUS_OK else None
-    monitor_info.device_id = devid
-    monitor_info.hardware_id = target_pnp_id
-    monitor_info.device_path = device_path
-    monitor_info.resolution.width = dm.dmPelsWidth
-    monitor_info.resolution.height = dm.dmPelsHeight
-    monitor_info.resolution.refresh_rate = dm.dmDisplayFrequency
-    monitor_info.resolution.aspect_ratio = get_aspect_ratio(dm.dmPelsWidth, dm.dmPelsHeight)
 
-    if orientation == DMDO_DEFAULT:
-        monitor_info.orientation = "Landscape"
-    elif orientation == DMDO_90:
-        monitor_info.orientation = "Portrait"
-    elif orientation == DMDO_180:
-        monitor_info.orientation = "Landscape (flipped)"
-    elif orientation == DMDO_270:
-        monitor_info.orientation = "Portrait (flipped)"
-    else:
-        monitor_info.orientation = "Unknown"
+def _build_monitor_info(
+    device_id: str,
+    hardware_id: str,
+    device_path: Optional[str],
+    display_mode: DEVMODEA,
+    edid: Optional[dict],
+    gpu_name: Optional[str],
+    connection_type: Optional[str],
+) -> DisplayModuleInfo:
+    """
+    Construct a DisplayModuleInfo object from collected data.
 
-    monitor_info.connection_type = connection_type
-    monitor_info.inches = edid.get("inches", None) if edid else None
-    monitor_info.vendor_id = f"0x{edid['vendor_id']:04X}" if edid else None
-    monitor_info.product_id = f"0x{edid['product_id']:04X}" if edid else None
-    monitor_info.serial_number = (
-        str(edid["serial"]) if edid and edid.get("serial") is not None else None
+    Args:
+        device_id: Display device identifier (e.g., "\\\\.\\DISPLAY1")
+        hardware_id: PNP hardware ID
+        device_path: Display path string (may be None)
+        display_mode: DEVMODEA structure with current display settings
+        edid: Parsed EDID dictionary (may be None)
+        gpu_name: Name of associated GPU (may be None)
+        connection_type: Connection type string (may be None)
+
+    Returns:
+        Populated DisplayModuleInfo object.
+    """
+    monitor = DisplayModuleInfo()
+
+    # Basic identification
+    monitor.device_id = device_id
+    monitor.hardware_id = hardware_id
+    monitor.device_path = device_path
+    monitor.parent_gpu = gpu_name
+    monitor.connection_type = connection_type
+
+    # Resolution info
+    monitor.resolution.width = display_mode.dmPelsWidth
+    monitor.resolution.height = display_mode.dmPelsHeight
+    monitor.resolution.refresh_rate = display_mode.dmDisplayFrequency
+    monitor.resolution.aspect_ratio = get_aspect_ratio(
+        display_mode.dmPelsWidth,
+        display_mode.dmPelsHeight
     )
-    monitor_info.manufacturer_code = (
-        edid.get("manufacturer_code", None) if edid else None
+
+    # Orientation
+    monitor.orientation = _get_orientation_name(display_mode.dmDisplayOrientation)
+
+    # EDID-derived information
+    if edid:
+        monitor.name = edid.get("name")
+        monitor.inches = edid.get("inches")
+        monitor.manufacturer_code = edid.get("manufacturer_code")
+        monitor.serial_number = str(edid["serial"]) if edid.get("serial") is not None else None
+        monitor.vendor_id = f"0x{edid['vendor_id']:04X}" if edid.get("vendor_id") else None
+        monitor.product_id = f"0x{edid['product_id']:04X}" if edid.get("product_id") else None
+
+    return monitor
+
+
+def _add_partial_status(display_info: DisplayInfo, message: str) -> None:
+    """Add a partial status message to the display info."""
+    display_info.status = Status(type=StatusType.PARTIAL)
+    display_info.status.messages.append(message)
+
+
+def _monitor_enum_callback(hmonitor, hdc, rect, lparam) -> bool:
+    """
+    Callback function for EnumDisplayMonitors.
+
+    Called for each active monitor. Collects display information and adds
+    it to the DisplayInfo list passed via lparam.
+
+    Args:
+        hmonitor: Handle to the display monitor
+        hdc: Handle to device context (unused)
+        rect: Pointer to RECT with monitor coordinates (unused)
+        lparam: Pointer to DisplayInfo object being populated
+
+    Returns:
+        True to continue enumeration, False to stop.
+    """
+    # Retrieve the DisplayInfo object from the pointer
+    display_info_ptr = ctypes.cast(lparam, ctypes.POINTER(ctypes.py_object))
+    display_info: DisplayInfo = display_info_ptr.contents.value
+
+    # Get monitor info including device name
+    monitor_info = MONITORINFOEXA()
+    monitor_info.cbSize = ctypes.sizeof(monitor_info)
+    GetMonitorInfoA(hmonitor, ctypes.byref(monitor_info))
+
+    device_id = monitor_info.szDevice.decode()
+    if not device_id:
+        _add_partial_status(display_info, "Failed to fetch Display device information, DeviceID is empty!")
+        return True
+
+    # Get current display settings
+    display_mode = DEVMODEA()
+    display_mode.dmSize = ctypes.sizeof(display_mode)
+    EnumDisplaySettingsA(monitor_info.szDevice, ENUM_CURRENT_SETTINGS, ctypes.byref(display_mode))
+
+    # Get PNP device ID
+    display_device = DISPLAY_DEVICEA(cb=ctypes.sizeof(DISPLAY_DEVICEA))
+    EnumDisplayDevicesA(monitor_info.szDevice, 0, ctypes.byref(display_device), 0)
+    pnp_device_id = display_device.DeviceID.decode()
+
+    if not pnp_device_id:
+        _add_partial_status(display_info, "Failed to fetch Display device information, PNPDeviceID is empty!")
+        return True
+
+    # Get connector info for this display
+    connector_info_map = getattr(display_info, "_connectorInfo", None)
+    connector_info = connector_info_map.get(device_id) if connector_info_map else None
+
+    # Get GPU association
+    gpu_name, gpu_result_code = find_monitor_gpu(device_id)
+
+    # Get EDID and connection type
+    edid, device_path = _fetch_edid_for_monitor(connector_info, pnp_device_id)
+    connection_type = _get_connection_type(connector_info)
+
+    # Build and add monitor info
+    monitor = _build_monitor_info(
+        device_id=device_id,
+        hardware_id=pnp_device_id,
+        device_path=device_path,
+        display_mode=display_mode,
+        edid=edid,
+        gpu_name=gpu_name if gpu_result_code == STATUS_OK else None,
+        connection_type=connection_type,
     )
 
-    monitor_list.modules.append(monitor_info)
+    display_info.modules.append(monitor)
+    return True
 
-    return True  # Continue enumeration
+
+# Keep the original name for backward compatibility
+monitor_enum_proc = _monitor_enum_callback
+
+
+# =============================================================================
+# Public API
+# =============================================================================
+
+
+def _fetch_connector_info() -> tuple[Optional[dict], Optional[tuple[StatusType, str]]]:
+    """
+    Fetch display connector information from the interop DLL.
+
+    Returns:
+        Tuple of (connector_info_dict, error_info):
+        - connector_info_dict: Parsed connector info, or None on failure
+        - error_info: Tuple of (StatusType, message) if failed, None on success
+    """
+    buffer = ctypes.create_string_buffer(4096)
+    result_code = GetDisplayPathInfo(buffer, 4096)
+
+    if result_code != STATUS_OK:
+        return None, (StatusType.PARTIAL, f"Failed to fetch Display connector information, error code: {result_code}")
+
+    raw_string = buffer.value.decode("utf-8", errors="ignore").strip()
+    return parse_connector_info(raw_string), None
 
 
 def fetch_display_info_internal() -> DisplayInfo:
-    monitors = DisplayInfo()
-    monitors_ptr = ctypes.py_object(monitors)
+    """
+    Enumerate all display monitors and collect their information.
 
-    connectorInfo = ctypes.create_string_buffer(4096)
-    res_code = GetDisplayPathInfo(connectorInfo, 4096)
+    This is the main entry point for display enumeration. It:
+    1. Fetches connector information from the interop DLL
+    2. Enumerates all active monitors using EnumDisplayMonitors
+    3. For each monitor, collects resolution, EDID data, GPU association, etc.
 
-    if res_code != STATUS_OK:
-        monitors.status.type = StatusType.PARTIAL
-        monitors.status.messages.append(
-            f"Failed to fetch Display connector information, error code: {res_code}"
-        )
+    Returns:
+        DisplayInfo object containing a list of DisplayModuleInfo objects,
+        one per detected monitor, along with status information.
+    """
+    display_info = DisplayInfo()
+
+    # Fetch connector information (display paths and connection types)
+    connector_info, error = _fetch_connector_info()
+    if error:
+        display_info.status.type = error[0]
+        display_info.status.messages.append(error[1])
     else:
-        monitors._connectorInfo = parse_connector_info(
-            connectorInfo.value.decode("utf-8", errors="ignore").strip()
-        )
+        display_info._connectorInfo = connector_info
 
-    enum_proc = MONITORENUMPROC(monitor_enum_proc)
-    EnumDisplayMonitors(0, 0, enum_proc, ctypes.addressof(monitors_ptr))
+    # Enumerate all monitors
+    display_info_ptr = ctypes.py_object(display_info)
+    enum_callback = MONITORENUMPROC(_monitor_enum_callback)
 
-    if len(monitors.modules) == 0:
-        monitors.status.type = StatusType.FAILED
+    EnumDisplayMonitors(0, 0, enum_callback, ctypes.addressof(display_info_ptr))
 
-    return monitors
+    # Mark as failed if no monitors were found
+    if len(display_info.modules) == 0:
+        display_info.status.type = StatusType.FAILED
+
+    return display_info
