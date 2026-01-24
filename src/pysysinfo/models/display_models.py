@@ -26,9 +26,7 @@ class DisplayModuleInfo(BaseModel):
     #: Year it was manufactured / designed.
     year: Optional[int] = None
 
-    vendor_id: Optional[str] = None
-    device_id: Optional[str] = None
-
+    #: ACPI path of the display device.
     acpi_path: Optional[str] = None
 
     #: Parent GPU driving this display
@@ -53,7 +51,7 @@ class DisplayModuleInfo(BaseModel):
 
 
 class DisplayInfo(ComponentInfo):
-    """Contains list of ``DisplayModuleInfo`` objects."""
+    """Contains a list of ``DisplayModuleInfo`` objects."""
 
     #: List of GPU modules present in the system.
     modules: List[DisplayModuleInfo] = Field(default_factory=list)
