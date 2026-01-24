@@ -112,6 +112,8 @@ def parse_edid(edid_data: bytes) -> DisplayModuleInfo:
             )
 
     if resolution != (0, 0, 0):
+        if not module.resolution:
+            module.resolution = ResolutionInfo()
         module.resolution.width = resolution[0]
         module.resolution.height = resolution[1]
         module.resolution.refresh_rate = resolution[2]
