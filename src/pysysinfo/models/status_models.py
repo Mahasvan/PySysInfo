@@ -23,6 +23,10 @@ class Status(BaseModel):
     type: StatusType = Field(default_factory=lambda: StatusType.SUCCESS)
     messages: List[str] = Field(default_factory=list)
 
+    def make_partial(self, message: str = None) -> None:
+        self.type = StatusType.PARTIAL
+        if message: self.messages.append(message)
+
 
 """
 The intention of `messages` being List[str] is that PartialStatus can benefit from containing many messages.
