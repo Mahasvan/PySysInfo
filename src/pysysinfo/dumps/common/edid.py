@@ -68,8 +68,9 @@ def parse_edid(edid_data: bytes) -> DisplayModuleInfo:
     if input_type >> 7 == 1:  # MSB is 1 => Digital output
         module.resolution = ResolutionInfo()
 
-        module.resolution.bit_depth = BIT_DEPTH_ENUM.get(_get_bits(input_type.to_bytes(1, byteorder="little"), 1, 5),
-                                                         "Undefined")
+        module.resolution.bit_depth = BIT_DEPTH_ENUM.get(
+            _get_bits(input_type.to_bytes(1, byteorder="little"), 1, 4),
+            0)
 
         module.interface = INTERFACE_ENUM.get(input_type & 7, "Unknown")
 
