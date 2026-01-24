@@ -21,7 +21,9 @@ def _get_monitor_resolution_from_system_profiler(monitor_info: dict) -> Optional
     return None
 
 def _enrich_data_from_edid(monitor_info: DisplayModuleInfo, edid_string: str) -> DisplayModuleInfo:
-    edid_bytes = bytes.fromhex(edid_string.lstrip("0x"))
+    if edid_string.lower().startswith("0x"):
+        edid_string = edid_string[2:]
+    edid_bytes = bytes.fromhex(edid_string)
     data: DisplayModuleInfo = parse_edid(edid_bytes)
     for field in data.model_dump().keys():
         if monitor_info.__getattribute__(field) is None:
@@ -82,7 +84,9 @@ def _fetch_monitor_info_system_profiler():
                 monitor_info.status.make_partial("Could not retrieve refresh rate from system profiler")
             monitor_info.resolution = res
 
-            monitor_info.gpu_name = display_controller.get("_name")
+            monitor_info.gpu_name = display_controller.get("sppci_model")
+            if not monitor_info.gpu_name:
+                monitor_info.gpu_name = display_controller.get("_name")
             if not monitor_info.gpu_name:
                 monitor_info.status.make_partial("Could not retrieve GPU name from system profiler")
 
