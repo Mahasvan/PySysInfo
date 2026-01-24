@@ -56,7 +56,6 @@ from pysysinfo.interops.win.api.structs import (
 from pysysinfo.models.display_models import DisplayInfo, DisplayModuleInfo
 from pysysinfo.models.status_models import Status, StatusType
 
-
 # =============================================================================
 # Constants
 # =============================================================================
@@ -431,11 +430,11 @@ def _enumerate_and_find_edid(device_info_set, hwid_upper: str) -> Optional[dict]
 
         # Enumerate next interface
         if not SetupDiEnumDeviceInterfaces(
-            device_info_set,
-            None,
-            ctypes.byref(GUID_DEVINTERFACE_MONITOR),
-            interface_index,
-            ctypes.byref(interface_data),
+                device_info_set,
+                None,
+                ctypes.byref(GUID_DEVINTERFACE_MONITOR),
+                interface_index,
+                ctypes.byref(interface_data),
         ):
             break
 
@@ -483,12 +482,12 @@ def _try_get_edid_for_interface(device_info_set, interface_data, hwid_upper: str
 
     # Get interface detail and device info
     if not SetupDiGetDeviceInterfaceDetailA(
-        device_info_set,
-        ctypes.byref(interface_data),
-        detail_buffer,
-        required_size,
-        None,
-        ctypes.byref(device_data),
+            device_info_set,
+            ctypes.byref(interface_data),
+            detail_buffer,
+            required_size,
+            None,
+            ctypes.byref(device_data),
     ):
         return None
 
@@ -547,8 +546,8 @@ def _get_connection_type(connector_info: Optional[dict]) -> Optional[str]:
 
 
 def _fetch_edid_for_monitor(
-    connector_info: Optional[dict],
-    pnp_device_id: str
+        connector_info: Optional[dict],
+        pnp_device_id: str
 ) -> tuple[Optional[dict], Optional[str]]:
     """
     Fetch EDID data for a monitor, preferring display path over PNP ID.
@@ -581,13 +580,13 @@ def _fetch_edid_for_monitor(
 
 
 def _build_monitor_info(
-    device_id: str,
-    hardware_id: str,
-    device_path: Optional[str],
-    display_mode: DEVMODEA,
-    edid: Optional[dict],
-    gpu_name: Optional[str],
-    connection_type: Optional[str],
+        device_id: str,
+        hardware_id: str,
+        device_path: Optional[str],
+        display_mode: DEVMODEA,
+        edid: Optional[dict],
+        gpu_name: Optional[str],
+        connection_type: Optional[str],
 ) -> DisplayModuleInfo:
     """
     Construct a DisplayModuleInfo object from collected data.
@@ -608,10 +607,10 @@ def _build_monitor_info(
 
     # Basic identification
     monitor.device_id = device_id
-    monitor.hardware_id = hardware_id
+    monitor.acpi_path = hardware_id
     monitor.device_path = device_path
-    monitor.parent_gpu = gpu_name
-    monitor.connection_type = connection_type
+    monitor.gpu_name = gpu_name
+    monitor.interface = connection_type
 
     # Resolution info
     monitor.resolution.width = display_mode.dmPelsWidth

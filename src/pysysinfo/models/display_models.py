@@ -1,4 +1,4 @@
-from typing import Optional, List, Tuple
+from typing import Optional, List
 
 from pydantic import BaseModel, Field
 
@@ -8,38 +8,33 @@ from pysysinfo.models.component_model import ComponentInfo
 class ResolutionInfo(BaseModel):
     """Resolution information for a Display."""
 
-    # Horizontal resolution in pixels.
+    #: Horizontal resolution in pixels.
     width: Optional[int] = None
-
-    # Vertical resolution in pixels.
+    #: Vertical resolution in pixels.
     height: Optional[int] = None
-
-    # Refresh rate in Hz.
+    #: Refresh rate in Hz.
     refresh_rate: Optional[int] = None
-
-    aspect_ratio: Optional[Tuple[int, int]] = None
+    #: Bit depth in bits per pixel.
+    bit_depth: Optional[int] = None
 
 
 class DisplayModuleInfo(BaseModel):
     """Information for one Display is stored here"""
 
-    # Name / model
     name: Optional[str] = None
 
-    # Parent GPU driving this display
-    parent_gpu: Optional[str] = None
+    #: Year it was manufactured / designed.
+    year: Optional[int] = None
 
-    # Device ID
+    vendor_id: Optional[str] = None
     device_id: Optional[str] = None
 
-    # Hardware ID
-    hardware_id: Optional[str] = None
+    acpi_path: Optional[str] = None
 
-    # Device path
-    device_path: Optional[str] = None
+    #: Parent GPU driving this display
+    gpu_name: Optional[str] = None
 
-    # The current resolution data
-    resolution: Optional[ResolutionInfo] = Field(default_factory=ResolutionInfo)
+    resolution: Optional[ResolutionInfo] = None
 
     # Diagonal size in inches
     inches: Optional[int] = None
@@ -47,19 +42,13 @@ class DisplayModuleInfo(BaseModel):
     # Orientation (landscape/portrait) (includes FLIPPED)
     orientation: Optional[str] = None
 
-    # Connector type (HDMI, DP, VGA, etc) - enum: DISPLAY_CON_TYPE
-    connection_type: Optional[str] = None
-
-    # Vendor ID
-    vendor_id: Optional[str] = None
-
-    # Product ID
-    product_id: Optional[str] = None
+    # Display Interface (HDMI, DP, VGA, etc) - enum: DISPLAY_CON_TYPE
+    interface: Optional[str] = None
 
     # Serial Number
     serial_number: Optional[str] = None
 
-    # Manufacturer (3-letter code)
+    #: Three-letter code assigned to each manufacturer.
     manufacturer_code: Optional[str] = None
 
 

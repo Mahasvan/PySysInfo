@@ -15,7 +15,7 @@ from pysysinfo.util.location_paths import fetch_device_properties, fetch_pcie_in
 
 def fetch_additional_properties(
         pnp_device_id: str,
-) -> tuple[str | None, str | None, str | None, str | None]:
+) -> tuple[Optional[str], Optional[str], Optional[str], Optional[str]]:
     """
     Fetch additional device properties using Windows Configuration Manager API.
 

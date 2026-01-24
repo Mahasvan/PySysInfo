@@ -193,7 +193,7 @@ class TestMonitorEnumProc:
 
         mod = monitors.modules[0]
         assert mod.name == "AG326UD"
-        assert mod.parent_gpu == "GPU-0"
+        assert mod.gpu_name == "GPU-0"
         assert mod.resolution.width == 2560
         assert mod.resolution.height == 1440
         assert mod.resolution.refresh_rate == 144
@@ -244,9 +244,9 @@ class TestDisplayInfoFetch:
 
         module = monitors.modules[0]
         assert module.name is not None
-        assert module.parent_gpu is not None
+        assert module.gpu_name is not None
         assert module.device_id is not None
-        assert module.hardware_id is not None
+        assert module.acpi_path is not None
         assert module.resolution.width > 0
         assert module.resolution.height > 0
         assert module.resolution.aspect_ratio > 0

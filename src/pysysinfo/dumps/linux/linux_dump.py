@@ -1,7 +1,9 @@
 from pysysinfo.dumps.linux.cpu import fetch_cpu_info
+from pysysinfo.dumps.linux.display import fetch_display_info
 from pysysinfo.dumps.linux.graphics import fetch_graphics_info
 from pysysinfo.dumps.linux.memory import fetch_memory_info
 from pysysinfo.dumps.linux.storage import fetch_storage_info
+from pysysinfo.models.display_models import DisplayInfo
 from pysysinfo.models.gpu_models import GraphicsInfo
 from pysysinfo.models.info_models import (
     CPUInfo,
@@ -48,3 +50,6 @@ class LinuxHardwareManager(HardwareManagerInterface):
         self.fetch_storage_info()
         self.fetch_graphics_info()
         return self.info
+
+    def fetch_display_info(self) -> DisplayInfo:
+        return fetch_display_info()
