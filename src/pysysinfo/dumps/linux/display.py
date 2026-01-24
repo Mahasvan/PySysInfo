@@ -169,4 +169,4 @@ def fetch_display_info():
             if response:
                 display_info.modules.append(response)
 
-    return None
+    return display_info
