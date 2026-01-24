@@ -151,6 +151,7 @@ def _fetch_individual_monitor_info(device_path: str, parent_device_path: str) ->
     # todo: populate parent graphics card info
     with open(path, "rb") as f:
         edid_data = f.read()
+    if len(edid_data) == 0: return None
     return _parse_edid(edid_data)
 
 
