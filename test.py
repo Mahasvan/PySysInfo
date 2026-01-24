@@ -1,6 +1,6 @@
-from pysysinfo.dumps.linux.linux_dump import LinuxHardwareManager
+from pysysinfo.dumps.mac.mac_dump import MacHardwareManager
 
-hm = LinuxHardwareManager()
+hm = MacHardwareManager()
 
 cpu = hm.fetch_display_info()
 

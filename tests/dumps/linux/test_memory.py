@@ -2,8 +2,6 @@ import builtins
 import os
 from unittest.mock import MagicMock
 
-import pytest
-
 from pysysinfo.dumps.linux.memory import (
     fetch_memory_info,
     _part_no,
@@ -29,7 +27,7 @@ class TestPartNo:
         strings = [b"PART-1234"]
         # Need "dimm" somewhere in the value for the check
         value[0:4] = b"DIMM"
-        
+
         result = _part_no(strings, bytes(value))
         assert result == "PART-1234"
 
@@ -40,7 +38,7 @@ class TestPartNo:
         strings = [b"PART-1234"]
         # No "dimm" in value
         value[0:4] = b"TEST"
-        
+
         result = _part_no(strings, bytes(value))
         assert result is None
 
@@ -50,7 +48,7 @@ class TestPartNo:
         value[0x1A] = 1
         strings = [b"PART-5678"]
         value[0:4] = b"dimm"  # lowercase
-        
+
         result = _part_no(strings, bytes(value))
         assert result == "PART-5678"
 
@@ -61,21 +59,21 @@ class TestDimmType:
     def test_dimm_type_ddr4(self):
         value = bytearray(0x13)
         value[0x12] = 0x1A  # DDR4
-        
+
         result = _dimm_type(bytes(value))
         assert result == "DDR4"
 
     def test_dimm_type_ddr3(self):
         value = bytearray(0x13)
         value[0x12] = 0x18  # DDR3
-        
+
         result = _dimm_type(bytes(value))
         assert result == "DDR3"
 
     def test_dimm_type_unknown(self):
         value = bytearray(0x13)
         value[0x12] = 0xFF  # Not in MEMORY_TYPE
-        
+
         result = _dimm_type(bytes(value))
         assert result is None
 
@@ -88,7 +86,7 @@ class TestDimmSlot:
         value[0x10] = 1  # Channel string index
         value[0x11] = 2  # Bank string index
         strings = [b"Channel A", b"Bank 0"]
-        
+
         result = _dimm_slot(strings, bytes(value))
         assert result is not None
         assert isinstance(result, MemoryModuleSlot)
@@ -100,7 +98,7 @@ class TestDimmSlot:
         value[0x10] = 0  # Zero index means "Unknown"
         value[0x11] = 0
         strings = []
-        
+
         result = _dimm_slot(strings, bytes(value))
         assert result is not None
         assert result.channel == "Unknown"
@@ -114,7 +112,7 @@ class TestDimmCapacity:
         value = bytearray(0x20)
         size_mb = 8192  # 8 GB
         value[0x0C:0x0E] = size_mb.to_bytes(2, 'little')
-        
+
         result = _dimm_capacity(bytes(value))
         assert result is not None
         assert isinstance(result, Megabyte)
@@ -125,7 +123,7 @@ class TestDimmCapacity:
         # Bit 15 set means kilobytes
         size_kb = 2048 | 0x8000
         value[0x0C:0x0E] = size_kb.to_bytes(2, 'little')
-        
+
         result = _dimm_capacity(bytes(value))
         assert result is not None
         assert isinstance(result, Kilobyte)
@@ -135,7 +133,7 @@ class TestDimmCapacity:
         value = bytearray(0x20)
         value[0x0C:0x0E] = (0x7FFF).to_bytes(2, 'little')  # Use extended size
         value[0x1C:0x20] = (32768).to_bytes(4, 'little')  # 32 GB
-        
+
         result = _dimm_capacity(bytes(value))
         assert result is not None
         assert isinstance(result, Megabyte)
@@ -144,7 +142,7 @@ class TestDimmCapacity:
     def test_dimm_capacity_unknown(self):
         value = bytearray(0x20)
         value[0x0C:0x0E] = (0xFFFF).to_bytes(2, 'little')  # Unknown size
-        
+
         result = _dimm_capacity(bytes(value))
         assert result is None
 
@@ -156,7 +154,7 @@ class TestEccSupport:
         value = bytearray(0x0C)
         value[0x08:0x0A] = (72).to_bytes(2, 'little')  # Total width
         value[0x0A:0x0C] = (64).to_bytes(2, 'little')  # Data width
-        
+
         result = _ecc_support(bytes(value))
         assert result is True
 
@@ -164,7 +162,7 @@ class TestEccSupport:
         value = bytearray(0x0C)
         value[0x08:0x0A] = (64).to_bytes(2, 'little')  # Total width
         value[0x0A:0x0C] = (64).to_bytes(2, 'little')  # Data width
-        
+
         result = _ecc_support(bytes(value))
         assert result is False
 
@@ -175,7 +173,7 @@ class TestDimmSpeed:
     def test_dimm_speed_normal(self):
         value = bytearray(0x58)
         value[0x15:0x17] = (3200).to_bytes(2, 'little')
-        
+
         result = _dimm_speed(bytes(value))
         assert result == 3200
 
@@ -183,14 +181,14 @@ class TestDimmSpeed:
         value = bytearray(0x58)
         value[0x15:0x17] = (0xFFFF).to_bytes(2, 'little')  # Use extended speed
         value[0x54:0x58] = (4800).to_bytes(4, 'little')
-        
+
         result = _dimm_speed(bytes(value))
         assert result == 4800
 
     def test_dimm_speed_unknown(self):
         value = bytearray(0x58)
         value[0x15:0x17] = (0).to_bytes(2, 'little')  # Unknown speed
-        
+
         result = _dimm_speed(bytes(value))
         assert result is None
 

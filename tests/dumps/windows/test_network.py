@@ -39,7 +39,7 @@ class TestBasicParsing:
         assert network_info.status.type == StatusType.PARTIAL
         assert len(network_info.modules) == 2
         assert (
-            network_info.modules[0].name == "Intel(R) Ethernet Connection (10) I219-V"
+                network_info.modules[0].name == "Intel(R) Ethernet Connection (10) I219-V"
         )
         assert network_info.modules[1].manufacturer == "Realtek"
 
@@ -149,7 +149,7 @@ class TestVendorDeviceParsing:
         ],
     )
     def test_parse_vendor_device_ids(
-        self, pnp_id, expected_vendor_id, expected_device_id, monkeypatch
+            self, pnp_id, expected_vendor_id, expected_device_id, monkeypatch
     ):
         """Test parsing various vendor/device ID combinations"""
         mock_output = f"Manufacturer=Test|PNPDeviceID={pnp_id}|Name=Test Device\n"
@@ -312,7 +312,7 @@ class TestFunctionCallAndErrors:
             vendor = f"VEN_{0x8086 + i:04X}" if i == 0 else f"VEN_{0x10EC + i:04X}"
             device = f"DEV_{0x15B8 + i:04X}"
             lines.append(
-                f"Manufacturer={mfg}|PNPDeviceID=PCI\\{vendor}&{device}|Name={mfg} NIC {i+1}"
+                f"Manufacturer={mfg}|PNPDeviceID=PCI\\{vendor}&{device}|Name={mfg} NIC {i + 1}"
             )
         mock_output = "\n".join(lines) + "\n"
 
@@ -369,27 +369,27 @@ class TestFunctionCallAndErrors:
         "pci_path, acpi_path, exp_pci_path, exp_acpi_path",
         [
             (
-                "PCIROOT(0)#PCI(1D00)#PCI(0000)#PCI(0000)#PCI(0000)",
-                "ACPI(_SB_)#ACPI(PCI0)#ACPI(SAT0)#ACPI(NIC0)",
-                "PciRoot(0x0)/Pci(0x1D,0x0)/Pci(0x0,0x0)/Pci(0x0,0x0)/Pci(0x0,0x0)",
-                "\\_SB_.PCI0.SAT0.NIC0",
+                    "PCIROOT(0)#PCI(1D00)#PCI(0000)#PCI(0000)#PCI(0000)",
+                    "ACPI(_SB_)#ACPI(PCI0)#ACPI(SAT0)#ACPI(NIC0)",
+                    "PciRoot(0x0)/Pci(0x1D,0x0)/Pci(0x0,0x0)/Pci(0x0,0x0)/Pci(0x0,0x0)",
+                    "\\_SB_.PCI0.SAT0.NIC0",
             ),
             (
-                "PCIROOT(0)#PCI(1C00)#PCI(0000)#PCI(0000)#PCI(0000)",
-                "ACPI(_SB_)#ACPI(PCI0)#ACPI(NIC1)",
-                "PciRoot(0x0)/Pci(0x1C,0x0)/Pci(0x0,0x0)/Pci(0x0,0x0)/Pci(0x0,0x0)",
-                "\\_SB_.PCI0.NIC1",
+                    "PCIROOT(0)#PCI(1C00)#PCI(0000)#PCI(0000)#PCI(0000)",
+                    "ACPI(_SB_)#ACPI(PCI0)#ACPI(NIC1)",
+                    "PciRoot(0x0)/Pci(0x1C,0x0)/Pci(0x0,0x0)/Pci(0x0,0x0)/Pci(0x0,0x0)",
+                    "\\_SB_.PCI0.NIC1",
             ),
             (
-                "PCIROOT(0)#PCI(1400)#PCI(0000)#PCI(0000)#PCI(0000)",
-                "ACPI(_SB_)#ACPI(PCI0)#ACPI(SAT1)#ACPI(NIC2)",
-                "PciRoot(0x0)/Pci(0x14,0x0)/Pci(0x0,0x0)/Pci(0x0,0x0)/Pci(0x0,0x0)",
-                "\\_SB_.PCI0.SAT1.NIC2",
+                    "PCIROOT(0)#PCI(1400)#PCI(0000)#PCI(0000)#PCI(0000)",
+                    "ACPI(_SB_)#ACPI(PCI0)#ACPI(SAT1)#ACPI(NIC2)",
+                    "PciRoot(0x0)/Pci(0x14,0x0)/Pci(0x0,0x0)/Pci(0x0,0x0)/Pci(0x0,0x0)",
+                    "\\_SB_.PCI0.SAT1.NIC2",
             ),
         ],
     )
     def test_format_paths(
-        self, pci_path, acpi_path, exp_pci_path, exp_acpi_path, monkeypatch
+            self, pci_path, acpi_path, exp_pci_path, exp_acpi_path, monkeypatch
     ):
         """Test that format_{pci|acpi}_path returns correct PCI and ACPI path"""
 

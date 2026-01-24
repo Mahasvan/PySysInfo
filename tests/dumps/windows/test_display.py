@@ -1,7 +1,8 @@
 import ctypes
 import struct
-import pytest
 from ctypes import py_object, addressof
+
+import pytest
 
 import pysysinfo.dumps.windows.display as display
 from pysysinfo.interops.win.api.constants import (
@@ -36,9 +37,9 @@ def build_minimal_edid(name=b"TEST-MONITOR", width_cm=60, height_cm=34):
     edid[21] = width_cm
     edid[22] = height_cm
     off = 54
-    edid[off : off + 4] = b"\x00\x00\x00\xfc"
+    edid[off: off + 4] = b"\x00\x00\x00\xfc"
     edid[off + 4] = 0x00
-    edid[off + 5 : off + 5 + len(name)] = name
+    edid[off + 5: off + 5 + len(name)] = name
     edid[off + 5 + len(name)] = 0x0A
     return bytes(edid), vendor
 
@@ -121,7 +122,7 @@ class TestEDIDParsing:
 
     def test_device_interfaces_enum_fail(self, monkeypatch):
         def mockfail_SetupDiEnumDeviceInterfaces(
-            hDev, devData, cGuidPtr, memberIdx, devIntData
+                hDev, devData, cGuidPtr, memberIdx, devIntData
         ):
             return False
 
@@ -280,7 +281,7 @@ class TestDisplayInfoFetch:
         ],
     )
     def test_fetch_display_info_internal_orientations(
-        self, orientation, expected, monkeypatch
+            self, orientation, expected, monkeypatch
     ):
         def fake_EnumDisplaySettingsA(device, mode, dm_ptr):
             dm = deref(dm_ptr, display.DEVMODEA)
@@ -311,8 +312,8 @@ class TestDisplayInfoFetch:
 
         assert data.status.type == StatusType.FAILED
         assert (
-            data.status.messages[0]
-            == "Failed to fetch Display device information, PNPDeviceID is empty!"
+                data.status.messages[0]
+                == "Failed to fetch Display device information, PNPDeviceID is empty!"
         )
 
 
@@ -326,21 +327,21 @@ class TestGPU:
             (b"", ctypes.create_string_buffer(256), 256, STATUS_INVALID_ARG),
             (b"\\\\.\\DISPLAY1", None, 256, STATUS_INVALID_ARG),
             (
-                b"\\\\.\\DISPLAY1",
-                ctypes.create_string_buffer(256),
-                0,
-                STATUS_INVALID_ARG,
+                    b"\\\\.\\DISPLAY1",
+                    ctypes.create_string_buffer(256),
+                    0,
+                    STATUS_INVALID_ARG,
             ),
             (
-                b"\\\\.\\DISPLAY420",
-                ctypes.create_string_buffer(256),
-                256,
-                STATUS_FAILURE,
+                    b"\\\\.\\DISPLAY420",
+                    ctypes.create_string_buffer(256),
+                    256,
+                    STATUS_FAILURE,
             ),
         ],
     )
     def test_fetch_display_info_gpu_display(
-        self, enc_name, out_buf, buf_size, exp_status, monkeypatch
+            self, enc_name, out_buf, buf_size, exp_status, monkeypatch
     ):
         def mock_find_monitor_gpu(device_name):
             res = display.GetGPUForDisplay(enc_name, out_buf, buf_size)
@@ -369,7 +370,7 @@ class TestGPU:
         ],
     )
     def test_fetch_display_info_gpu_display_failures(
-        self, set_status, exp_status, monkeypatch
+            self, set_status, exp_status, monkeypatch
     ):
         def mockfail_GetGPUForDisplay(enc_name, out_buf, buf_size):
             return set_status  # Simulate failure

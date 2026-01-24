@@ -1,6 +1,5 @@
 from pysysinfo.models.display_models import DisplayModuleInfo, ResolutionInfo
 
-
 BIT_DEPTH_ENUM = {
     1: 6,
     2: 8,
@@ -122,5 +121,5 @@ def parse_edid(edid_data: bytes) -> DisplayModuleInfo:
 
     return module
 
-
+# todo: parse extension blocks
 # todo: remove logging when verified to work

@@ -186,11 +186,13 @@ class TestX86Flags:
         flags = _x86_flags(cpu_lines)
         # Should return None when flags not found
         assert flags is None
+
     def test_x86_flags_empty(self):
         cpu_lines = "flags\t\t: \n"
         flags = _x86_flags(cpu_lines)
         # Empty flags value doesn't match regex (.+ requires at least one char)
         assert flags is None
+
 
 class TestFetchArmCpuInfo:
     """Tests for fetch_arm_cpu_info function."""

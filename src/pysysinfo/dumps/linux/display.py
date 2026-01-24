@@ -2,8 +2,9 @@ import os
 import re
 from typing import Optional
 
-from pysysinfo.models.display_models import DisplayInfo, DisplayModuleInfo
 from pysysinfo.dumps.common.edid import parse_edid
+from pysysinfo.models.display_models import DisplayInfo, DisplayModuleInfo
+
 
 def _fetch_individual_monitor_info(device_path: str, parent_device_path: str) -> Optional[DisplayModuleInfo]:
     path = os.path.join(device_path, "edid")

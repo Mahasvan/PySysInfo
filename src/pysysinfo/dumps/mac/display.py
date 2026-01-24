@@ -3,8 +3,9 @@ import re
 import subprocess
 from typing import Tuple, Optional
 
-from pysysinfo.models.display_models import DisplayInfo, DisplayModuleInfo, ResolutionInfo
 from pysysinfo.dumps.common.edid import parse_edid
+from pysysinfo.models.display_models import DisplayInfo, DisplayModuleInfo, ResolutionInfo
+
 
 def _get_monitor_resolution_from_system_profiler(monitor_info: dict) -> Optional[Tuple[int, int]]:
     precedence = [
@@ -19,6 +20,7 @@ def _get_monitor_resolution_from_system_profiler(monitor_info: dict) -> Optional
         if resolution := resolution_regex.search(monitor_info.get(key, "")):
             return int(resolution.group(1)), int(resolution.group(2))
     return None
+
 
 def _enrich_data_from_edid(monitor_info: DisplayModuleInfo, edid_string: str) -> DisplayModuleInfo:
     if edid_string.lower().startswith("0x"):
@@ -39,6 +41,7 @@ def _enrich_data_from_edid(monitor_info: DisplayModuleInfo, edid_string: str) ->
             monitor_info.resolution.__setattr__(field, data.resolution.__getattribute__(field))
     return monitor_info
 
+
 def _get_refresh_rate_from_system_profiler(monitor_info: dict) -> Optional[float]:
     precedence = [
         "spdisplays_pixelresolution"
@@ -51,6 +54,7 @@ def _get_refresh_rate_from_system_profiler(monitor_info: dict) -> Optional[float
         if refresh_rate := refresh_rate_regex.search(monitor_info.get(key, "")):
             return float(refresh_rate.group(1))
     return None
+
 
 def _fetch_monitor_info_system_profiler():
     monitors = []
@@ -90,8 +94,8 @@ def _fetch_monitor_info_system_profiler():
             if not monitor_info.gpu_name:
                 monitor_info.status.make_partial("Could not retrieve GPU name from system profiler")
 
-            if monitor.get("_spdisplays_edid"):
-                monitor_info = _enrich_data_from_edid(monitor_info, monitor.get("_spdisplays_edid"))
+            if edid := monitor.get("_spdisplays_edid"):
+                monitor_info = _enrich_data_from_edid(monitor_info, edid)
 
             monitors.append(monitor_info)
 
@@ -101,7 +105,5 @@ def _fetch_monitor_info_system_profiler():
 def fetch_display_info() -> DisplayInfo:
     display_info = DisplayInfo()
     display_info.modules = _fetch_monitor_info_system_profiler()
-
-
 
     return display_info

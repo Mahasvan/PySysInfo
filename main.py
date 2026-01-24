@@ -24,7 +24,6 @@ hm = pysysinfo.HardwareManager()
 
 loading_end_time = time.time()
 
-
 start_times = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
 # CPU, Memory, Storage, Display, Network, Audio, Baseboard, Graphics, Total
 end_times = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
