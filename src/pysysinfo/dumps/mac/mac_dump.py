@@ -1,8 +1,10 @@
 from pysysinfo.dumps.mac.cpu import fetch_cpu_info
+from pysysinfo.dumps.mac.display import fetch_display_info
 from pysysinfo.dumps.mac.graphics import fetch_graphics_info
 from pysysinfo.dumps.mac.memory import fetch_memory_info
 from pysysinfo.dumps.mac.storage import fetch_storage_info
 from pysysinfo.models.cpu_models import CPUInfo
+from pysysinfo.models.display_models import DisplayInfo
 from pysysinfo.models.gpu_models import GraphicsInfo
 from pysysinfo.models.info_models import HardwareInfo
 from pysysinfo.models.info_models import HardwareManagerInterface
@@ -22,6 +24,7 @@ class MacHardwareManager(HardwareManagerInterface):
             memory=MemoryInfo(),
             storage=StorageInfo(),
             graphics=GraphicsInfo(),
+            display=DisplayInfo(),
         )
 
     def fetch_cpu_info(self) -> CPUInfo:
@@ -39,6 +42,10 @@ class MacHardwareManager(HardwareManagerInterface):
     def fetch_graphics_info(self) -> GraphicsInfo:
         self.info.graphics = fetch_graphics_info()
         return self.info.graphics
+
+    def fetch_display_info(self):
+        self.info.display = fetch_display_info()
+        return self.info.display
 
     def fetch_hardware_info(self) -> HardwareInfo:
         self.fetch_cpu_info()

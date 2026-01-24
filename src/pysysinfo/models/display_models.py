@@ -3,6 +3,7 @@ from typing import Optional, List
 from pydantic import BaseModel, Field
 
 from pysysinfo.models.component_model import ComponentInfo
+from pysysinfo.models.status_models import Status
 
 
 class ResolutionInfo(BaseModel):
@@ -20,6 +21,7 @@ class ResolutionInfo(BaseModel):
 
 class DisplayModuleInfo(BaseModel):
     """Information for one Display is stored here"""
+    status: Status = Field(default_factory=Status)
 
     name: Optional[str] = None
 
