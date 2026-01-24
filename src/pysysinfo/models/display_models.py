@@ -13,7 +13,7 @@ class ResolutionInfo(BaseModel):
     #: Vertical resolution in pixels.
     height: Optional[int] = None
     #: Refresh rate in Hz.
-    refresh_rate: Optional[int] = None
+    refresh_rate: Optional[float] = None
     #: Bit depth in bits per pixel.
     bit_depth: Optional[int] = None
 
