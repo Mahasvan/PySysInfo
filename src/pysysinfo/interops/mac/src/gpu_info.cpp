@@ -9,8 +9,8 @@
 
 // ---- Internal helpers ----
 
-static uint32_t readUInt32(CFDictionaryRef dict, CFStringRef key) {
-    CFTypeRef ref = CFDictionaryGetValue(dict, key);
+static uint32_t readUInt32(const CFDictionaryRef dict, const CFStringRef key) {
+    const CFTypeRef ref = CFDictionaryGetValue(dict, key);
     if (!ref || CFGetTypeID(ref) != CFDataGetTypeID())
         return 0;
     uint32_t value = 0;

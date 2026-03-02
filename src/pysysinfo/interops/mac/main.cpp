@@ -4,7 +4,7 @@
 
 int main() {
     GPUProperties gpus[16];
-    int count = get_gpu_info(gpus, 16);
+    const int count = get_gpu_info(gpus, 16);
 
     if (count < 0) {
         std::cerr << "Failed to retrieve GPU info.\n";
