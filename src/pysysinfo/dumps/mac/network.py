@@ -10,6 +10,7 @@ def _fetch_controllers() -> List[str]:
     output = subprocess.run(["ipconfig", "getiflist"], capture_output=True)
     return output.stdout.decode("utf-8").strip().split(" ")
 
+
 def _fetch_ethernet_details() -> Dict[str, NICInfo]:
     output = subprocess.run(["system_profiler", "SPEthernetDataType", "-xml"], capture_output=True)
     plist = plistlib.loads(output.stdout)
@@ -26,6 +27,7 @@ def _fetch_ethernet_details() -> Dict[str, NICInfo]:
             res[bsd_device_name] = info
 
     return res
+
 
 def _fetch_airport_details() -> Dict[str, NICInfo]:
     output = subprocess.run(["system_profiler", "SPAirPortDataType", "-xml"], capture_output=True)
@@ -51,6 +53,7 @@ def _fetch_airport_details() -> Dict[str, NICInfo]:
                 res[bsd_interface_name] = item
 
     return res
+
 
 def _fetch_system_profiler_details(valid_bsd_interfaces: List[str]) -> NetworkInfo:
     output = subprocess.run(["system_profiler", "SPNetworkDataType", "-xml"], capture_output=True)
@@ -100,5 +103,4 @@ def _fetch_system_profiler_details(valid_bsd_interfaces: List[str]) -> NetworkIn
 
 def fetch_network_info():
     controllers = _fetch_controllers()
-
     return _fetch_system_profiler_details(controllers)
