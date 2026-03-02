@@ -72,6 +72,8 @@ def _fetch_system_profiler_details(valid_bsd_interfaces: List[str]) -> NetworkIn
             module.mac_address = network_controller.get("Ethernet", {}).get("MAC Address")
             if not module.mac_address:
                 # Sometimes, unplugged devices also show up in system_profiler.
+                # todo: Still, some unplugged devices show up, which have duplicated MAC addresses.
+                # Can we prune them? They show up in System Information too though, so not a dealbreaker.
                 continue
             module.type = network_controller.get("type")
             ip_addresses = network_controller.get("IPv4", {}).get("Addresses")
