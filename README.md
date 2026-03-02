@@ -55,7 +55,7 @@ print(json.dumps(json_data, indent=2))
     - [x] Storage
 - macOS
     - [x] CPU
-    - [x] GPU - _Incomplete, could get more info_
+    - [x] GPU - _Incomplete, could get more info_ - _Trying C++ Dylib_
     - [x] Memory
     - [x] Network - _Work in Progress_
     - [ ] Audio
