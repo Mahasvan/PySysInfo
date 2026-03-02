@@ -6,8 +6,9 @@ from pysysinfo.models.component_model import ComponentInfo
 
 
 class NICInfo(BaseModel):
-    # The underlying network controller model
     name: Optional[str] = None
+
+    # TODO: Old Stuff: Need to revamp
 
     # Device ID
     device_id: Optional[str] = None
@@ -23,6 +24,12 @@ class NICInfo(BaseModel):
 
     # Manufacturer
     manufacturer: Optional[str] = None
+
+    """New Stuff begins here"""
+    interface: Optional[str] = None
+    mac_address: Optional[str] = None
+    type: Optional[str] = None
+    ip_address: Optional[str] = None
 
 
 class NetworkInfo(ComponentInfo):
