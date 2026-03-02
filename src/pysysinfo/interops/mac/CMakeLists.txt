@@ -45,6 +45,13 @@ set_target_properties(device_info PROPERTIES
     LIBRARY_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/bindings
 )
 
+# Use install_name_tool to change the install name after build
+add_custom_command(TARGET device_info POST_BUILD
+    COMMAND install_name_tool -id "@loader_path/libdevice_info.dylib"
+        "${CMAKE_CURRENT_SOURCE_DIR}/bindings/libdevice_info.dylib"
+    COMMENT "Updating install name for libdevice_info.dylib"
+)
+
 # ---- Standalone test executable ----
 add_executable(MacDeviceInfo main.cpp)
 
@@ -56,3 +63,18 @@ target_link_libraries(MacDeviceInfo
     PRIVATE
     device_info
 )
+
+# Configure the executable to find the dylib relative to its location
+set_target_properties(MacDeviceInfo PROPERTIES
+    BUILD_RPATH "${CMAKE_CURRENT_SOURCE_DIR}/bindings"
+    INSTALL_RPATH "${CMAKE_CURRENT_SOURCE_DIR}/bindings"
+)
+
+# Copy dylib to the same directory as the executable after build
+add_custom_command(TARGET MacDeviceInfo POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy
+        "${CMAKE_CURRENT_SOURCE_DIR}/bindings/libdevice_info.dylib"
+        "$<TARGET_FILE_DIR:MacDeviceInfo>/libdevice_info.dylib"
+    COMMENT "Copying libdevice_info.dylib next to executable"
+)
+
