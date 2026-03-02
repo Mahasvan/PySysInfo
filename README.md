@@ -40,6 +40,7 @@ print(json.dumps(json_data, indent=2))
 - [ ] Implement GH actions for compiling modules from `interops/{platform}/*.{c|cpp}` to their respective output
   directories
 - [ ] Group Pydantic Model fields into essential and optional. 
+- [ ] Remove `pyobjc` dependency in macOS by rewriting dependent code chunks in C++ 
 
 ### Hardware Discovery
 
