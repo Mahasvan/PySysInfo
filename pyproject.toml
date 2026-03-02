@@ -25,7 +25,8 @@ classifiers = [
 
 dependencies = [
     "pydantic",
-    "pyobjc; sys_platform == 'darwin'",
+    "pyobjc-core; sys_platform == 'darwin'",
+    "pyobjc-framework-cocoa; sys_platform == 'darwin'",
 ]
 
 [tool.setuptools.packages.find]
