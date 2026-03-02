@@ -59,4 +59,6 @@ class MacHardwareManager(HardwareManagerInterface):
         self.fetch_memory_info()
         self.fetch_storage_info()
         self.fetch_graphics_info()
+        self.fetch_network_info()
+        self.fetch_display_info()
         return self.info

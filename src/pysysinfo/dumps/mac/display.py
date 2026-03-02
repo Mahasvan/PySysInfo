@@ -79,7 +79,7 @@ def _fetch_monitor_info_system_profiler():
         monitor_instances = display_controller.get("spdisplays_ndrvs", [])
         for monitor in monitor_instances:
             monitor_info = DisplayModuleInfo()
-            if name:= monitor.get("_name"):
+            if name := monitor.get("_name"):
                 monitor_info.name = name
             else:
                 monitor_info.status.make_partial("Could not retrieve monitor name from system profiler")
