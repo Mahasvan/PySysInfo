@@ -35,11 +35,11 @@ print(json.dumps(json_data, indent=2))
 ```
 
 ## Tracker
-
 ### Miscellaneous Tasks / Problems
 
 - [ ] Implement GH actions for compiling modules from `interops/{platform}/*.{c|cpp}` to their respective output
   directories
+- [ ] Group Pydantic Model fields into essential and optional. 
 
 ### Hardware Discovery
 
@@ -56,7 +56,7 @@ print(json.dumps(json_data, indent=2))
     - [x] CPU
     - [x] GPU - _Incomplete, could get more info_
     - [x] Memory
-    - [ ] Network
+    - [x] Network - _Work in Progress_
     - [ ] Audio
     - [ ] Vendor
     - [ ] Input
