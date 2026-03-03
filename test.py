@@ -1,7 +1,7 @@
-from pysysinfo.dumps.mac.mac_dump import MacHardwareManager
+from src.pysysinfo.dumps.mac.mac_dump import MacHardwareManager
 
 hm = MacHardwareManager()
 
-cpu = hm.fetch_display_info()
+graphics = hm.fetch_graphics_info()
 
-print(cpu.model_dump_json(indent=2))
+print(graphics.model_dump_json(indent=2))
