@@ -41,6 +41,7 @@ print(json.dumps(json_data, indent=2))
   directories
 - [ ] Group Pydantic Model fields into essential and optional. 
 - [ ] Remove `pyobjc` dependency in macOS by rewriting dependent code chunks in C++ 
+- [ ] Autodetection of storage units
 
 ### Hardware Discovery
 
