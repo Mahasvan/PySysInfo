@@ -40,7 +40,7 @@ def fetch_graphics_info() -> GraphicsInfo:
     for gpu in gpu_list:
         module = GPUInfo()
 
-        module.name = gpu.name if gpu.name else None
+        module.name = gpu.name.strip() if gpu.name and gpu.name.strip() else None
         if not module.name:
             graphics_info.status.make_partial("Could not get GPU name")
 
@@ -65,7 +65,12 @@ def fetch_graphics_info() -> GraphicsInfo:
                     f"Apple Silicon GPU detected but extended properties are unavailable for: {module.name}"
                 )
             else:
-                module.vram = Megabyte(capacity=gpu.apple_gpu.unified_memory_mb)
+                if gpu.apple_gpu.unified_memory_mb:
+                    module.vram = Megabyte(capacity=gpu.apple_gpu.unified_memory_mb)
+                else:
+                    graphics_info.status.make_partial(
+                        f"Apple Silicon GPU reported 0 MB unified memory for: {module.name}"
+                    )
 
                 apple_info = AppleExtendedGPUInfo()
                 apple_info.gpu_core_count = gpu.apple_gpu.core_count
