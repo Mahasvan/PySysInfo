@@ -14,7 +14,7 @@ int main() {
     std::cout << "Found " << count << " GPU(s):\n\n";
 
     for (int i = 0; i < count; ++i) {
-        const GPUProperties& g = gpus[i];
+        const GPUProperties &g = gpus[i];
         std::cout << "GPU " << i << ":\n";
         std::cout << "  Name:         " << g.name << "\n";
         std::cout << "  Manufacturer: " << g.manufacturer << "\n";

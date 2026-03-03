@@ -25,39 +25,41 @@ if not _LIB_PATH.exists():
 
 _lib = ctypes.CDLL(str(_LIB_PATH))
 
+
 # ── mirror the C structs ─────────────────────────────────────────────────────
 
 class _AppleGPUProperties(ctypes.Structure):
     _fields_ = [
-        ("core_count",        ctypes.c_int),
-        ("gpu_perf_shaders",  ctypes.c_int),
-        ("gpu_gen",           ctypes.c_int),
+        ("core_count", ctypes.c_int),
+        ("gpu_perf_shaders", ctypes.c_int),
+        ("gpu_gen", ctypes.c_int),
         ("unified_memory_mb", ctypes.c_uint64),
     ]
 
 
 class _GPUProperties(ctypes.Structure):
     _fields_ = [
-        ("name",              ctypes.c_char * 256),
-        ("vendor_id",         ctypes.c_uint32),
-        ("device_id",         ctypes.c_uint32),
-        ("manufacturer",      ctypes.c_char * 128),
-        ("is_apple_silicon",  ctypes.c_int),
-        ("apple_gpu",         _AppleGPUProperties),
+        ("name", ctypes.c_char * 256),
+        ("vendor_id", ctypes.c_uint32),
+        ("device_id", ctypes.c_uint32),
+        ("manufacturer", ctypes.c_char * 128),
+        ("is_apple_silicon", ctypes.c_int),
+        ("apple_gpu", _AppleGPUProperties),
     ]
 
 
 # ── function signature ───────────────────────────────────────────────────────
-_lib.get_gpu_info.restype  = ctypes.c_int
+_lib.get_gpu_info.restype = ctypes.c_int
 _lib.get_gpu_info.argtypes = [ctypes.POINTER(_GPUProperties), ctypes.c_int]
+
 
 # ── Python-facing dataclasses ────────────────────────────────────────────────
 
 @dataclass
 class AppleGPUProperties:
-    core_count:       int
+    core_count: int
     gpu_perf_shaders: int  # num_gps: GPU performance shader count
-    gpu_gen:          int
+    gpu_gen: int
     unified_memory_mb: int  # Total system (unified) memory in MB
 
     def __str__(self) -> str:
@@ -72,12 +74,12 @@ class AppleGPUProperties:
 
 @dataclass
 class GPUProperties:
-    name:              str
-    vendor_id:         int
-    device_id:         int
-    manufacturer:      str
-    is_apple_silicon:  bool
-    apple_gpu:         Optional[AppleGPUProperties]  # None for non-Apple GPUs
+    name: str
+    vendor_id: int
+    device_id: int
+    manufacturer: str
+    is_apple_silicon: bool
+    apple_gpu: Optional[AppleGPUProperties]  # None for non-Apple GPUs
 
     def __str__(self) -> str:
         lines = [
@@ -96,6 +98,7 @@ class GPUProperties:
 
 _MAX_GPUS = 16
 
+
 def get_gpu_info() -> list[GPUProperties]:
     """Return a list of GPUProperties for every GPU found on this machine."""
     buf = (_GPUProperties * _MAX_GPUS)()
@@ -109,18 +112,18 @@ def get_gpu_info() -> list[GPUProperties]:
         apple = None
         if raw.is_apple_silicon:
             apple = AppleGPUProperties(
-                core_count        = raw.apple_gpu.core_count,
-                gpu_perf_shaders  = raw.apple_gpu.gpu_perf_shaders,
-                gpu_gen           = raw.apple_gpu.gpu_gen,
-                unified_memory_mb = raw.apple_gpu.unified_memory_mb,
+                core_count=raw.apple_gpu.core_count,
+                gpu_perf_shaders=raw.apple_gpu.gpu_perf_shaders,
+                gpu_gen=raw.apple_gpu.gpu_gen,
+                unified_memory_mb=raw.apple_gpu.unified_memory_mb,
             )
         result.append(GPUProperties(
-            name             = raw.name.decode("utf-8", errors="replace"),
-            vendor_id        = raw.vendor_id,
-            device_id        = raw.device_id,
-            manufacturer     = raw.manufacturer.decode("utf-8", errors="replace"),
-            is_apple_silicon = bool(raw.is_apple_silicon),
-            apple_gpu        = apple,
+            name=raw.name.decode("utf-8", errors="replace"),
+            vendor_id=raw.vendor_id,
+            device_id=raw.device_id,
+            manufacturer=raw.manufacturer.decode("utf-8", errors="replace"),
+            is_apple_silicon=bool(raw.is_apple_silicon),
+            apple_gpu=apple,
         ))
     return result
 
@@ -133,4 +136,3 @@ if __name__ == "__main__":
         print(f"GPU {idx}:")
         print(g)
         print()
-

@@ -18,14 +18,14 @@ static uint32_t readUInt32(const CFDictionaryRef dict, const CFStringRef key) {
     if (len > 0) {
         CFDataGetBytes(static_cast<CFDataRef>(ref),
                        CFRangeMake(0, std::min(static_cast<CFIndex>(sizeof(value)), len)),
-                       reinterpret_cast<UInt8*>(&value));
+                       reinterpret_cast<UInt8 *>(&value));
     }
     return value;
 }
 
 static std::string readCFString(CFStringRef cfStr) {
     if (!cfStr) return {};
-    if (const char* cStr = CFStringGetCStringPtr(cfStr, kCFStringEncodingUTF8))
+    if (const char *cStr = CFStringGetCStringPtr(cfStr, kCFStringEncodingUTF8))
         return {cStr};
     CFIndex length = CFStringGetLength(cfStr);
     if (length == 0) return {};
@@ -57,14 +57,14 @@ static uint64_t getSystemMemoryMB() {
 
 static CFDictionaryRef buildMatchingDict(bool is_arm) {
     if (is_arm) {
-        const void* keys[]   = {CFSTR("IONameMatched")};
-        const void* values[] = {CFSTR("gpu*")};
+        const void *keys[] = {CFSTR("IONameMatched")};
+        const void *values[] = {CFSTR("gpu*")};
         return CFDictionaryCreate(kCFAllocatorDefault, keys, values, 1,
                                   &kCFTypeDictionaryKeyCallBacks,
                                   &kCFTypeDictionaryValueCallBacks);
     } else {
-        const void* keys[]   = {CFSTR("IOProviderClass"), CFSTR("IOPCIClassMatch")};
-        const void* values[] = {CFSTR("IOPCIDevice"), CFSTR("0x03000000&0xff000000")};
+        const void *keys[] = {CFSTR("IOProviderClass"), CFSTR("IOPCIClassMatch")};
+        const void *values[] = {CFSTR("IOPCIDevice"), CFSTR("0x03000000&0xff000000")};
         return CFDictionaryCreate(kCFAllocatorDefault, keys, values, 2,
                                   &kCFTypeDictionaryKeyCallBacks,
                                   &kCFTypeDictionaryValueCallBacks);
@@ -73,7 +73,7 @@ static CFDictionaryRef buildMatchingDict(bool is_arm) {
 
 // ---- Public API ----
 
-int get_gpu_info(GPUProperties* out, int max_count) {
+int get_gpu_info(GPUProperties *out, int max_count) {
     if (!out || max_count <= 0) return -1;
 
 #if defined(__arm64__)
@@ -108,8 +108,10 @@ int get_gpu_info(GPUProperties* out, int max_count) {
 
         // Filter non-GPU entries on ARM
         if (is_arm) {
-            std::string ioName = readCFString(static_cast<CFStringRef>(CFDictionaryGetValue(props, CFSTR("IONameMatched"))));
-            std::string bundle = readCFString(static_cast<CFStringRef>(CFDictionaryGetValue(props, CFSTR("CFBundleIdentifierKernel"))));
+            std::string ioName = readCFString(
+                static_cast<CFStringRef>(CFDictionaryGetValue(props, CFSTR("IONameMatched"))));
+            std::string bundle = readCFString(
+                static_cast<CFStringRef>(CFDictionaryGetValue(props, CFSTR("CFBundleIdentifierKernel"))));
             if (ioName.find("gpu") == std::string::npos && bundle.find("AGX") == std::string::npos) {
                 CFRelease(props);
                 IOObjectRelease(service);
@@ -135,7 +137,7 @@ int get_gpu_info(GPUProperties* out, int max_count) {
                 if (len > 0) {
                     CFIndex copy = std::min(len, static_cast<CFIndex>(sizeof(gpu.name) - 1));
                     CFDataGetBytes(data, CFRangeMake(0, copy),
-                                   reinterpret_cast<UInt8*>(gpu.name));
+                                   reinterpret_cast<UInt8 *>(gpu.name));
                     gpu.name[copy] = '\0';
                 }
             }
@@ -150,14 +152,14 @@ int get_gpu_info(GPUProperties* out, int max_count) {
                 CFTypeRef configRef = CFDictionaryGetValue(props, CFSTR("GPUConfigurationVariable"));
                 if (configRef && CFGetTypeID(configRef) == CFDictionaryGetTypeID()) {
                     auto gpuConfig = static_cast<CFDictionaryRef>(configRef);
-                    gpu.apple_gpu.core_count       = getAppleGpuProperty(gpuConfig, CFSTR("num_cores"));
+                    gpu.apple_gpu.core_count = getAppleGpuProperty(gpuConfig, CFSTR("num_cores"));
                     gpu.apple_gpu.gpu_perf_shaders = getAppleGpuProperty(gpuConfig, CFSTR("num_gps"));
-                    gpu.apple_gpu.gpu_gen          = getAppleGpuProperty(gpuConfig, CFSTR("gpu_gen"));
+                    gpu.apple_gpu.gpu_gen = getAppleGpuProperty(gpuConfig, CFSTR("gpu_gen"));
                 }
             } else {
                 gpu.is_apple_silicon = 0;
-                const char* mfr = "Unknown";
-                if      (gpu.vendor_id == 0x8086) mfr = "Intel";
+                const char *mfr = "Unknown";
+                if (gpu.vendor_id == 0x8086) mfr = "Intel";
                 else if (gpu.vendor_id == 0x1002) mfr = "AMD";
                 else if (gpu.vendor_id == 0x10DE) mfr = "NVIDIA";
                 std::strncpy(gpu.manufacturer, mfr, sizeof(gpu.manufacturer) - 1);
