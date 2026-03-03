@@ -1,11 +1,14 @@
 import binascii
 import subprocess
+from typing import List
 
 from pysysinfo.dumps.mac.common import construct_pci_path_mac
 from pysysinfo.dumps.mac.ioreg import *
-from pysysinfo.models.gpu_models import GraphicsInfo, GPUInfo
+from pysysinfo.models.gpu_models import GraphicsInfo, GPUInfo, AppleExtendedGPUInfo
 from pysysinfo.models.size_models import Megabyte
 from pysysinfo.models.status_models import StatusType
+
+from pysysinfo.interops.mac.bindings.gpu_info import get_gpu_info, GPUProperties
 
 
 def check_arm():
@@ -14,8 +17,47 @@ def check_arm():
         return True
     return False
 
+def fetch_graphics_info():
+    gpu_info: List[GPUProperties] = get_gpu_info()
+    graphics_info = GraphicsInfo()
+    graphics_info.modules = []
+    for gpu in gpu_info:
+        module = GPUInfo()
+        module.name = gpu.name
 
-def fetch_graphics_info() -> GraphicsInfo:
+        if not module.name:
+            graphics_info.status.make_partial("Could not get GPU Name")
+
+        module.vendor_id = hex(gpu.vendor_id)
+        if module.vendor_id:
+            if hex(gpu.vendor_id).lower() == "0x106b": module.manufacturer = "Apple Inc."
+            elif hex(gpu.vendor_id).lower() == "0x10de": module.manufacturer = "Nvidia"
+            elif hex(gpu.vendor_id).lower() == "0x1002": module.manufacturer = "AMD"
+            elif hex(gpu.vendor_id).lower() == "0x8086": module.manufacturer = "Intel"
+            else: module.manufacturer = "Unknown"
+        else:
+            graphics_info.status.make_partial("Could not get GPU vendor ID")
+
+        if not gpu.device_id:
+            if not gpu.is_apple_silicon:
+                graphics_info.status.make_partial(f"Could not get Device ID for {module.name}")
+        else:
+            module.device_id = hex(gpu.device_id)
+
+        if gpu.is_apple_silicon:
+            module.vram = Megabyte(capacity=gpu.apple_gpu.unified_memory_mb)
+
+            module.apple_gpu_info = AppleExtendedGPUInfo()
+            module.apple_gpu_info.gpu_core_count = gpu.apple_gpu.core_count
+            module.apple_gpu_info.performance_shader_count = gpu.apple_gpu.gpu_perf_shaders
+            module.apple_gpu_info.gpu_gen = gpu.apple_gpu.gpu_gen
+
+
+        graphics_info.modules.append(module)
+    return graphics_info
+
+def old_fetch_graphics_info() -> GraphicsInfo:
+    """Deprecated. Uses fetch_graphics_info now."""
     graphics_info = GraphicsInfo()
     is_arm = check_arm()
 
