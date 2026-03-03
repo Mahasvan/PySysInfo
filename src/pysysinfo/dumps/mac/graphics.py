@@ -1,14 +1,9 @@
-import binascii
 import subprocess
 from typing import List
 
-from pysysinfo.dumps.mac.common import construct_pci_path_mac
-from pysysinfo.dumps.mac.ioreg import *
+from pysysinfo.interops.mac.bindings.gpu_info import get_gpu_info, GPUProperties
 from pysysinfo.models.gpu_models import GraphicsInfo, GPUInfo, AppleExtendedGPUInfo
 from pysysinfo.models.size_models import Megabyte
-from pysysinfo.models.status_models import StatusType
-
-from pysysinfo.interops.mac.bindings.gpu_info import get_gpu_info, GPUProperties
 
 
 def check_arm():
@@ -56,8 +51,14 @@ def fetch_graphics_info():
         graphics_info.modules.append(module)
     return graphics_info
 
+
+"""
+This older fetch_graphics_info uses pyobjc to connect to IOKit. 
+This has been replaced by means of C++ bindings to the dylib. 
+Refer `src/interops/mac`. 
+
 def old_fetch_graphics_info() -> GraphicsInfo:
-    """Deprecated. Uses fetch_graphics_info now."""
+    
     graphics_info = GraphicsInfo()
     is_arm = check_arm()
 
@@ -151,3 +152,4 @@ def old_fetch_graphics_info() -> GraphicsInfo:
             graphics_info.status.messages.append(f"Failed to enumerate GPU: {e}")
 
     return graphics_info
+"""
