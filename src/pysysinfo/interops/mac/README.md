@@ -8,6 +8,9 @@ Python `ctypes` binding in `bindings/gpu_info.py`.
 This is intended to be used via `gpu_info.py`. The CLI tool is primarily for testing and demonstration purposes, but it
 can be used directly if desired.
 
+Full disclosure: A big part of this C++ connector was written by Claude.
+If you are someone with more know-how, and find lapses in this code, we'd be more than happy to welcome Pull Requests.
+
 ## Requirements
 
 - macOS 10.9 (Mavericks) or newer on Intel
