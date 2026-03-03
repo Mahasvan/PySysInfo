@@ -145,7 +145,6 @@ int get_gpu_info(GPUProperties *out, int max_count) {
 
         if (gpu.name[0] != '\0' || gpu.vendor_id != 0) {
             if (is_arm) {
-                std::strncpy(gpu.manufacturer, "Apple Inc.", sizeof(gpu.manufacturer) - 1);
                 gpu.is_apple_silicon = 1;
                 gpu.apple_gpu.unified_memory_mb = getSystemMemoryMB();
 
@@ -158,11 +157,6 @@ int get_gpu_info(GPUProperties *out, int max_count) {
                 }
             } else {
                 gpu.is_apple_silicon = 0;
-                const char *mfr = "Unknown";
-                if (gpu.vendor_id == 0x8086) mfr = "Intel";
-                else if (gpu.vendor_id == 0x1002) mfr = "AMD";
-                else if (gpu.vendor_id == 0x10DE) mfr = "NVIDIA";
-                std::strncpy(gpu.manufacturer, mfr, sizeof(gpu.manufacturer) - 1);
             }
             out[count++] = gpu;
         }

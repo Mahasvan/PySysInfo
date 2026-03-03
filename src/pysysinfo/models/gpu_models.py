@@ -5,6 +5,16 @@ from pydantic import BaseModel, Field
 from pysysinfo.models.component_model import ComponentInfo
 from pysysinfo.models.size_models import StorageSize
 
+class AppleExtendedGPUInfo(BaseModel):
+    """Contains extra information about Apple Silicon GPUs."""
+    #: Number of GPU cores.
+    gpu_core_count: Optional[int] = None
+
+    #: Number of GPU Performance Shaders
+    performance_shader_count: Optional[int] = None
+
+    #: GPU Generation
+    gpu_gen: Optional[int] = None
 
 class GPUInfo(BaseModel):
     """Information for one GPU is stored here"""
@@ -42,13 +52,9 @@ class GPUInfo(BaseModel):
     #: Total VRAM available on the GPU.
     vram: Optional[StorageSize] = None
 
-    #: Only for Apple Silicon GPUs: Number of GPU cores.
+    #: Only for Apple Silicon GPUs. ``null`` on all other platforms and GPUs.
     #: ``null`` on all other platforms.
-    apple_gpu_core_count: Optional[int] = None
-
-    #: Only for Apple Silicon GPUs: Number of Neural Engine Cores.
-    #: ``null`` on all other platforms.
-    apple_neural_core_count: Optional[int] = None
+    apple_gpu_info: Optional[AppleExtendedGPUInfo] = None
 
 
 class GraphicsInfo(ComponentInfo):

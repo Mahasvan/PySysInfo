@@ -17,7 +17,6 @@ int main() {
         const GPUProperties &g = gpus[i];
         std::cout << "GPU " << i << ":\n";
         std::cout << "  Name:         " << g.name << "\n";
-        std::cout << "  Manufacturer: " << g.manufacturer << "\n";
         std::cout << std::hex << std::setfill('0');
         std::cout << "  Vendor ID:    0x" << std::setw(4) << g.vendor_id << "\n";
         std::cout << "  Device ID:    0x" << std::setw(4) << g.device_id << "\n";

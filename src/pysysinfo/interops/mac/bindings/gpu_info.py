@@ -42,7 +42,6 @@ class _GPUProperties(ctypes.Structure):
         ("name", ctypes.c_char * 256),
         ("vendor_id", ctypes.c_uint32),
         ("device_id", ctypes.c_uint32),
-        ("manufacturer", ctypes.c_char * 128),
         ("is_apple_silicon", ctypes.c_int),
         ("apple_gpu", _AppleGPUProperties),
     ]
@@ -77,14 +76,12 @@ class GPUProperties:
     name: str
     vendor_id: int
     device_id: int
-    manufacturer: str
     is_apple_silicon: bool
     apple_gpu: Optional[AppleGPUProperties]  # None for non-Apple GPUs
 
     def __str__(self) -> str:
         lines = [
             f"  Name:         {self.name}",
-            f"  Manufacturer: {self.manufacturer}",
             f"  Vendor ID:    0x{self.vendor_id:04X}",
             f"  Device ID:    0x{self.device_id:04X}",
         ]
@@ -121,7 +118,6 @@ def get_gpu_info() -> list[GPUProperties]:
             name=raw.name.decode("utf-8", errors="replace"),
             vendor_id=raw.vendor_id,
             device_id=raw.device_id,
-            manufacturer=raw.manufacturer.decode("utf-8", errors="replace"),
             is_apple_silicon=bool(raw.is_apple_silicon),
             apple_gpu=apple,
         ))

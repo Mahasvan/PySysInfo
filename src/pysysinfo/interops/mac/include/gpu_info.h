@@ -19,7 +19,6 @@ typedef struct {
     char name[256];
     uint32_t vendor_id;
     uint32_t device_id;
-    char manufacturer[128];
     int is_apple_silicon;
     AppleGPUProperties apple_gpu;
 } GPUProperties;
