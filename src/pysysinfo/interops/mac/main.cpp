@@ -28,6 +28,10 @@ int main() {
             std::cout << "    GPU Gen:       " << g.apple_gpu.gpu_gen << "\n";
             std::cout << "    Unified Mem:   " << g.apple_gpu.unified_memory_mb << " MB\n";
         }
+        if (g.acpi_path[0] != '\0')
+            std::cout << "  ACPI Path:    " << g.acpi_path << "\n";
+        if (g.pci_path[0] != '\0')
+            std::cout << "  PCI Path:     " << g.pci_path << "\n";
         std::cout << "\n";
     }
 

@@ -58,6 +58,11 @@ def fetch_graphics_info() -> GraphicsInfo:
         elif not gpu.is_apple_silicon:
             graphics_info.status.make_partial(f"Could not get device ID for GPU: {module.name}")
 
+        if gpu.acpi_path:
+            module.acpi_path = gpu.acpi_path
+        if gpu.pci_path:
+            module.pci_path = gpu.pci_path
+
         # Apple Silicon extended info
         if gpu.is_apple_silicon:
             if gpu.apple_gpu is None:

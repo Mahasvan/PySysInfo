@@ -38,6 +38,8 @@ class FakeGPUProperties:
     device_id: int
     is_apple_silicon: bool
     apple_gpu: Optional[FakeAppleGPUProperties]
+    acpi_path: Optional[str] = None
+    pci_path: Optional[str] = None
 
 
 # ── helpers ──────────────────────────────────────────────────────────────────

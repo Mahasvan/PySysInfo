@@ -3,6 +3,8 @@
 #include <cstdint>
 #include <string>
 #include <cstring>
+#include <vector>
+#include <algorithm>
 #include <CoreFoundation/CoreFoundation.h>
 #include <IOKit/IOKitLib.h>
 #include <sys/sysctl.h>
@@ -69,6 +71,137 @@ static CFDictionaryRef buildMatchingDict(bool is_arm) {
                                   &kCFTypeDictionaryKeyCallBacks,
                                   &kCFTypeDictionaryValueCallBacks);
     }
+}
+
+// ---- PCI / ACPI path helpers ----
+
+static std::string constructPciPath(io_service_t service) {
+    std::vector<std::string> segments;
+    io_service_t entry = service;
+    IOObjectRetain(entry);
+
+    while (entry) {
+        if (IOObjectConformsTo(entry, "IOPCIDevice")) {
+            io_name_t location{};
+            kern_return_t kr = IORegistryEntryGetLocationInPlane(entry, kIOServicePlane, location);
+            if (kr != KERN_SUCCESS) {
+                IOObjectRelease(entry);
+                break;
+            }
+            std::string loc(location);
+            try {
+                unsigned long busVal = 0, funcVal = 0;
+                auto comma = loc.find(',');
+                if (comma != std::string::npos) {
+                    busVal = std::stoul(loc.substr(0, comma), nullptr, 16);
+                    funcVal = std::stoul(loc.substr(comma + 1), nullptr, 16);
+                } else {
+                    busVal = std::stoul(loc, nullptr, 16);
+                }
+                char seg[64];
+                std::snprintf(seg, sizeof(seg), "Pci(0x%lx,0x%lx)", busVal, funcVal);
+                segments.emplace_back(seg);
+            } catch (...) {
+                IOObjectRelease(entry);
+                break;
+            }
+        } else if (IOObjectConformsTo(entry, "IOACPIPlatformDevice")) {
+            int uid = 0;
+            CFTypeRef uidRef = IORegistryEntryCreateCFProperty(entry, CFSTR("_UID"), kCFAllocatorDefault, kNilOptions);
+            if (uidRef) {
+                if (CFGetTypeID(uidRef) == CFNumberGetTypeID()) {
+                    CFNumberGetValue(static_cast<CFNumberRef>(uidRef), kCFNumberIntType, &uid);
+                } else if (CFGetTypeID(uidRef) == CFStringGetTypeID()) {
+                    std::string uidStr = readCFString(static_cast<CFStringRef>(uidRef));
+                    try { uid = std::stoi(uidStr); } catch (...) {}
+                }
+                CFRelease(uidRef);
+            }
+            char seg[64];
+            std::snprintf(seg, sizeof(seg), "PciRoot(0x%x)", uid);
+            segments.emplace_back(seg);
+            IOObjectRelease(entry);
+            break;
+        } else if (IOObjectConformsTo(entry, "IOPCIBridge")) {
+            // Skip bridges, keep walking
+        } else {
+            segments.clear();
+            IOObjectRelease(entry);
+            break;
+        }
+
+        io_service_t parent = 0;
+        kern_return_t kr = IORegistryEntryGetParentEntry(entry, kIOServicePlane, &parent);
+        IOObjectRelease(entry);
+        if (kr != KERN_SUCCESS)
+            break;
+        entry = parent;
+    }
+
+    if (segments.empty())
+        return {};
+
+    std::reverse(segments.begin(), segments.end());
+    std::string result;
+    for (size_t i = 0; i < segments.size(); ++i) {
+        if (i > 0) result += '/';
+        result += segments[i];
+    }
+    return result;
+}
+
+static std::string parseAcpiPath(CFDictionaryRef props) {
+    CFTypeRef ref = CFDictionaryGetValue(props, CFSTR("acpi-path"));
+    if (!ref) return {};
+
+    std::string raw;
+    if (CFGetTypeID(ref) == CFStringGetTypeID()) {
+        raw = readCFString(static_cast<CFStringRef>(ref));
+    } else if (CFGetTypeID(ref) == CFDataGetTypeID()) {
+        auto data = static_cast<CFDataRef>(ref);
+        CFIndex len = CFDataGetLength(data);
+        if (len <= 0) return {};
+        raw.resize(static_cast<size_t>(len));
+        CFDataGetBytes(data, CFRangeMake(0, len), reinterpret_cast<UInt8 *>(raw.data()));
+        auto nul = raw.find('\0');
+        if (nul != std::string::npos)
+            raw.resize(nul);
+    } else {
+        return {};
+    }
+
+    // Format: "IOACPIPlane:/_SB/PC00/RP05/PXSX" -> "\_SB.PC00.RP05.PXSX"
+    auto colon = raw.find(':');
+    if (colon == std::string::npos) return {};
+
+    std::string tail = raw.substr(colon + 1);
+    std::string result;
+    size_t pos = 0;
+    while (pos < tail.size()) {
+        if (tail[pos] == '/') { ++pos; continue; }
+        auto next = tail.find('/', pos);
+        std::string segment = (next == std::string::npos) ? tail.substr(pos) : tail.substr(pos, next - pos);
+
+        // Strip @... suffix
+        auto at = segment.find('@');
+        if (at != std::string::npos)
+            segment = segment.substr(0, at);
+
+        if (!segment.empty()) {
+            // Check if the lowercased segment contains "sb"
+            std::string lower = segment;
+            std::transform(lower.begin(), lower.end(), lower.begin(), ::tolower);
+            if (lower.find("sb") != std::string::npos)
+                result += '\\';
+            else
+                result += '.';
+            result += segment;
+        }
+
+        pos = (next == std::string::npos) ? tail.size() : next + 1;
+    }
+
+    return result;
 }
 
 // ---- Public API ----
@@ -157,6 +290,14 @@ int get_gpu_info(GPUProperties *out, int max_count) {
                 }
             } else {
                 gpu.is_apple_silicon = 0;
+
+                std::string pciPath = constructPciPath(service);
+                if (!pciPath.empty())
+                    std::strncpy(gpu.pci_path, pciPath.c_str(), sizeof(gpu.pci_path) - 1);
+
+                std::string acpiPath = parseAcpiPath(props);
+                if (!acpiPath.empty())
+                    std::strncpy(gpu.acpi_path, acpiPath.c_str(), sizeof(gpu.acpi_path) - 1);
             }
             out[count++] = gpu;
         }

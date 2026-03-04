@@ -44,6 +44,8 @@ class _GPUProperties(ctypes.Structure):
         ("device_id", ctypes.c_uint32),
         ("is_apple_silicon", ctypes.c_int),
         ("apple_gpu", _AppleGPUProperties),
+        ("acpi_path", ctypes.c_char * 512),
+        ("pci_path", ctypes.c_char * 512),
     ]
 
 
@@ -78,6 +80,8 @@ class GPUProperties:
     device_id: int
     is_apple_silicon: bool
     apple_gpu: Optional[AppleGPUProperties]  # None for non-Apple GPUs
+    acpi_path: Optional[str]
+    pci_path: Optional[str]
 
     def __str__(self) -> str:
         lines = [
@@ -88,6 +92,10 @@ class GPUProperties:
         if self.is_apple_silicon and self.apple_gpu:
             lines.append("  Apple Silicon GPU:")
             lines.append(str(self.apple_gpu))
+        if self.acpi_path:
+            lines.append(f"  ACPI Path:    {self.acpi_path}")
+        if self.pci_path:
+            lines.append(f"  PCI Path:     {self.pci_path}")
         return "\n".join(lines)
 
 
@@ -114,12 +122,17 @@ def get_gpu_info() -> list[GPUProperties]:
                 gpu_gen=raw.apple_gpu.gpu_gen,
                 unified_memory_mb=raw.apple_gpu.unified_memory_mb,
             )
+        acpi = raw.acpi_path.decode("utf-8", errors="replace").strip("\x00") or None
+        pci = raw.pci_path.decode("utf-8", errors="replace").strip("\x00") or None
+
         result.append(GPUProperties(
             name=raw.name.decode("utf-8", errors="replace"),
             vendor_id=raw.vendor_id,
             device_id=raw.device_id,
             is_apple_silicon=bool(raw.is_apple_silicon),
             apple_gpu=apple,
+            acpi_path=acpi,
+            pci_path=pci,
         ))
     return result
 
