@@ -204,6 +204,63 @@ static std::string parseAcpiPath(CFDictionaryRef props) {
     return result;
 }
 
+// ---- VRAM helper ----
+
+static uint64_t readCFTypeAsUInt64(CFTypeRef ref) {
+    if (!ref) return 0;
+    if (CFGetTypeID(ref) == CFNumberGetTypeID()) {
+        uint64_t val = 0;
+        CFNumberGetValue(static_cast<CFNumberRef>(ref), kCFNumberSInt64Type, &val);
+        return val;
+    }
+    if (CFGetTypeID(ref) == CFDataGetTypeID()) {
+        auto data = static_cast<CFDataRef>(ref);
+        CFIndex len = CFDataGetLength(data);
+        if (len <= 0) return 0;
+        uint64_t val = 0;
+        CFDataGetBytes(data,
+                       CFRangeMake(0, std::min(len, static_cast<CFIndex>(sizeof(val)))),
+                       reinterpret_cast<UInt8 *>(&val));
+        return val;
+    }
+    return 0;
+}
+
+static uint64_t getDiscreteVramMB(io_service_t service) {
+    // Try "VRAM,totalMB" first (directly in MB).
+    // IOKit may store this as CFNumber or CFData depending on the GPU driver.
+    // Search the service and its children recursively.
+    CFTypeRef ref = IORegistryEntrySearchCFProperty(
+        service, kIOServicePlane, CFSTR("VRAM,totalMB"),
+        kCFAllocatorDefault, kIORegistryIterateRecursively);
+    if (ref) {
+        uint64_t mb = readCFTypeAsUInt64(ref);
+        fprintf(stderr, "[VRAM] VRAM,totalMB found (type=%lu, value=%llu)\n",
+                CFGetTypeID(ref), mb);
+        CFRelease(ref);
+        if (mb > 0) return mb;
+    } else {
+        fprintf(stderr, "[VRAM] VRAM,totalMB not found\n");
+    }
+
+    // Fallback: "VRAM,totalsize" (in bytes).
+    ref = IORegistryEntrySearchCFProperty(
+        service, kIOServicePlane, CFSTR("VRAM,totalsize"),
+        kCFAllocatorDefault, kIORegistryIterateRecursively);
+    if (ref) {
+        uint64_t bytes = readCFTypeAsUInt64(ref);
+        fprintf(stderr, "[VRAM] VRAM,totalsize fallback hit (type=%lu, bytes=%llu)\n",
+                CFGetTypeID(ref), bytes);
+        CFRelease(ref);
+        if (bytes > 0) return bytes / (1024 * 1024);
+    } else {
+        fprintf(stderr, "[VRAM] VRAM,totalsize not found either\n");
+    }
+
+    fprintf(stderr, "[VRAM] no VRAM property found\n");
+    return 0;
+}
+
 // ---- Public API ----
 
 int get_gpu_info(GPUProperties *out, int max_count) {
@@ -298,6 +355,8 @@ int get_gpu_info(GPUProperties *out, int max_count) {
                 std::string acpiPath = parseAcpiPath(props);
                 if (!acpiPath.empty())
                     std::strncpy(gpu.acpi_path, acpiPath.c_str(), sizeof(gpu.acpi_path) - 1);
+
+                gpu.vram_mb = getDiscreteVramMB(service);
             }
             out[count++] = gpu;
         }

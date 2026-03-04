@@ -46,6 +46,7 @@ class _GPUProperties(ctypes.Structure):
         ("apple_gpu", _AppleGPUProperties),
         ("acpi_path", ctypes.c_char * 512),
         ("pci_path", ctypes.c_char * 512),
+        ("vram_mb", ctypes.c_uint64),
     ]
 
 
@@ -82,6 +83,7 @@ class GPUProperties:
     apple_gpu: Optional[AppleGPUProperties]  # None for non-Apple GPUs
     acpi_path: Optional[str]
     pci_path: Optional[str]
+    vram_mb: int
 
     def __str__(self) -> str:
         lines = [
@@ -96,6 +98,8 @@ class GPUProperties:
             lines.append(f"  ACPI Path:    {self.acpi_path}")
         if self.pci_path:
             lines.append(f"  PCI Path:     {self.pci_path}")
+        if self.vram_mb:
+            lines.append(f"  VRAM:         {self.vram_mb} MB")
         return "\n".join(lines)
 
 
@@ -133,6 +137,7 @@ def get_gpu_info() -> list[GPUProperties]:
             apple_gpu=apple,
             acpi_path=acpi,
             pci_path=pci,
+            vram_mb=raw.vram_mb,
         ))
     return result
 

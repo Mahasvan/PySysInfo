@@ -63,6 +63,10 @@ def fetch_graphics_info() -> GraphicsInfo:
         if gpu.pci_path:
             module.pci_path = gpu.pci_path
 
+        # VRAM for discrete (non-Apple-Silicon) GPUs
+        if not gpu.is_apple_silicon and gpu.vram_mb:
+            module.vram = Megabyte(capacity=gpu.vram_mb)
+
         # Apple Silicon extended info
         if gpu.is_apple_silicon:
             if gpu.apple_gpu is None:

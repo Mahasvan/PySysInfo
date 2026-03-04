@@ -32,6 +32,8 @@ int main() {
             std::cout << "  ACPI Path:    " << g.acpi_path << "\n";
         if (g.pci_path[0] != '\0')
             std::cout << "  PCI Path:     " << g.pci_path << "\n";
+        if (g.vram_mb > 0)
+            std::cout << "  VRAM:         " << g.vram_mb << " MB\n";
         std::cout << "\n";
     }
 

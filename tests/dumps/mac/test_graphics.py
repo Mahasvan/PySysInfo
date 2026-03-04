@@ -40,6 +40,7 @@ class FakeGPUProperties:
     apple_gpu: Optional[FakeAppleGPUProperties]
     acpi_path: Optional[str] = None
     pci_path: Optional[str] = None
+    vram_mb: int = 0
 
 
 # ── helpers ──────────────────────────────────────────────────────────────────

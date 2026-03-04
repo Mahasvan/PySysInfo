@@ -23,6 +23,7 @@ typedef struct {
     AppleGPUProperties apple_gpu;
     char acpi_path[512];
     char pci_path[512];
+    uint64_t vram_mb;
 } GPUProperties;
 
 // Fills `out` with GPU entries. Returns number of GPUs found, or -1 on error.
