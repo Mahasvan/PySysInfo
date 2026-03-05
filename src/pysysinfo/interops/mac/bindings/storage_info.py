@@ -6,6 +6,8 @@ Usage:
     disks = get_storage_info()
     for d in disks:
         print(d)
+
+Source code is in `interops/mac/include/` and `interops/mac/src/`.
 """
 
 import ctypes

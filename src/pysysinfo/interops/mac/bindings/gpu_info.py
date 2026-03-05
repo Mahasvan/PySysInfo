@@ -6,6 +6,8 @@ Usage:
     gpus = get_gpu_info()
     for g in gpus:
         print(g)
+
+Source code is in `interops/mac/include/` and `interops/mac/src/`.
 """
 
 import ctypes

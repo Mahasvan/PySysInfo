@@ -11,6 +11,11 @@ _VENDOR_MAP = {
     0x8086: "Intel",
 }
 
+"""
+This module fetches storage information on macOS using a C++ extension that interfaces with IOKit. 
+Refer interops/mac/bindings/gpu_info.py for the C++ extension implementation.
+"""
+
 
 def fetch_graphics_info() -> GraphicsInfo:
     graphics_info = GraphicsInfo()
