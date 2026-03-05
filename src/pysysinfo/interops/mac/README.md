@@ -1,11 +1,13 @@
 # MacDeviceInfo
 
-A tiny macOS utility and shared library that enumerates every GPU in the system and reports extra Apple Silicon
-details (core count, performance shaders, unified memory, etc.).
-The native library lives in `src/`/`include/`, is exposed via a command-line tester (`main.cpp`), and also powers a thin
-Python `ctypes` binding in `bindings/gpu_info.py`.
+A tiny macOS utility and shared library that:
+- enumerates GPUs and reports extra Apple Silicon details (core count, performance shaders, GPU Gen).
+- enumerates Storage devices
 
-This is intended to be used via `gpu_info.py`. The CLI tool is primarily for testing and demonstration purposes, but it
+The native library lives in `src/` and `include/`, and is exposed via a command-line tester (`main.cpp`). 
+Also powers a thin Python `ctypes` binding in `bindings/gpu_info.py`.
+
+This is intended to be used via each hardware component's respective python interface, like`gpu_info.py`. The CLI tool is primarily for testing and demonstration purposes, but it
 can be used directly if desired.
 
 Full disclosure: A big part of this C++ connector was written by Claude.
