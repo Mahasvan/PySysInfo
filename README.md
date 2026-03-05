@@ -40,7 +40,7 @@ print(json.dumps(json_data, indent=2))
 - [ ] Implement GH actions for compiling modules from `interops/{platform}/*.{c|cpp}` to their respective output
   directories
 - [ ] Group Pydantic Model fields into essential and optional. 
-- [ ] Remove `pyobjc` dependency in macOS by rewriting dependent code chunks in C++ 
+- [x] Remove `pyobjc` dependency in macOS by rewriting dependent code chunks in C++ 
 - [ ] Autodetection of storage units
 
 ### Hardware Discovery
@@ -56,9 +56,9 @@ print(json.dumps(json_data, indent=2))
     - [x] Storage
 - macOS
     - [x] CPU
-    - [x] GPU - _Incomplete, could get more info_ - _Trying C++ Dylib_
+    - [x] GPU
     - [x] Memory
-    - [x] Network - _Work in Progress_
+    - [x] Network - _Make faster? Wifi info is slow to fetch_
     - [ ] Audio
     - [ ] Vendor
     - [ ] Input
@@ -66,14 +66,14 @@ print(json.dumps(json_data, indent=2))
     - [ ] Display
 - Windows
     - [x] CPU
-    - [x] GPU* [PCIe gen info only for Nvidia GPUs]
+    - [x] GPU - _PCIe gen info only for Nvidia GPUs_
     - [x] Memory
     - [x] Network
     - [x] Audio
     - [x] Motherboard
     - [ ] Input
     - [x] Storage
-    - [x] Display
+    - [x] Display - Revamp the C++ Lib
 
 ### Supporting Features
 
