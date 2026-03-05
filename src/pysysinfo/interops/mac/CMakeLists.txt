@@ -27,7 +27,9 @@ find_library(COREFOUNDATION_FRAMEWORK CoreFoundation REQUIRED)
 
 # ---- Shared library ----
 add_library(device_info SHARED
+        src/iokit_helpers.cpp
         src/gpu_info.cpp
+        src/storage_info.cpp
 )
 
 target_include_directories(device_info

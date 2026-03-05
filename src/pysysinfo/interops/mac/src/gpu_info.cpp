@@ -1,4 +1,5 @@
 #include "gpu_info.h"
+#include "iokit_helpers.h"
 
 #include <cstdint>
 #include <string>
@@ -10,35 +11,6 @@
 #include <sys/sysctl.h>
 
 // ---- Internal helpers ----
-
-static uint32_t readUInt32(const CFDictionaryRef dict, const CFStringRef key) {
-    const CFTypeRef ref = CFDictionaryGetValue(dict, key);
-    if (!ref || CFGetTypeID(ref) != CFDataGetTypeID())
-        return 0;
-    uint32_t value = 0;
-    CFIndex len = CFDataGetLength(static_cast<CFDataRef>(ref));
-    if (len > 0) {
-        CFDataGetBytes(static_cast<CFDataRef>(ref),
-                       CFRangeMake(0, std::min(static_cast<CFIndex>(sizeof(value)), len)),
-                       reinterpret_cast<UInt8 *>(&value));
-    }
-    return value;
-}
-
-static std::string readCFString(CFStringRef cfStr) {
-    if (!cfStr) return {};
-    if (const char *cStr = CFStringGetCStringPtr(cfStr, kCFStringEncodingUTF8))
-        return {cStr};
-    CFIndex length = CFStringGetLength(cfStr);
-    if (length == 0) return {};
-    CFIndex maxSize = CFStringGetMaximumSizeForEncoding(length, kCFStringEncodingUTF8) + 1;
-    std::string result(static_cast<size_t>(maxSize), '\0');
-    if (CFStringGetCString(cfStr, result.data(), maxSize, kCFStringEncodingUTF8)) {
-        result.resize(std::strlen(result.c_str()));
-        return result;
-    }
-    return {};
-}
 
 static int getAppleGpuProperty(CFDictionaryRef gpuConfig, CFStringRef key) {
     int result = 0;
@@ -113,7 +85,8 @@ static std::string constructPciPath(io_service_t service) {
                     CFNumberGetValue(static_cast<CFNumberRef>(uidRef), kCFNumberIntType, &uid);
                 } else if (CFGetTypeID(uidRef) == CFStringGetTypeID()) {
                     std::string uidStr = readCFString(static_cast<CFStringRef>(uidRef));
-                    try { uid = std::stoi(uidStr); } catch (...) {}
+                    try { uid = std::stoi(uidStr); } catch (...) {
+                    }
                 }
                 CFRelease(uidRef);
             }
@@ -178,7 +151,10 @@ static std::string parseAcpiPath(CFDictionaryRef props) {
     std::string result;
     size_t pos = 0;
     while (pos < tail.size()) {
-        if (tail[pos] == '/') { ++pos; continue; }
+        if (tail[pos] == '/') {
+            ++pos;
+            continue;
+        }
         auto next = tail.find('/', pos);
         std::string segment = (next == std::string::npos) ? tail.substr(pos) : tail.substr(pos, next - pos);
 
@@ -206,26 +182,6 @@ static std::string parseAcpiPath(CFDictionaryRef props) {
 
 // ---- VRAM helper ----
 
-static uint64_t readCFTypeAsUInt64(CFTypeRef ref) {
-    if (!ref) return 0;
-    if (CFGetTypeID(ref) == CFNumberGetTypeID()) {
-        uint64_t val = 0;
-        CFNumberGetValue(static_cast<CFNumberRef>(ref), kCFNumberSInt64Type, &val);
-        return val;
-    }
-    if (CFGetTypeID(ref) == CFDataGetTypeID()) {
-        auto data = static_cast<CFDataRef>(ref);
-        CFIndex len = CFDataGetLength(data);
-        if (len <= 0) return 0;
-        uint64_t val = 0;
-        CFDataGetBytes(data,
-                       CFRangeMake(0, std::min(len, static_cast<CFIndex>(sizeof(val)))),
-                       reinterpret_cast<UInt8 *>(&val));
-        return val;
-    }
-    return 0;
-}
-
 static uint64_t getDiscreteVramMB(io_service_t service) {
     // Try "VRAM,totalMB" first (directly in MB).
     // IOKit may store this as CFNumber or CFData depending on the GPU driver.
@@ -252,11 +208,7 @@ int get_gpu_info(GPUProperties *out, int max_count) {
     constexpr bool is_arm = false;
 #endif
 
-    mach_port_t ioPort;
-    if (__builtin_available(macOS 12.0, *))
-        ioPort = kIOMainPortDefault;
-    else
-        ioPort = kIOMasterPortDefault;
+    mach_port_t ioPort = getIOKitMainPort();
 
     // NOTE: IOServiceGetMatchingServices takes ownership of the matching dict
     // (it always calls CFRelease internally), so we must not release it ourselves.
