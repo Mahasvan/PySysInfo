@@ -63,9 +63,13 @@ def fetch_graphics_info() -> GraphicsInfo:
         if gpu.pci_path:
             module.pci_path = gpu.pci_path
 
-        # VRAM for discrete (non-Apple-Silicon) GPUs
+        # VRAM for non-Apple-Silicon GPUs
+        # Apple Silicon GPUs can use the entire system memory as VRAM
         if not gpu.is_apple_silicon and gpu.vram_mb:
             module.vram = Megabyte(capacity=gpu.vram_mb)
+        elif not gpu.is_apple_silicon:
+            # Non-Apple Silicon GPU, and yet VRAM is reported as 0 MB.
+            graphics_info.status.make_partial(f"Could not get VRAM for non-Apple-Silicon GPU: {module.name}")
 
         # Apple Silicon extended info
         if gpu.is_apple_silicon:
