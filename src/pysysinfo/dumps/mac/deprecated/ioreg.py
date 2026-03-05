@@ -1,3 +1,9 @@
+"""
+Usage of these functions are deprecated.
+This functionality has been moved to the C++ layer for better integration with IOKit.
+Refer interops/mac for the rewritten implementation.
+"""
+
 # Credits to @[DhinakG](https://github.com/DhinkaG) for allowing us to copy over their `ioreg.py` abstraction implementation from OpenCore-Legacy-Patcher:
 # https://github.com/dortania/OpenCore-Legacy-Patcher/blob/f6ef7583eedc706e2bb70550fe847601ef258fcd/resources/ioreg.py
 
