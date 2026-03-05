@@ -73,6 +73,7 @@ def _discrete_gpu(
     name="NVIDIA GeForce RTX 3090",
     vendor_id=0x10DE,
     device_id=0x2204,
+    vram_mb=24576,
 ) -> FakeGPUProperties:
     """Return a fully-populated discrete (non-Apple-Silicon) GPU stub."""
     return FakeGPUProperties(
@@ -81,6 +82,7 @@ def _discrete_gpu(
         device_id=device_id,
         is_apple_silicon=False,
         apple_gpu=None,
+        vram_mb=vram_mb,
     )
 
 
@@ -280,13 +282,14 @@ class TestDiscreteGPU:
             return fetch_graphics_info()
 
     def test_nvidia_gpu_success(self):
-        info = self._run([_discrete_gpu(name="NVIDIA GeForce RTX 3090", vendor_id=0x10DE, device_id=0x2204)])
+        info = self._run([_discrete_gpu(name="NVIDIA GeForce RTX 3090", vendor_id=0x10DE, device_id=0x2204, vram_mb=24576)])
         assert info.status.type == StatusType.SUCCESS
         gpu = info.modules[0]
         assert gpu.name == "NVIDIA GeForce RTX 3090"
         assert gpu.vendor_id == "0x10de"
         assert gpu.device_id == hex(0x2204)
         assert gpu.manufacturer == "Nvidia"
+        assert gpu.vram.capacity == 24576
         assert gpu.apple_gpu_info is None
 
     def test_amd_gpu_success(self):
@@ -334,10 +337,21 @@ class TestDiscreteGPU:
         assert info.status.type == StatusType.PARTIAL
         assert any("vendor ID" in m for m in info.status.messages)
 
-    def test_discrete_gpu_has_no_vram_or_apple_info(self):
-        """Discrete GPUs should not have vram or apple_gpu_info set by this function."""
-        info = self._run([_discrete_gpu()])
+    def test_discrete_gpu_vram_populated(self):
+        """Discrete GPUs with reported VRAM should have vram set."""
+        info = self._run([_discrete_gpu(vram_mb=8192)])
         gpu = info.modules[0]
+        assert gpu.vram is not None
+        assert gpu.vram.capacity == 8192
+        assert gpu.vram.unit == "MB"
+        assert gpu.apple_gpu_info is None
+
+    def test_discrete_gpu_missing_vram_is_partial(self):
+        """vram_mb == 0 on a non-Apple-Silicon GPU -> PARTIAL."""
+        info = self._run([_discrete_gpu(vram_mb=0)])
+        gpu = info.modules[0]
+        assert info.status.type == StatusType.PARTIAL
+        assert any("VRAM" in m for m in info.status.messages)
         assert gpu.vram is None
         assert gpu.apple_gpu_info is None
 

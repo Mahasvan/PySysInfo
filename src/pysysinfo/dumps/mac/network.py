@@ -79,6 +79,7 @@ def _fetch_system_profiler_details(valid_bsd_interfaces: List[str]) -> NetworkIn
                 # Can we prune them? They show up in System Information too though, so not a dealbreaker.
                 continue
             module.type = network_controller.get("type")
+            # todo: Make this an ENUM and share with other OSes
             ip_addresses = network_controller.get("IPv4", {}).get("Addresses")
             if ip_addresses:
                 module.ip_address = ip_addresses[0]
