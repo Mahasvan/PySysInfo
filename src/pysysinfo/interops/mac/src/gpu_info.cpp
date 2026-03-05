@@ -235,29 +235,9 @@ static uint64_t getDiscreteVramMB(io_service_t service) {
         kCFAllocatorDefault, kIORegistryIterateRecursively);
     if (ref) {
         uint64_t mb = readCFTypeAsUInt64(ref);
-        fprintf(stderr, "[VRAM] VRAM,totalMB found (type=%lu, value=%llu)\n",
-                CFGetTypeID(ref), mb);
         CFRelease(ref);
         if (mb > 0) return mb;
-    } else {
-        fprintf(stderr, "[VRAM] VRAM,totalMB not found\n");
     }
-
-    // Fallback: "VRAM,totalsize" (in bytes).
-    ref = IORegistryEntrySearchCFProperty(
-        service, kIOServicePlane, CFSTR("VRAM,totalsize"),
-        kCFAllocatorDefault, kIORegistryIterateRecursively);
-    if (ref) {
-        uint64_t bytes = readCFTypeAsUInt64(ref);
-        fprintf(stderr, "[VRAM] VRAM,totalsize fallback hit (type=%lu, bytes=%llu)\n",
-                CFGetTypeID(ref), bytes);
-        CFRelease(ref);
-        if (bytes > 0) return bytes / (1024 * 1024);
-    } else {
-        fprintf(stderr, "[VRAM] VRAM,totalsize not found either\n");
-    }
-
-    fprintf(stderr, "[VRAM] no VRAM property found\n");
     return 0;
 }
 
