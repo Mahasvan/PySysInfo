@@ -48,10 +48,8 @@ def get_arm_ram_info() -> MemoryInfo:
         memory_info.status.messages.append("Failed to parse SPMemoryDataType: " + str(e))
         return memory_info
 
-    # print(pl)
     try:
         for entry in pl:
-            # print(entry["_items"])
             sticks = entry["_items"]
             for stick in sticks:
                 module = MemoryModuleInfo()
@@ -59,7 +57,7 @@ def get_arm_ram_info() -> MemoryInfo:
                     # This is a dictionary
                     for k, v in stick.items():
                         if k == "SPMemoryDataType" and v.strip():
-                            module.capacity = Gigabyte(capacity=int(v.strip().rstrip(" GB")))
+                            module.capacity = Gigabyte(capacity=int(v.strip().removesuffix(" GB")))
 
                         if "manufacturer" in k:
                             module.manufacturer = v
@@ -82,24 +80,21 @@ def get_ram_size_from_system_profiler() -> List[StorageSize]:
     sizes = []
     try:
         value = subprocess.check_output(["system_profiler", "SPMemoryDataType", "-xml"])
-        # value = subprocess.check_output(["cat", "/users/mahas/Downloads/c2d_profiler.txt"])
         pl = plistlib.loads(value, fmt=plistlib.FMT_XML)
-        # pl is an array of dictionaries
         for entry in pl:
             items = entry["_items"]
             for item in items:
                 sticks = item["_items"]
                 for stick in sticks:
-                    # print(stick)
                     size = stick["dimm_size"]
                     if size:
-                        sizes.append(int(size.rstrip(" GB")))
-    except Exception as e:
-        raise e
+                        sizes.append(int(size.removesuffix(" GB")))
+    except Exception:
+        raise
     return [Gigabyte(capacity=x) for x in sizes]
 
 
-def fetch_memory_info():
+def fetch_memory_info() -> MemoryInfo:
     memory_info = MemoryInfo()
     """
     Memory Module Information, can only work on Intel and AMD machines.
@@ -122,7 +117,6 @@ def fetch_memory_info():
     """
     try:
         output = subprocess.check_output(["ioreg", "-alw0", "-p", "IODeviceTree"])
-        # output = subprocess.check_output(["cat", "/Users/mahas/Downloads/tree.txt"])
         pl = plistlib.loads(output, fmt=plistlib.FMT_XML)
 
         children = pl["IORegistryEntryChildren"]
@@ -186,10 +180,9 @@ def fetch_memory_info():
                         dimm_types.extend([x.decode() for x in v.split(b'\x00') if x.decode().strip()])
 
                     if "ecc-enabled" in k.lower():
-                        ecc_enabled = ecc_enabled and v
+                        ecc_enabled = ecc_enabled or v
 
                     if "slot-name" in k.lower():
-                        # print(v)
                         dimm_slots = [x.decode().split("/") for x in v.split(b'\x00') if x.decode().strip()]
 
         # Now we attempt to get more accurate RAM Module Capacities
@@ -224,15 +217,21 @@ def fetch_memory_info():
     for i in range(n_modules):
         module = MemoryModuleInfo()
         try:
-            module.manufacturer = dimm_manufacturer[i]
-            module.part_number = dimm_part_numbers[i]
-            module.type = dimm_types[i]
-            module.capacity = dimm_sizes[i]
-            module.slot = MemoryModuleSlot(
-                channel=dimm_slots[i][0],
-                bank=dimm_slots[i][1]
-            )
-            module.frequency_mhz = int(dimm_speeds[i].lower().rstrip("mhz"))
+            if i < len(dimm_manufacturer):
+                module.manufacturer = dimm_manufacturer[i]
+            if i < len(dimm_part_numbers):
+                module.part_number = dimm_part_numbers[i]
+            if i < len(dimm_types):
+                module.type = dimm_types[i]
+            if i < len(dimm_sizes):
+                module.capacity = dimm_sizes[i]
+            if i < len(dimm_slots):
+                module.slot = MemoryModuleSlot(
+                    channel=dimm_slots[i][0],
+                    bank=dimm_slots[i][1]
+                )
+            if i < len(dimm_speeds):
+                module.frequency_mhz = int(dimm_speeds[i].removesuffix("MHz"))
             module.supports_ecc = ecc_enabled
             memory_info.modules.append(module)
 

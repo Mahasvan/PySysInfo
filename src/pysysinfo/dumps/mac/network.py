@@ -8,7 +8,8 @@ from pysysinfo.models.network_models import NetworkInfo, NICInfo
 
 def _fetch_controllers() -> List[str]:
     output = subprocess.run(["ipconfig", "getiflist"], capture_output=True)
-    return output.stdout.decode("utf-8").strip().split(" ")
+    stripped = output.stdout.decode("utf-8").strip()
+    return stripped.split(" ") if stripped else []
 
 
 def _fetch_ethernet_details() -> Dict[str, NICInfo]:
@@ -39,18 +40,19 @@ def _fetch_airport_details() -> Dict[str, NICInfo]:
         for wifi_card in item.get("_items", []):
             interfaces = wifi_card.get("spairport_airport_interfaces")
             for interface in interfaces:
-                item = NICInfo()
                 if "spairport_wireless_card_type" not in interface: continue
                 # AWDL interfaces don't have this, and we want to skip them.
 
                 card_type = interface["spairport_wireless_card_type"]
                 match = ven_dev_pattern.findall(card_type)
                 if not match: continue
-                item.vendor_id = match[0][0]
-                item.device_id = match[0][1]
+
+                nic = NICInfo()
+                nic.vendor_id = match[0][0]
+                nic.device_id = match[0][1]
 
                 bsd_interface_name = interface.get("_name")
-                res[bsd_interface_name] = item
+                res[bsd_interface_name] = nic
 
     return res
 
@@ -64,7 +66,7 @@ def _fetch_system_profiler_details(valid_bsd_interfaces: List[str]) -> NetworkIn
     airport_info: Optional[Dict[str, NICInfo]] = None
 
     for item in plist:
-        for network_controller in item["_items"]:
+        for network_controller in item.get("_items", []):
             module = NICInfo()
 
             bsd_interface_name = network_controller.get("interface")
@@ -102,6 +104,6 @@ def _fetch_system_profiler_details(valid_bsd_interfaces: List[str]) -> NetworkIn
     return network_info
 
 
-def fetch_network_info():
+def fetch_network_info() -> NetworkInfo:
     controllers = _fetch_controllers()
     return _fetch_system_profiler_details(controllers)

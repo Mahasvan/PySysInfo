@@ -31,8 +31,8 @@ def _enrich_data_from_edid(monitor_info: DisplayModuleInfo, edid_string: str) ->
     edid_bytes = bytes.fromhex(edid_string)
     data: DisplayModuleInfo = parse_edid(edid_bytes)
     for field in data.model_dump().keys():
-        if monitor_info.__getattribute__(field) is None:
-            monitor_info.__setattr__(field, data.__getattribute__(field))
+        if getattr(monitor_info, field) is None:
+            setattr(monitor_info, field, getattr(data, field))
     # Update the resolution as well
     if data.resolution is None: return monitor_info
     if monitor_info.resolution is None:
@@ -40,18 +40,18 @@ def _enrich_data_from_edid(monitor_info: DisplayModuleInfo, edid_string: str) ->
         return monitor_info
 
     for field in data.resolution.model_dump().keys():
-        if monitor_info.resolution.__getattribute__(field) is None:
-            monitor_info.resolution.__setattr__(field, data.resolution.__getattribute__(field))
+        if getattr(monitor_info.resolution, field) is None:
+            setattr(monitor_info.resolution, field, getattr(data.resolution, field))
     return monitor_info
 
 
 def _get_refresh_rate_from_system_profiler(monitor_info: dict) -> Optional[float]:
     precedence = [
-        "spdisplays_pixelresolution"
+        "spdisplays_pixelresolution",
         "_spdisplays_pixels",
         "spdisplays_pixels",
         "_spdisplays_resolution",
-        "spdisplays_resolution"
+        "spdisplays_resolution",
     ]
     refresh_rate_regex = re.compile(r"([\d.]+)(?=Hz)")
 

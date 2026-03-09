@@ -18,7 +18,7 @@ def fetch_cpu_info() -> CPUInfo:
         machdep.cpu.brand_string: Apple M3
         """
         # we split it into lines, and make a dictionary with key:value pairs
-        data = {k: v for (k, v) in [x.split(": ") for x in data.splitlines()]}
+        data = dict(x.split(": ", 1) for x in data.splitlines() if ": " in x)
     except Exception as e:
         cpu_info.status.type = StatusType.FAILED
         cpu_info.status.messages.append("Error while parsing sysctl: " + str(e))
@@ -86,7 +86,7 @@ def fetch_cpu_info() -> CPUInfo:
             # Apple Silicon machines usually dont have the machdep.cpu.vendor string
             # So, this branch will likely not execute. This is defined just in case.
             cpu_info.vendor = "Apple"
-    elif "apple" in data["machdep.cpu.brand_string"].lower():
+    elif "apple" in data.get("machdep.cpu.brand_string", "").lower():
         # Apple Silicon devices do not have machdep.cpu.vendor defined.
         cpu_info.vendor = "Apple"
 
@@ -122,7 +122,7 @@ def fetch_cpu_info() -> CPUInfo:
     such as SME and SME2. Apple has not implemented SVE2 capabilities to their CPUs, so we cannot use those. 
     """
     # todo: Detect minor ARM versions as well, like 8.X and 9.X ?
-    if "arm" in arch:
+    if "arm" in arch.lower():
         try:
             sme_presence = subprocess.check_output(["sysctl", "hw.optional.arm.FEAT_SME"]).decode()
             sme_presence = True if sme_presence.split(": ")[1].strip() == "1" else False

@@ -12,7 +12,7 @@ _VENDOR_MAP = {
 }
 
 """
-This module fetches storage information on macOS using a C++ extension that interfaces with IOKit. 
+This module fetches graphics information on macOS using a C++ extension that interfaces with IOKit. 
 Refer interops/mac/bindings/gpu_info.py for the C++ extension implementation.
 """
 
