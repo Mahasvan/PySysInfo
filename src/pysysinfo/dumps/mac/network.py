@@ -30,29 +30,98 @@ def _fetch_ethernet_details() -> Dict[str, NICInfo]:
     return res
 
 
+def _find_child(children: list, key: str, value: str) -> Optional[dict]:
+    """Find the first child dict where dict[key] == value."""
+    return next((x for x in children if x and x.get(key) == value), None)
+
+
+def _get_bsd_interface_apple_silicon(item: dict) -> Optional[str]:
+    """
+    Traverse the IORegistry tree for Apple Silicon Wi-Fi controllers:
+    item
+     └─ IORegistryEntryChildren
+         └─ [IORegistryEntryName == "AppleBCMWLANSkywalkInterface"]
+             └─ IORegistryEntryChildren
+                 └─ [IOObjectClass == "IOSkywalkLegacyEthernet"]
+                     └─ IORegistryEntryChildren
+                         └─ [IOObjectClass == "IOSkywalkLegacyEthernetInterface"]
+                             └─ IORegistryEntryName  →  "en0"
+    """
+    skywalk = _find_child(
+        item.get("IORegistryEntryChildren", []),
+        "IORegistryEntryName", "AppleBCMWLANSkywalkInterface"
+    )
+    if skywalk is None:
+        return None
+
+    legacy_ethernet = _find_child(
+        skywalk.get("IORegistryEntryChildren", []),
+        "IOObjectClass", "IOSkywalkLegacyEthernet"
+    )
+    if legacy_ethernet is None:
+        return None
+
+    legacy_interface = _find_child(
+        legacy_ethernet.get("IORegistryEntryChildren", []),
+        "IOObjectClass", "IOSkywalkLegacyEthernetInterface"
+    )
+    if legacy_interface is None:
+        return None
+
+    return legacy_interface.get("IORegistryEntryName")
+
+
 def _fetch_airport_details() -> Dict[str, NICInfo]:
-    output = subprocess.run(["system_profiler", "SPAirPortDataType", "-xml"], capture_output=True)
+    """
+    Earlier, `system_profiler SPAirPortDataType -xml` was used to get the vendor and device id.
+    However, this was too slow, and we can get the same details from `ioreg`, while it being faster.
+    """
+    output = subprocess.run(["ioreg", "-c", "IO80211Controller", "-r", "-a"])
     plist = plistlib.loads(output.stdout)
+
     res = {}
-    ven_dev_pattern = re.compile(r"\((0[xX].{4}),\s?(0[xX].{4})\)")
 
     for item in plist:
-        for wifi_card in item.get("_items", []):
-            interfaces = wifi_card.get("spairport_airport_interfaces")
-            for interface in interfaces:
-                if "spairport_wireless_card_type" not in interface: continue
-                # AWDL interfaces don't have this, and we want to skip them.
+        io_name_pattern = re.compile(r"pci([0-9a-fA-F]{4}),([0-9a-fA-F]{4})")
 
-                card_type = interface["spairport_wireless_card_type"]
-                match = ven_dev_pattern.findall(card_type)
-                if not match: continue
+        driver = item.get("IORegistryEntryName")
 
-                nic = NICInfo()
-                nic.vendor_id = match[0][0]
-                nic.device_id = match[0][1]
+        if not driver: return res
 
-                bsd_interface_name = interface.get("_name")
-                res[bsd_interface_name] = nic
+        if driver == "AirPort_BrcmNIC":
+            # Intel Macs, usually
+            io_name = item.get("IONameMatched", "")
+            io_model = item.get("IOModel", "")
+            match = io_name_pattern.match(io_name)
+            vendor, device = match.groups()
+
+            nic_info = NICInfo()
+            nic_info.vendor_id = "0x" + vendor.upper()
+            nic_info.device_id = "0x" + device.upper()
+            if io_model: nic_info.name = io_model
+
+            for child in item.get("IORegistryEntryChildren", []):
+                if not child.get("IOObjectClass", "") == "AirPort_BrcmNIC_Interface":
+                    continue
+                bcm_identifier = child.get("IORegistryEntryName")
+                res[bcm_identifier] = nic_info
+                break
+
+        elif driver == "AppleBCMWLANCore":
+            # Apple Silicon Macs
+            module_data = item.get("ModuleDictionary", {})
+            nic_info = NICInfo()
+            nic_info.vendor_id = hex(module_data.get("ManufacturerID", 0)).upper()
+            nic_info.device_id = hex(module_data.get("ProductID", 0)).upper()
+
+            bsd_identifier = _get_bsd_interface_apple_silicon(item)
+            if bsd_identifier:
+                res[bsd_identifier] = nic_info
+        else:
+            # todo: Implement for drivers such as AirPortAtheros40, AirPortBrcm4331, AirPortBrcm4360
+            print("Unknown driver: ", driver)
+            print("Please contact developer with this information to help improve support for your machine.")
+            continue
 
     return res
 
