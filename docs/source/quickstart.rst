@@ -16,6 +16,11 @@ Currently, the project is hosted on TestPyPI. To install, run:
 
    pip3 install --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple/ PySysInfo
 
+The official PyPI release is:
+
+.. image:: https://i.redd.it/ssjo8ocxehjb1.png
+    :alt: Cyberpunk 2077 - Coming when it's ready
+
 Basic usage
 -----------
 Instantiate the platform-aware manager and collect everything in one shot:
