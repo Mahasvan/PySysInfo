@@ -7,11 +7,16 @@ from pydantic import BaseModel, Field
 class StatusType(Enum):
     """Types of statuses possible."""
 
+    #: :meta hide-value:
     #: There were no errors encountered.
     SUCCESS = "success"
+
+    #: :meta hide-value:
     #: There were errors encountered, but only some parts of the data could not be retrieved.
     PARTIAL = "partial"
-    #: Fatal error occurred, no data was able to be retrieved.
+
+    #: :meta hide-value:
+    #: Fatal error occurred, no data could be retrieved.
     FAILED = "failed"
 
 
@@ -24,6 +29,12 @@ class Status(BaseModel):
     messages: List[str] = Field(default_factory=list)
 
     def make_partial(self, message: str = None) -> None:
+        """
+        Used to convert status of a component from SuccessStatus to PartialStatus.
+        Optional message parameter appends to the existing list of messages.
+
+        :meta private:
+        """
         self.type = StatusType.PARTIAL
         if message: self.messages.append(message)
 
