@@ -8,14 +8,17 @@ class StatusType(Enum):
     """Types of statuses possible."""
 
     #: :meta hide-value:
+    #
     #: There were no errors encountered.
     SUCCESS = "success"
 
     #: :meta hide-value:
+    #
     #: There were errors encountered, but only some parts of the data could not be retrieved.
     PARTIAL = "partial"
 
     #: :meta hide-value:
+    #
     #: Fatal error occurred, no data could be retrieved.
     FAILED = "failed"
 

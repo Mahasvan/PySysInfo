@@ -6,14 +6,13 @@ from pysysinfo.models.component_model import ComponentInfo
 
 
 class CPUInfo(ComponentInfo):
-    """This is the model that holds CPU information."""
     #: This is the CPU's name
     name: Optional[str] = None
 
-    #: The CPU's architecture, x86, ARM, etc.
+    #: x86, ARM, etc.
     architecture: Optional[str] = None
 
-    #: Denotes whether the CPU is 32 or 64 bit. 
+    #: Denotes whether the CPU is 32 or 64 bit.
     #: Independent of whether the OS is 32 or 64 bit.
     bitness: Optional[int] = None
 

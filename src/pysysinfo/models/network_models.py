@@ -9,23 +9,20 @@ class NICInfo(BaseModel):
     name: Optional[str] = None
 
     # TODO: Old Stuff: Need to revamp
-
-    # Device ID
     device_id: Optional[str] = None
 
-    # Vendor ID
     vendor_id: Optional[str] = None
 
-    # ACPI path of NIC
+    #: ACPI device path, e.g. ``\\_SB.PC00.RP05.PXSX``.
     acpi_path: Optional[str] = None
 
-    # PCI path of NIC
+    #: PCI path from the firmware tree, e.g. ``PciRoot(0x0)/Pci(0x1C,0x5)/Pci(0x0,0x0)``.
     pci_path: Optional[str] = None
 
-    # Manufacturer
     manufacturer: Optional[str] = None
 
     """New Stuff begins here"""
+    #: BSD Device Name for Linux/macOS, Example: ``en0``
     interface: Optional[str] = None
     mac_address: Optional[str] = None
     type: Optional[str] = None

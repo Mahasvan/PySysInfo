@@ -9,13 +9,14 @@ from pysysinfo.models.status_models import Status
 class ResolutionInfo(BaseModel):
     """Resolution information for a Display."""
 
+
     #: Horizontal resolution in pixels.
     width: Optional[int] = None
     #: Vertical resolution in pixels.
     height: Optional[int] = None
     #: Refresh rate in Hz.
     refresh_rate: Optional[float] = None
-    #: Bit depth in bits per pixel.
+    #: Bit depth (bits per channel).
     bit_depth: Optional[int] = None
 
 

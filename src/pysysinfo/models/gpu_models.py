@@ -19,11 +19,10 @@ class AppleExtendedGPUInfo(BaseModel):
 class GPUInfo(BaseModel):
     """Information for one GPU is stored here"""
 
-    #: This is the GPU's name
     name: Optional[str] = None
 
     #: This is the hexadecimal number that identifies the manufacturer of the GPU.
-    #: Format: ``0xPQRS``
+    #: Format: ``0x10DE`` - Nvidia
     vendor_id: Optional[str] = None
 
     #: This is the hexadecimal number that identifies the GPU model.
@@ -35,6 +34,7 @@ class GPUInfo(BaseModel):
 
     #: The manufacturer of the GPU. For example, it may be ``Lenovo`` on a Thinkpad.
     subsystem_manufacturer: Optional[str] = None
+
     #: The model name given by the subsystem manufacturer.
     subsystem_model: Optional[str] = None
 
