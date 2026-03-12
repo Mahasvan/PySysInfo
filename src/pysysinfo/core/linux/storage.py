@@ -26,6 +26,8 @@ def fetch_storage_info() -> StorageInfo:
             if (not "nvme" in folder) and (not "sd" in folder):
                 continue
 
+            disk.identifier = folder.strip() # sda, sdb, etc.
+
             # Check properties of block device
             model = open(f"{path}/device/model", "r").read().strip()
 
