@@ -14,7 +14,6 @@ def _get_monitor_resolution_from_system_profiler(monitor_info: dict) -> Optional
         "_spdisplays_resolution",
         "_spdisplays_pixels",
         "spdisplays_pixels",
-
     ]
 
     resolution_regex = re.compile(r"(\d+)\s?x\s?(\d+)")

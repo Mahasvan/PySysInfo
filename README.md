@@ -2,6 +2,10 @@
 
 A Python Library to simplify retrieval of hardware components of your computer.
 
+- To get started, read the **[Quickstart](https://mahasvan.github.io/PySysInfo/quickstart.html).**
+- Additionally, you can view the **[Documentation](https://mahasvan.github.io/PySysInfo/)**.
+
+
 ## Installation
 
 ### macOS / Linux
