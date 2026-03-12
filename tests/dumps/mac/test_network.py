@@ -61,7 +61,7 @@ def _make_intel_ioreg_entry(
 
 
 def _make_apple_silicon_ioreg_entry(
-    manufacturer_id=0x14E4,
+    manufacturer_id=0x14e4,
     product_id=0x4488,
     bsd_name="en0",
 ):
@@ -154,7 +154,7 @@ class TestFetchEthernetDetails:
             },
             {
                 "spethernet_BSD_Device_Name": "en3",
-                "spethernet_vendor-id": "0x14E4",
+                "spethernet_vendor-id": "0x14e4",
                 "spethernet_vendor_name": "Broadcom",
                 "spethernet_product-id": "0x1682",
             },
@@ -270,7 +270,7 @@ class TestFetchAirportDetails:
 
         result = _fetch_airport_details()
         assert "en1" in result
-        assert result["en1"].vendor_id == "0x14E4"
+        assert result["en1"].vendor_id == "0x14e4"
         assert result["en1"].device_id == "0x4331"
         assert result["en1"].name == "AirPort Extreme"
 
@@ -284,7 +284,7 @@ class TestFetchAirportDetails:
 
         result = _fetch_airport_details()
         assert result["en1"].vendor_id == "0x8086"
-        assert result["en1"].device_id == "0x095A"
+        assert result["en1"].device_id == "0x095a"
 
     @patch("pysysinfo.dumps.mac.network.subprocess.run")
     def test_intel_mac_no_matching_interface_child(self, mock_run):
@@ -305,7 +305,7 @@ class TestFetchAirportDetails:
     def test_apple_silicon_bcm_wlan_core(self, mock_run):
         """AppleBCMWLANCore entry is parsed correctly on Apple Silicon Macs."""
         plist_data = _make_ioreg_plist([_make_apple_silicon_ioreg_entry(
-            manufacturer_id=0x14E4,
+            manufacturer_id=0x14e4,
             product_id=0x4488,
             bsd_name="en0",
         )])
@@ -313,16 +313,16 @@ class TestFetchAirportDetails:
 
         result = _fetch_airport_details()
         assert "en0" in result
-        # hex(0x14E4).upper() → "0X14E4" (the X is uppercased too)
-        assert result["en0"].vendor_id == "0X14E4"
-        assert result["en0"].device_id == "0X4488"
+        # hex(0x14e4).upper() → "0x14e4" (the X is uppercased too)
+        assert result["en0"].vendor_id == "0x14e4"
+        assert result["en0"].device_id == "0x4488"
 
     @patch("pysysinfo.dumps.mac.network.subprocess.run")
     def test_apple_silicon_no_bsd_interface_skipped(self, mock_run):
         """Apple Silicon entry with no resolvable BSD interface is not added."""
         entry = {
             "IORegistryEntryName": "AppleBCMWLANCore",
-            "ModuleDictionary": {"ManufacturerID": 0x14E4, "ProductID": 0x4488},
+            "ModuleDictionary": {"ManufacturerID": 0x14e4, "ProductID": 0x4488},
             "IORegistryEntryChildren": [],  # missing Skywalk tree
         }
         plist_data = _make_ioreg_plist([entry])
@@ -411,14 +411,14 @@ class TestFetchSystemProfilerDetails:
         }])
         mock_run.return_value = MagicMock(stdout=network_plist)
         mock_air.return_value = {
-            "en1": NICInfo(vendor_id="0x14E4", device_id="0x4331")
+            "en1": NICInfo(vendor_id="0x14e4", device_id="0x4331")
         }
 
         result = _fetch_system_profiler_details(["en1"])
         assert len(result.modules) == 1
         m = result.modules[0]
         assert m.type == "AirPort"
-        assert m.vendor_id == "0x14E4"
+        assert m.vendor_id == "0x14e4"
 
     @patch("pysysinfo.dumps.mac.network.subprocess.run")
     def test_interface_not_in_valid_list_is_skipped(self, mock_run):
@@ -480,7 +480,7 @@ class TestFetchSystemProfilerDetails:
         ])
         mock_run.return_value = MagicMock(stdout=network_plist)
         mock_eth.return_value = {"en0": NICInfo(vendor_id="0x8086")}
-        mock_air.return_value = {"en1": NICInfo(vendor_id="0x14E4")}
+        mock_air.return_value = {"en1": NICInfo(vendor_id="0x14e4")}
 
         result = _fetch_system_profiler_details(["en0", "en1"])
         assert len(result.modules) == 2
