@@ -35,50 +35,40 @@ print(json.dumps(json_data, indent=2))
 ```
 
 ## Tracker
+
+### Hardware Discovery Progress Tracker
+
+| Component   | Linux | macOS  | Windows |
+|-------------|:-----:|:------:|:-------:|
+| CPU         |   ✅   |   ✅    |    ✅    |
+| GPU         |   ✅   |   ✅    | ✅* (1)  |
+| Memory      |   ✅   |   ✅    |    ✅    |
+| Network     |   ❌   |   ✅    |    ✅    |
+| Audio       |   ❌   |   ❌    |    ✅    |
+| Motherboard |   ❌   |   ❌    |    ✅    |
+| Storage     |   ✅   |   ✅    |    ✅    |
+| Display     |   ❌   | ❌* (2) | ✅* (3)  |
+| Vendor      |   ❌   |   ❌    |    ➖    |
+| Input       |   ❌   |   ❌    |    ❌    |
+
+1. PCIe gen info only for Nvidia
+2. In progress
+3. Need to rewrite C++ bindings
+
 ### Miscellaneous Tasks / Problems
 
-- [ ] Implement GH actions for compiling modules from `interops/{platform}/*.{c|cpp}` to their respective output
-  directories
-- [ ] Group Pydantic Model fields into essential and optional. 
-- [x] Remove `pyobjc` dependency in macOS by rewriting dependent code chunks in C++ 
-- [ ] Autodetection of storage units
-
-### Hardware Discovery
-
-- Linux
-    - [x] CPU
-    - [x] GPU
-    - [x] Memory
-    - [ ] Network
-    - [ ] Audio
-    - [ ] Motherboard
-    - [ ] Input
-    - [x] Storage
-- macOS
-    - [x] CPU
-    - [x] GPU
-    - [x] Memory
-    - [x] Network - _Make faster? Wifi info is slow to fetch_
-    - [ ] Audio
-    - [ ] Vendor
-    - [ ] Input
-    - [x] Storage
-    - [ ] Display
-- Windows
-    - [x] CPU
-    - [x] GPU - _PCIe gen info only for Nvidia GPUs_
-    - [x] Memory
-    - [x] Network
-    - [x] Audio
-    - [x] Motherboard
-    - [ ] Input
-    - [x] Storage
-    - [x] Display - Revamp the C++ Lib
+| Task                                                                                             | Status |
+|--------------------------------------------------------------------------------------------------|:------:|
+| GH actions for compiling `interops/{platform}/*.{c\|cpp}` to their respective output directories |   ❌    |
+| Group Pydantic Model fields into essential and optional                                          |   ❌    |
+| Remove `pyobjc` dependency in macOS by rewriting dependent code chunks in C++                    |   ✅    |
+| Autodetection of storage units                                                                   |   ❌    |
 
 ### Supporting Features
 
-- [ ] PCI Lookup - DeviceHunt
-- [ ] PCI
-  Lookup - [PCI IDs Repository](https://pci-ids.ucw.cz) - [GitHub](https://github.com/pciutils/pciids/blob/master/pci.ids)
-- [x] Logging
-- [x] Working Library
+| Feature                                                                                                                      | Status |
+|------------------------------------------------------------------------------------------------------------------------------|:------:|
+| PCI Lookup — [DeviceHunt](https://devicehunt.com)                                                                            |   ❌    |
+| PCI Lookup — [PCI IDs Repository](https://pci-ids.ucw.cz) ([GitHub](https://github.com/pciutils/pciids/blob/master/pci.ids)) |   ❌    |
+| Logging                                                                                                                      |   ✅    |
+| Working Library                                                                                                              |   ✅    |
