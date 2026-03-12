@@ -31,7 +31,7 @@ Output:
 
 .. code-block:: shell
 
-    <class 'pysysinfo.dumps.mac.mac_dump.MacHardwareManager'>
+    <class 'pysysinfo.core.mac.MacHardwareManager'>
     True
 
 The type of HardwareManager instantiated depends on the OS.
@@ -41,15 +41,15 @@ On macOS, as we can see, the ``MacHardwareManager`` was instantiated.
 
 Depending on your OS, when ``HardwareManager()`` is called, one of the following classes will be instantiated:
 
-.. autoclass:: pysysinfo.dumps.windows.windows_dump.WindowsHardwareManager
+.. autoclass:: pysysinfo.core.windows.manager.WindowsHardwareManager
     :exclude-members: __init__,__new__
     :noindex:
 
-.. autoclass:: pysysinfo.dumps.mac.mac_dump.MacHardwareManager
+.. autoclass:: pysysinfo.core.mac.manager.MacHardwareManager
     :exclude-members: __init__,__new__
     :noindex:
 
-.. autoclass:: pysysinfo.dumps.linux.linux_dump.LinuxHardwareManager
+.. autoclass:: pysysinfo.core.linux.manager.LinuxHardwareManager
     :exclude-members: __init__,__new__
     :noindex:
 

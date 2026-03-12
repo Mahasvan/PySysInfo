@@ -9,10 +9,15 @@ autodoc_mock_imports = []
 if sys.platform != "win32":
     autodoc_mock_imports += [
         "winreg",
-        "ctypes",
+        "pysysinfo.interops.win",
+        "pysysinfo.core.windows.audio",
+        "pysysinfo.core.windows.baseboard",
+        "pysysinfo.core.windows.common",
         "pysysinfo.core.windows.cpu",
+        "pysysinfo.core.windows.display",
         "pysysinfo.core.windows.graphics",
         "pysysinfo.core.windows.memory",
+        "pysysinfo.core.windows.network",
         "pysysinfo.core.windows.storage",
         "pysysinfo.core.windows.win_enum",
     ]
