@@ -35,40 +35,60 @@ def _find_child(children: list, key: str, value: str) -> Optional[dict]:
     return next((x for x in children if x and x.get(key) == value), None)
 
 
-def _get_bsd_interface_apple_silicon(item: dict) -> Optional[str]:
+def _traverse_ioreg(root: dict, steps: List[tuple], result_key: str = "IORegistryEntryName") -> Optional[str]:
     """
-    Traverse the IORegistry tree for Apple Silicon Wi-Fi controllers:
-    item
-     └─ IORegistryEntryChildren
-         └─ [IORegistryEntryName == "AppleBCMWLANSkywalkInterface"]
-             └─ IORegistryEntryChildren
-                 └─ [IOObjectClass == "IOSkywalkLegacyEthernet"]
-                     └─ IORegistryEntryChildren
-                         └─ [IOObjectClass == "IOSkywalkLegacyEthernetInterface"]
-                             └─ IORegistryEntryName  →  "en0"
+    Generic IORegistry depth-first traversal.
+
+    Each step is a (match_key, match_value) pair used to select the next child
+    via _find_child.  After all steps, ``result_key`` is read from the final node.
+
+    Example – AppleBCMWLANCore path:
+        steps = [
+            ("IORegistryEntryName", "AppleBCMWLANSkywalkInterface"),
+            ("IOObjectClass",       "IOSkywalkLegacyEthernet"),
+            ("IOObjectClass",       "IOSkywalkLegacyEthernetInterface"),
+        ]
     """
-    skywalk = _find_child(
-        item.get("IORegistryEntryChildren", []),
-        "IORegistryEntryName", "AppleBCMWLANSkywalkInterface"
-    )
-    if skywalk is None:
-        return None
+    node = root
+    for match_key, match_value in steps:
+        node = _find_child(node.get("IORegistryEntryChildren", []), match_key, match_value)
+        if node is None:
+            return None
+    return node.get(result_key)
 
-    legacy_ethernet = _find_child(
-        skywalk.get("IORegistryEntryChildren", []),
-        "IOObjectClass", "IOSkywalkLegacyEthernet"
-    )
-    if legacy_ethernet is None:
-        return None
 
-    legacy_interface = _find_child(
-        legacy_ethernet.get("IORegistryEntryChildren", []),
-        "IOObjectClass", "IOSkywalkLegacyEthernetInterface"
-    )
-    if legacy_interface is None:
-        return None
+# Traversal path for AppleBCMWLANCore (Intel Macs / most Apple Silicon)
+_STEPS_BCM_WLAN = [
+    ("IORegistryEntryName", "AppleBCMWLANSkywalkInterface"),
+    ("IOObjectClass",       "IOSkywalkLegacyEthernet"),
+    ("IOObjectClass",       "IOSkywalkLegacyEthernetInterface"),
+]
 
-    return legacy_interface.get("IORegistryEntryName")
+# Traversal path for AppleWLANDriver (Wi-Fi 7, M5 series)
+# Note: the second level is matched by IORegistryEntryName, not IOObjectClass.
+_STEPS_WLAN_DRIVER = [
+    ("IORegistryEntryName", "AppleWLANInterfaceSTA"),
+    ("IORegistryEntryName", "IOSkywalkLegacyEthernet"),
+    ("IOObjectClass",       "IOSkywalkLegacyEthernetInterface"),
+]
+
+
+def _get_bsd_interface_apple_silicon(item: dict, driver: str = "AppleBCMWLANCore") -> Optional[str]:
+    """
+    Resolve the BSD interface name for Apple Silicon Wi-Fi controllers.
+
+    Tries the AppleBCMWLANCore path first, then falls back to the
+    AppleWLANDriver (Wi-Fi 7 / Skywalk STA) path.
+    """
+    if driver == "AppleBCMWLANCore":
+        return _traverse_ioreg(item, _STEPS_BCM_WLAN)
+    elif driver == "AppleWLANDriver":
+        _traverse_ioreg(item, _STEPS_WLAN_DRIVER)
+
+    return (
+        _traverse_ioreg(item, _STEPS_BCM_WLAN)
+        or _traverse_ioreg(item, _STEPS_WLAN_DRIVER)
+    )
 
 
 def _fetch_airport_details() -> Dict[str, NICInfo]:
@@ -108,15 +128,39 @@ def _fetch_airport_details() -> Dict[str, NICInfo]:
                 break
 
         elif driver == "AppleBCMWLANCore":
-            # Apple Silicon Macs
+            # Most Apple Silicon Macs
             module_data = item.get("ModuleDictionary", {})
             nic_info = NICInfo()
             nic_info.vendor_id = hex(module_data.get("ManufacturerID", 0))
             nic_info.device_id = hex(module_data.get("ProductID", 0))
 
-            bsd_identifier = _get_bsd_interface_apple_silicon(item)
+            if module_data.get("subsystem-vendor-id") == 4203:  # 0x106b, Apple
+                nic_info.manufacturer = "Apple"
+
+            bsd_identifier = _get_bsd_interface_apple_silicon(item, driver=driver)
             if bsd_identifier:
                 res[bsd_identifier] = nic_info
+
+        elif driver == "AppleWLANDriver":
+            # Wi-Fi 7 driver for the M5 series
+
+            device_info = item.get("AirshipDeviceCriteria")
+
+            chipset = device_info.get("Chipset")
+            vendor = device_info.get("Vendor")
+
+            bsd_identifier = _get_bsd_interface_apple_silicon(item, driver=driver)
+            nic_info = NICInfo()
+
+            if vendor:
+                nic_info.manufacturer = f"Apple ({vendor})"
+            else:
+                nic_info.manufacturer = "Apple"
+
+            if chipset: nic_info.name = f"Wi-Fi ({chipset} chipset)"
+
+            res[bsd_identifier] = nic_info
+
         else:
             # todo: Implement for drivers such as AirPortAtheros40, AirPortBrcm4331, AirPortBrcm4360
             print("Unknown driver: ", driver)
@@ -165,8 +209,14 @@ def _fetch_system_profiler_details(valid_bsd_interfaces: List[str]) -> NetworkIn
             elif module.type == 'AirPort':
                 if airport_info is None: airport_info = _fetch_airport_details()
                 if bsd_interface_name in airport_info:
-                    module.vendor_id = airport_info[bsd_interface_name].vendor_id
-                    module.device_id = airport_info[bsd_interface_name].device_id
+                    if manufacturer := airport_info[bsd_interface_name].manufacturer:
+                        module.manufacturer = manufacturer
+                    if name := airport_info[bsd_interface_name].name:
+                        module.name = name
+                    if vendor_id := airport_info[bsd_interface_name].vendor_id:
+                        module.vendor_id = vendor_id
+                    if device_id := airport_info[bsd_interface_name].device_id:
+                        module.device_id = device_id
 
             network_info.modules.append(module)
 
