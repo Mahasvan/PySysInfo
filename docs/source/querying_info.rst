@@ -260,6 +260,7 @@ Depending on the errors encountered, it can be one of the following three values
 
 .. autoclass:: pysysinfo.models.status_models.StatusType
     :members:
+    :no-index:
 
 -------
 

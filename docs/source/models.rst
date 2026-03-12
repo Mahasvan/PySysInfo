@@ -57,6 +57,12 @@ is a ``GraphicsInfo`` object, with the ``modules`` property containing a list of
 
 ---------
 
+.. autopydantic_model:: pysysinfo.models.gpu_models.AppleExtendedGPUInfo
+    :exclude-members: __init__
+    :model-show-field-summary: False
+
+---------
+
 Memory
 ======
 
