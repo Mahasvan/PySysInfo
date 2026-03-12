@@ -28,10 +28,10 @@ CPU
 the information retrieved about the CPU is stored as the following class.
 
 .. autopydantic_model:: pysysinfo.models.cpu_models.CPUInfo
-:show-inheritance:
-:inherited-members: ComponentInfo
-:exclude-members: __init__
-:model-show-field-summary: False
+    :show-inheritance:
+    :inherited-members: ComponentInfo
+    :exclude-members: __init__
+    :model-show-field-summary: False
 
 ---------
 
@@ -44,16 +44,16 @@ is a ``GraphicsInfo`` object, with the ``modules`` property containing a list of
 ------
 
 .. autopydantic_model:: pysysinfo.models.gpu_models.GraphicsInfo
-:show-inheritance:
-:inherited-members: ComponentInfo
-:exclude-members: __init__
-:model-show-field-summary: False
+    :show-inheritance:
+    :inherited-members: ComponentInfo
+    :exclude-members: __init__
+    :model-show-field-summary: False
 
 --------
 
 .. autopydantic_model:: pysysinfo.models.gpu_models.GPUInfo
-:exclude-members: __init__
-:model-show-field-summary: False
+    :exclude-members: __init__
+    :model-show-field-summary: False
 
 ---------
 
@@ -73,20 +73,20 @@ The RAM slot is stored in the ``slot`` property, as a
 --------
 
 .. autopydantic_model:: pysysinfo.models.memory_models.MemoryInfo
-:exclude-members: __init__
-:model-show-field-summary: False
+    :exclude-members: __init__
+    :model-show-field-summary: False
 
 --------
 
 .. autopydantic_model:: pysysinfo.models.memory_models.MemoryModuleInfo
-:exclude-members: __init__
-:model-show-field-summary: False
+    :exclude-members: __init__
+    :model-show-field-summary: False
 
 --------
 
 .. autopydantic_model:: pysysinfo.models.memory_models.MemoryModuleSlot
-:exclude-members: __init__
-:model-show-field-summary: False
+    :exclude-members: __init__
+    :model-show-field-summary: False
 
 --------
 
@@ -102,14 +102,14 @@ Like GPU and RAM devices, Storage devices are stored as a list of
 ------
 
 .. autopydantic_model:: pysysinfo.models.storage_models.StorageInfo
-:exclude-members: __init__
-:model-show-field-summary: False
+    :exclude-members: __init__
+    :model-show-field-summary: False
 
 ------
 
 .. autopydantic_model:: pysysinfo.models.storage_models.DiskInfo
-:exclude-members: __init__
-:model-show-field-summary: False
+    :exclude-members: __init__
+    :model-show-field-summary: False
 
 
 =============
@@ -125,8 +125,8 @@ This property will be of the :class:`Status <pysysinfo.models.status_models.Stat
 ---------
 
 .. autopydantic_model:: pysysinfo.models.status_models.Status
-:exclude-members: __init__
-:model-show-field-summary: False
+    :exclude-members: __init__
+    :model-show-field-summary: False
 
 ---------
 
@@ -148,8 +148,8 @@ is expressed as one of the subclasses of the
 
 
 .. autopydantic_model:: pysysinfo.models.size_models.StorageSize
-:exclude-members: __init__
-:model-show-field-summary: False
+    :exclude-members: __init__
+    :model-show-field-summary: False
 
 ----------
 
@@ -159,18 +159,18 @@ Every ``size`` parameter, that is of type ``StorageSize``, will of be one of the
 ----------
 
 .. autopydantic_model:: pysysinfo.models.size_models.Kilobyte
-:exclude-members: __init__
-:model-show-field-summary: False
+    :exclude-members: __init__
+    :model-show-field-summary: False
 
 ----------
 
 .. autopydantic_model:: pysysinfo.models.size_models.Megabyte
-:exclude-members: __init__
-:model-show-field-summary: False
+    :exclude-members: __init__
+    :model-show-field-summary: False
 
 ----------
 
 .. autopydantic_model:: pysysinfo.models.size_models.Gigabyte
-:exclude-members: __init__
-:model-show-field-summary: False
+    :exclude-members: __init__
+    :model-show-field-summary: False
 
