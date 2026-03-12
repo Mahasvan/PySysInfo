@@ -76,7 +76,7 @@ def _fetch_airport_details() -> Dict[str, NICInfo]:
     Earlier, `system_profiler SPAirPortDataType -xml` was used to get the vendor and device id.
     However, this was too slow, and we can get the same details from `ioreg`, while it being faster.
     """
-    output = subprocess.run(["ioreg", "-c", "IO80211Controller", "-r", "-a"])
+    output = subprocess.run(["ioreg", "-c", "IO80211Controller", "-r", "-a"], capture_output=True)
     plist = plistlib.loads(output.stdout)
 
     res = {}
@@ -96,8 +96,8 @@ def _fetch_airport_details() -> Dict[str, NICInfo]:
             vendor, device = match.groups()
 
             nic_info = NICInfo()
-            nic_info.vendor_id = "0x" + vendor.upper()
-            nic_info.device_id = "0x" + device.upper()
+            nic_info.vendor_id = "0x" + vendor
+            nic_info.device_id = "0x" + device
             if io_model: nic_info.name = io_model
 
             for child in item.get("IORegistryEntryChildren", []):
@@ -111,8 +111,8 @@ def _fetch_airport_details() -> Dict[str, NICInfo]:
             # Apple Silicon Macs
             module_data = item.get("ModuleDictionary", {})
             nic_info = NICInfo()
-            nic_info.vendor_id = hex(module_data.get("ManufacturerID", 0)).upper()
-            nic_info.device_id = hex(module_data.get("ProductID", 0)).upper()
+            nic_info.vendor_id = hex(module_data.get("ManufacturerID", 0))
+            nic_info.device_id = hex(module_data.get("ProductID", 0))
 
             bsd_identifier = _get_bsd_interface_apple_silicon(item)
             if bsd_identifier:

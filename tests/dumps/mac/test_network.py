@@ -8,6 +8,8 @@ from pysysinfo.dumps.mac.network import (
     _fetch_ethernet_details,
     _fetch_airport_details,
     _fetch_system_profiler_details,
+    _find_child,
+    _get_bsd_interface_apple_silicon,
     fetch_network_info,
 )
 from pysysinfo.models.network_models import NetworkInfo, NICInfo
@@ -34,9 +36,59 @@ def _make_ethernet_plist(items):
     return plistlib.dumps([{"_items": items}], fmt=plistlib.FMT_XML)
 
 
-def _make_airport_plist(items):
-    """Build a fake SPAirPortDataType plist structure."""
-    return plistlib.dumps([{"_items": items}], fmt=plistlib.FMT_XML)
+def _make_ioreg_plist(items):
+    """Build a fake ioreg IO80211Controller plist (list of controller dicts)."""
+    return plistlib.dumps(items, fmt=plistlib.FMT_XML)
+
+
+def _make_intel_ioreg_entry(
+    io_name_matched="pci14e4,4331",
+    io_model="AirPort Extreme",
+    bsd_name="en1",
+):
+    """AirPort_BrcmNIC entry as seen on Intel Macs."""
+    return {
+        "IORegistryEntryName": "AirPort_BrcmNIC",
+        "IONameMatched": io_name_matched,
+        "IOModel": io_model,
+        "IORegistryEntryChildren": [
+            {
+                "IOObjectClass": "AirPort_BrcmNIC_Interface",
+                "IORegistryEntryName": bsd_name,
+            }
+        ],
+    }
+
+
+def _make_apple_silicon_ioreg_entry(
+    manufacturer_id=0x14E4,
+    product_id=0x4488,
+    bsd_name="en0",
+):
+    """AppleBCMWLANCore entry as seen on Apple Silicon Macs."""
+    return {
+        "IORegistryEntryName": "AppleBCMWLANCore",
+        "ModuleDictionary": {
+            "ManufacturerID": manufacturer_id,
+            "ProductID": product_id,
+        },
+        "IORegistryEntryChildren": [
+            {
+                "IORegistryEntryName": "AppleBCMWLANSkywalkInterface",
+                "IORegistryEntryChildren": [
+                    {
+                        "IOObjectClass": "IOSkywalkLegacyEthernet",
+                        "IORegistryEntryChildren": [
+                            {
+                                "IOObjectClass": "IOSkywalkLegacyEthernetInterface",
+                                "IORegistryEntryName": bsd_name,
+                            }
+                        ],
+                    }
+                ],
+            }
+        ],
+    }
 
 
 # ── _fetch_controllers ───────────────────────────────────────────────────────
@@ -122,56 +174,198 @@ class TestFetchEthernetDetails:
             _fetch_ethernet_details()
 
 
+# ── _find_child ──────────────────────────────────────────────────────────────
+
+class TestFindChild:
+
+    def test_returns_matching_dict(self):
+        children = [
+            {"IOObjectClass": "Foo"},
+            {"IOObjectClass": "Bar"},
+        ]
+        result = _find_child(children, "IOObjectClass", "Bar")
+        assert result == {"IOObjectClass": "Bar"}
+
+    def test_returns_none_when_no_match(self):
+        children = [{"IOObjectClass": "Foo"}]
+        result = _find_child(children, "IOObjectClass", "Missing")
+        assert result is None
+
+    def test_returns_none_for_empty_list(self):
+        assert _find_child([], "IOObjectClass", "Foo") is None
+
+    def test_skips_falsy_entries(self):
+        children = [None, {}, {"IOObjectClass": "Target"}]
+        result = _find_child(children, "IOObjectClass", "Target")
+        assert result == {"IOObjectClass": "Target"}
+
+    def test_returns_first_match(self):
+        children = [
+            {"IOObjectClass": "Target", "id": 1},
+            {"IOObjectClass": "Target", "id": 2},
+        ]
+        result = _find_child(children, "IOObjectClass", "Target")
+        assert result["id"] == 1
+
+
+# ── _get_bsd_interface_apple_silicon ─────────────────────────────────────────
+
+class TestGetBsdInterfaceAppleSilicon:
+
+    def _make_item(self, bsd_name="en0"):
+        return _make_apple_silicon_ioreg_entry(bsd_name=bsd_name)
+
+    def test_returns_bsd_name_for_full_path(self):
+        item = self._make_item("en0")
+        assert _get_bsd_interface_apple_silicon(item) == "en0"
+
+    def test_returns_none_when_skywalk_interface_missing(self):
+        item = {"IORegistryEntryChildren": []}
+        assert _get_bsd_interface_apple_silicon(item) is None
+
+    def test_returns_none_when_legacy_ethernet_missing(self):
+        item = {
+            "IORegistryEntryChildren": [
+                {
+                    "IORegistryEntryName": "AppleBCMWLANSkywalkInterface",
+                    "IORegistryEntryChildren": [],  # no IOSkywalkLegacyEthernet
+                }
+            ]
+        }
+        assert _get_bsd_interface_apple_silicon(item) is None
+
+    def test_returns_none_when_legacy_interface_missing(self):
+        item = {
+            "IORegistryEntryChildren": [
+                {
+                    "IORegistryEntryName": "AppleBCMWLANSkywalkInterface",
+                    "IORegistryEntryChildren": [
+                        {
+                            "IOObjectClass": "IOSkywalkLegacyEthernet",
+                            "IORegistryEntryChildren": [],  # no IOSkywalkLegacyEthernetInterface
+                        }
+                    ],
+                }
+            ]
+        }
+        assert _get_bsd_interface_apple_silicon(item) is None
+
+    def test_returns_none_when_children_key_absent(self):
+        assert _get_bsd_interface_apple_silicon({}) is None
+
+
 # ── _fetch_airport_details ───────────────────────────────────────────────────
 
 class TestFetchAirportDetails:
 
     @patch("pysysinfo.dumps.mac.network.subprocess.run")
-    def test_single_wifi_card(self, mock_run):
-        plist_data = _make_airport_plist([{
-            "spairport_airport_interfaces": [{
-                "_name": "en1",
-                "spairport_wireless_card_type": "Wi-Fi  (0x14E4, 0x4331)",
-            }]
-        }])
+    def test_intel_mac_brcm_nic(self, mock_run):
+        """AirPort_BrcmNIC entry is parsed correctly on Intel Macs."""
+        plist_data = _make_ioreg_plist([_make_intel_ioreg_entry(
+            io_name_matched="pci14e4,4331",
+            io_model="AirPort Extreme",
+            bsd_name="en1",
+        )])
         mock_run.return_value = MagicMock(stdout=plist_data)
 
         result = _fetch_airport_details()
         assert "en1" in result
         assert result["en1"].vendor_id == "0x14E4"
         assert result["en1"].device_id == "0x4331"
+        assert result["en1"].name == "AirPort Extreme"
 
     @patch("pysysinfo.dumps.mac.network.subprocess.run")
-    def test_awdl_interface_skipped(self, mock_run):
-        """AWDL interfaces lack spairport_wireless_card_type and should be skipped."""
-        plist_data = _make_airport_plist([{
-            "spairport_airport_interfaces": [{
-                "_name": "awdl0",
-                # No spairport_wireless_card_type key
-            }]
-        }])
+    def test_intel_mac_vendor_device_uppercased(self, mock_run):
+        """Vendor and device IDs are stored as uppercase hex strings."""
+        plist_data = _make_ioreg_plist([_make_intel_ioreg_entry(
+            io_name_matched="pci8086,095a",
+        )])
         mock_run.return_value = MagicMock(stdout=plist_data)
 
         result = _fetch_airport_details()
-        assert "awdl0" not in result
+        assert result["en1"].vendor_id == "0x8086"
+        assert result["en1"].device_id == "0x095A"
 
     @patch("pysysinfo.dumps.mac.network.subprocess.run")
-    def test_card_type_without_vendor_device_pattern_skipped(self, mock_run):
-        plist_data = _make_airport_plist([{
-            "spairport_airport_interfaces": [{
-                "_name": "en1",
-                "spairport_wireless_card_type": "Wi-Fi Unknown Type",
-            }]
-        }])
+    def test_intel_mac_no_matching_interface_child(self, mock_run):
+        """Entry with no AirPort_BrcmNIC_Interface child produces no result."""
+        entry = {
+            "IORegistryEntryName": "AirPort_BrcmNIC",
+            "IONameMatched": "pci14e4,4331",
+            "IOModel": "AirPort Extreme",
+            "IORegistryEntryChildren": [],  # no matching child
+        }
+        plist_data = _make_ioreg_plist([entry])
         mock_run.return_value = MagicMock(stdout=plist_data)
 
         result = _fetch_airport_details()
         assert result == {}
 
     @patch("pysysinfo.dumps.mac.network.subprocess.run")
+    def test_apple_silicon_bcm_wlan_core(self, mock_run):
+        """AppleBCMWLANCore entry is parsed correctly on Apple Silicon Macs."""
+        plist_data = _make_ioreg_plist([_make_apple_silicon_ioreg_entry(
+            manufacturer_id=0x14E4,
+            product_id=0x4488,
+            bsd_name="en0",
+        )])
+        mock_run.return_value = MagicMock(stdout=plist_data)
+
+        result = _fetch_airport_details()
+        assert "en0" in result
+        # hex(0x14E4).upper() → "0X14E4" (the X is uppercased too)
+        assert result["en0"].vendor_id == "0X14E4"
+        assert result["en0"].device_id == "0X4488"
+
+    @patch("pysysinfo.dumps.mac.network.subprocess.run")
+    def test_apple_silicon_no_bsd_interface_skipped(self, mock_run):
+        """Apple Silicon entry with no resolvable BSD interface is not added."""
+        entry = {
+            "IORegistryEntryName": "AppleBCMWLANCore",
+            "ModuleDictionary": {"ManufacturerID": 0x14E4, "ProductID": 0x4488},
+            "IORegistryEntryChildren": [],  # missing Skywalk tree
+        }
+        plist_data = _make_ioreg_plist([entry])
+        mock_run.return_value = MagicMock(stdout=plist_data)
+
+        result = _fetch_airport_details()
+        assert result == {}
+
+    @patch("pysysinfo.dumps.mac.network.subprocess.run")
+    def test_unknown_driver_is_skipped(self, mock_run):
+        """Unknown drivers print a warning and are skipped — no exception raised."""
+        entry = {"IORegistryEntryName": "AirPortAtheros40"}
+        plist_data = _make_ioreg_plist([entry])
+        mock_run.return_value = MagicMock(stdout=plist_data)
+
+        result = _fetch_airport_details()
+        assert result == {}
+
+    @patch("pysysinfo.dumps.mac.network.subprocess.run")
+    def test_missing_driver_name_returns_early(self, mock_run):
+        """Entry without IORegistryEntryName causes early return with empty result."""
+        plist_data = _make_ioreg_plist([{"IONameMatched": "pci14e4,4331"}])
+        mock_run.return_value = MagicMock(stdout=plist_data)
+
+        result = _fetch_airport_details()
+        assert result == {}
+
+    @patch("pysysinfo.dumps.mac.network.subprocess.run")
+    def test_multiple_controllers(self, mock_run):
+        """Multiple controllers across both Mac types are all collected."""
+        plist_data = _make_ioreg_plist([
+            _make_intel_ioreg_entry(bsd_name="en1"),
+            _make_apple_silicon_ioreg_entry(bsd_name="en0"),
+        ])
+        mock_run.return_value = MagicMock(stdout=plist_data)
+
+        result = _fetch_airport_details()
+        assert "en0" in result
+        assert "en1" in result
+
+    @patch("pysysinfo.dumps.mac.network.subprocess.run")
     def test_subprocess_failure_propagates(self, mock_run):
-        """BUG 2: No error handling."""
-        mock_run.side_effect = FileNotFoundError("system_profiler not found")
+        mock_run.side_effect = FileNotFoundError("ioreg not found")
         with pytest.raises(FileNotFoundError):
             _fetch_airport_details()
 
