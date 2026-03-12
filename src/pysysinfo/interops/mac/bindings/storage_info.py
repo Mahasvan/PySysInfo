@@ -33,6 +33,7 @@ class _StorageDeviceProperties(ctypes.Structure):
         ("medium_type", ctypes.c_char * 128),
         ("interconnect", ctypes.c_char * 128),
         ("location", ctypes.c_char * 64),
+        ("bsd_name", ctypes.c_char * 64),
         ("size_bytes", ctypes.c_uint64),
     ]
 
@@ -48,6 +49,7 @@ class StorageDeviceProperties:
     medium_type: str
     interconnect: str
     location: str
+    bsd_name: str
     size_bytes: int
 
     def __str__(self) -> str:
@@ -58,6 +60,7 @@ class StorageDeviceProperties:
             f"  Medium Type:  {self.medium_type}",
             f"  Interconnect: {self.interconnect}",
             f"  Location:     {self.location}",
+            f"  BSD Name:     {self.bsd_name}",
             f"  Size:         {size_mb} MB",
         ]
         return "\n".join(lines)
@@ -82,6 +85,7 @@ def get_storage_info() -> list[StorageDeviceProperties]:
             medium_type=raw.medium_type.decode("utf-8", errors="replace").strip("\x00"),
             interconnect=raw.interconnect.decode("utf-8", errors="replace").strip("\x00"),
             location=raw.location.decode("utf-8", errors="replace").strip("\x00"),
+            bsd_name=raw.bsd_name.decode("utf-8", errors="replace").strip("\x00"),
             size_bytes=raw.size_bytes,
         ))
     return result

@@ -14,6 +14,7 @@ class FakeStorageDeviceProperties:
     medium_type: str
     interconnect: str
     location: str
+    bsd_name: str
     size_bytes: int
 
 
@@ -25,6 +26,7 @@ def _nvme_ssd(
         medium_type="Solid State",
         interconnect="PCI-Express",
         location="Internal",
+        bsd_name="disk0",
         size_bytes=500_107_862_016,
 ) -> FakeStorageDeviceProperties:
     return FakeStorageDeviceProperties(
@@ -33,6 +35,7 @@ def _nvme_ssd(
         medium_type=medium_type,
         interconnect=interconnect,
         location=location,
+        bsd_name=bsd_name,
         size_bytes=size_bytes,
     )
 
@@ -43,6 +46,7 @@ def _sata_ssd(
         medium_type="Solid State",
         interconnect="SATA",
         location="Internal",
+        bsd_name="disk1",
         size_bytes=1_000_204_886_016,
 ) -> FakeStorageDeviceProperties:
     return FakeStorageDeviceProperties(
@@ -51,6 +55,7 @@ def _sata_ssd(
         medium_type=medium_type,
         interconnect=interconnect,
         location=location,
+        bsd_name=bsd_name,
         size_bytes=size_bytes,
     )
 
@@ -61,6 +66,7 @@ def _hdd(
         medium_type="Rotational",
         interconnect="SATA",
         location="Internal",
+        bsd_name="disk2",
         size_bytes=1_000_204_886_016,
 ) -> FakeStorageDeviceProperties:
     return FakeStorageDeviceProperties(
@@ -69,6 +75,7 @@ def _hdd(
         medium_type=medium_type,
         interconnect=interconnect,
         location=location,
+        bsd_name=bsd_name,
         size_bytes=size_bytes,
     )
 
@@ -79,6 +86,7 @@ def _usb_drive(
         medium_type="",
         interconnect="USB",
         location="External",
+        bsd_name="disk3",
         size_bytes=32_015_982_592,
 ) -> FakeStorageDeviceProperties:
     return FakeStorageDeviceProperties(
@@ -87,6 +95,7 @@ def _usb_drive(
         medium_type=medium_type,
         interconnect=interconnect,
         location=location,
+        bsd_name=bsd_name,
         size_bytes=size_bytes,
     )
 
@@ -97,6 +106,7 @@ def _apple_fabric_ssd(
         medium_type="Solid State",
         interconnect="Apple Fabric",
         location="Internal",
+        bsd_name="disk0",
         size_bytes=500_107_862_016,
 ) -> FakeStorageDeviceProperties:
     return FakeStorageDeviceProperties(
@@ -105,6 +115,7 @@ def _apple_fabric_ssd(
         medium_type=medium_type,
         interconnect=interconnect,
         location=location,
+        bsd_name=bsd_name,
         size_bytes=size_bytes,
     )
 
@@ -438,6 +449,7 @@ class TestEdgeCases:
             medium_type="",
             interconnect="Secure Digital",
             location="Internal",
+            bsd_name="disk4",
             size_bytes=0,
         )
         info = _run([reader])

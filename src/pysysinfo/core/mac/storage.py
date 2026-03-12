@@ -65,6 +65,9 @@ def fetch_storage_info() -> StorageInfo:
         if device.size_bytes:
             disk.size = Megabyte(capacity=device.size_bytes // (1024 * 1024))
 
+        bsd_name = device.bsd_name.strip() if device.bsd_name else None
+        disk.identifier = bsd_name if bsd_name else None
+
         storage_info.modules.append(disk)
 
     return storage_info

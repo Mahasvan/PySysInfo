@@ -12,6 +12,7 @@ typedef struct {
     char medium_type[128]; // e.g. "Solid State", "Rotational"
     char interconnect[128]; // e.g. "PCI-Express", "SATA", "USB"
     char location[64]; // e.g. "Internal", "External"
+    char bsd_name[64]; // e.g. "disk0", "disk1"
     uint64_t size_bytes; // Total disk size from IOMedia
 } StorageDeviceProperties;
 

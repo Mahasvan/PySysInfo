@@ -109,12 +109,16 @@ int get_storage_info(StorageDeviceProperties *out, int max_count) {
             copyTrimmedString(location, dev.location, sizeof(dev.location));
         }
 
-        // Find the "Whole" IOMedia child for disk size
+        // Find the "Whole" IOMedia child for disk size and BSD name
         CFMutableDictionaryRef mediaProps = findWholeMedia(service);
         if (mediaProps) {
             CFTypeRef sizeRef = CFDictionaryGetValue(mediaProps, CFSTR("Size"));
             if (sizeRef)
                 dev.size_bytes = readCFTypeAsUInt64(sizeRef);
+
+            std::string bsdName = readCFStringFromDict(mediaProps, CFSTR("BSD Name"));
+            copyTrimmedString(bsdName, dev.bsd_name, sizeof(dev.bsd_name));
+
             CFRelease(mediaProps);
         }
 

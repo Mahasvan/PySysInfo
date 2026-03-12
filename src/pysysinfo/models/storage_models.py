@@ -10,6 +10,10 @@ class DiskInfo(BaseModel):
     # Device Name
     model: Optional[str] = None
     manufacturer: Optional[str] = None
+
+    #: Unique identifier assigned by the OS - ``disk0``/``sda``, etc.
+    identifier: Optional[str] = None
+
     # Internal/External
     location: Optional[str] = None
     # PCIe/SCSI/etc.
@@ -20,7 +24,6 @@ class DiskInfo(BaseModel):
     device_id: Optional[str] = None
     vendor_id: Optional[str] = None
     size: Optional[StorageSize] = None
-    pass
 
 
 class StorageInfo(ComponentInfo):
