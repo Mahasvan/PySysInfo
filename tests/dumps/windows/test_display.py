@@ -4,7 +4,7 @@ from ctypes import py_object, addressof
 
 import pytest
 
-import pysysinfo.dumps.windows.display as display
+import pysysinfo.core.windows.display as display
 from pysysinfo.interops.win.api.constants import (
     STATUS_OK,
     STATUS_NOK,

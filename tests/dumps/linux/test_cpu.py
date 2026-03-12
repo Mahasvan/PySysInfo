@@ -1,7 +1,7 @@
 import builtins
 import subprocess
 
-from pysysinfo.dumps.linux.cpu import (
+from pysysinfo.core.linux.cpu import (
     _arm_cpu_cores,
     _x86_cpu_cores,
     _arm_cpu_model,
@@ -206,7 +206,7 @@ class TestFetchArmCpuInfo:
         )
 
         monkeypatch.setattr(
-            "pysysinfo.dumps.linux.cpu._arm_cpu_cores",
+            "pysysinfo.core.linux.cpu._arm_cpu_cores",
             lambda: 4,
         )
 
@@ -226,7 +226,7 @@ class TestFetchArmCpuInfo:
             "Model\t: Raspberry Pi 4\n"
         )
 
-        monkeypatch.setattr("pysysinfo.dumps.linux.cpu._arm_cpu_cores", lambda: 4)
+        monkeypatch.setattr("pysysinfo.core.linux.cpu._arm_cpu_cores", lambda: 4)
 
         cpu = fetch_arm_cpu_info(raw)
 
@@ -238,7 +238,7 @@ class TestFetchArmCpuInfo:
             "CPU architecture: 8\n"
         )
 
-        monkeypatch.setattr("pysysinfo.dumps.linux.cpu._arm_cpu_cores", lambda: 4)
+        monkeypatch.setattr("pysysinfo.core.linux.cpu._arm_cpu_cores", lambda: 4)
 
         cpu = fetch_arm_cpu_info(raw)
 
@@ -251,7 +251,7 @@ class TestFetchArmCpuInfo:
             "Hardware\t: BCM2711\n"
         )
 
-        monkeypatch.setattr("pysysinfo.dumps.linux.cpu._arm_cpu_cores", lambda: 4)
+        monkeypatch.setattr("pysysinfo.core.linux.cpu._arm_cpu_cores", lambda: 4)
 
         cpu = fetch_arm_cpu_info(raw)
 
@@ -264,7 +264,7 @@ class TestFetchArmCpuInfo:
             "CPU architecture: 8\n"
         )
 
-        monkeypatch.setattr("pysysinfo.dumps.linux.cpu._arm_cpu_cores", lambda: 4)
+        monkeypatch.setattr("pysysinfo.core.linux.cpu._arm_cpu_cores", lambda: 4)
 
         cpu = fetch_arm_cpu_info(raw)
 
@@ -278,7 +278,7 @@ class TestFetchArmCpuInfo:
             "CPU architecture: 8\n"
         )
 
-        monkeypatch.setattr("pysysinfo.dumps.linux.cpu._arm_cpu_cores", lambda: None)
+        monkeypatch.setattr("pysysinfo.core.linux.cpu._arm_cpu_cores", lambda: None)
 
         cpu = fetch_arm_cpu_info(raw)
 
@@ -288,7 +288,7 @@ class TestFetchArmCpuInfo:
     def test_fetch_arm_cpu_info_all_missing(self, monkeypatch):
         raw = ""
 
-        monkeypatch.setattr("pysysinfo.dumps.linux.cpu._arm_cpu_cores", lambda: None)
+        monkeypatch.setattr("pysysinfo.core.linux.cpu._arm_cpu_cores", lambda: None)
 
         cpu = fetch_arm_cpu_info(raw)
 
@@ -477,7 +477,7 @@ class TestFetchCpuInfo:
 
         monkeypatch.setattr(subprocess, "run", mock_run)
 
-        monkeypatch.setattr("pysysinfo.dumps.linux.cpu._arm_cpu_cores", lambda: 4)
+        monkeypatch.setattr("pysysinfo.core.linux.cpu._arm_cpu_cores", lambda: 4)
 
         cpu = fetch_cpu_info()
         assert cpu.architecture == "ARM"
@@ -497,7 +497,7 @@ class TestFetchCpuInfo:
 
         monkeypatch.setattr(subprocess, "run", mock_run)
 
-        monkeypatch.setattr("pysysinfo.dumps.linux.cpu._arm_cpu_cores", lambda: 4)
+        monkeypatch.setattr("pysysinfo.core.linux.cpu._arm_cpu_cores", lambda: 4)
 
         cpu = fetch_cpu_info()
         assert cpu.architecture == "ARM"
@@ -542,7 +542,7 @@ class TestLinuxCPURealWorld:
 
         monkeypatch.setattr(subprocess, "run", mock_run)
 
-        monkeypatch.setattr("pysysinfo.dumps.linux.cpu._arm_cpu_cores", lambda: 4)
+        monkeypatch.setattr("pysysinfo.core.linux.cpu._arm_cpu_cores", lambda: 4)
 
         cpu = fetch_cpu_info()
         assert cpu.architecture == "ARM"

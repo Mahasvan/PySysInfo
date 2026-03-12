@@ -1,11 +1,11 @@
 """
-Tests for pysysinfo.dumps.mac.graphics.fetch_graphics_info
+Tests for pysysinfo.core.mac.graphics.fetch_graphics_info
 
 Strategy
 --------
 fetch_graphics_info imports the binding lazily (inside the try block), so
 every test patches the binding at the point it is looked up:
-    pysysinfo.dumps.mac.graphics  <– the module under test
+    pysysinfo.core.mac.graphics  <– the module under test
 
 We build minimal fake GPUProperties / AppleGPUProperties objects that mirror
 the real dataclasses from the binding, without importing the dylib at all.
@@ -17,7 +17,7 @@ from unittest.mock import patch, MagicMock
 
 import pytest
 
-from pysysinfo.dumps.mac.graphics import fetch_graphics_info
+from pysysinfo.core.mac.graphics import fetch_graphics_info
 from pysysinfo.models.status_models import StatusType
 
 

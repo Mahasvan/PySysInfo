@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from unittest.mock import patch, MagicMock
 
-from pysysinfo.dumps.mac.storage import fetch_storage_info
+from pysysinfo.core.mac.storage import fetch_storage_info
 from pysysinfo.models.status_models import StatusType
 
 

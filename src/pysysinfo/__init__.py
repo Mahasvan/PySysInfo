@@ -25,14 +25,14 @@ def _detect_platform() -> str:
 _platform = _detect_platform()
 
 if _platform in {"windows", "win32", "nt"}:
-    from pysysinfo.dumps.windows.windows_dump import WindowsHardwareManager as HardwareManager
+    from pysysinfo.core.windows.windows_dump import WindowsHardwareManager as HardwareManager
 
     if hasattr(os, "add_dll_directory"):
         os.add_dll_directory(_dll_path)
 elif _platform == "darwin":
-    from pysysinfo.dumps.mac.mac_dump import MacHardwareManager as HardwareManager
+    from pysysinfo.core.mac.mac_dump import MacHardwareManager as HardwareManager
 else:
     # Default to Linux for unknown/override cases (including tests on macOS)
-    from pysysinfo.dumps.linux.linux_dump import LinuxHardwareManager as HardwareManager
+    from pysysinfo.core.linux.linux_dump import LinuxHardwareManager as HardwareManager
 
 __all__ = ["HardwareManager"]

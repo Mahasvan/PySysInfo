@@ -4,7 +4,7 @@ import winreg
 from ctypes import wintypes
 from typing import List
 
-from pysysinfo.dumps.windows.win_enum import FEATURE_ID_MAP
+from pysysinfo.core.windows.win_enum import FEATURE_ID_MAP
 from pysysinfo.models.cpu_models import CPUInfo
 from pysysinfo.models.status_models import StatusType
 

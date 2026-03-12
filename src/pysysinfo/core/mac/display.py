@@ -3,7 +3,7 @@ import re
 import subprocess
 from typing import Tuple, Optional
 
-from pysysinfo.dumps.common.edid import parse_edid
+from pysysinfo.core.common.edid import parse_edid
 from pysysinfo.models.display_models import DisplayInfo, DisplayModuleInfo, ResolutionInfo
 
 

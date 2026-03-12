@@ -15,7 +15,7 @@ import struct
 from ctypes import wintypes
 from typing import Optional
 
-from pysysinfo.dumps.windows.win_enum import DISPLAY_CON_TYPE
+from pysysinfo.core.windows.win_enum import DISPLAY_CON_TYPE
 from pysysinfo.interops.win.api.constants import (
     STATUS_OK,
     GUID_DEVINTERFACE_MONITOR,

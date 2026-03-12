@@ -3,7 +3,7 @@ import os
 import subprocess
 from unittest.mock import mock_open
 
-from pysysinfo.dumps.linux.graphics import (
+from pysysinfo.core.linux.graphics import (
     _vram_amd,
     _pcie_gen,
     _check_gpu_class,
@@ -444,7 +444,7 @@ class TestFetchGraphicsInfo:
             raise FileNotFoundError(path)
 
         monkeypatch.setattr(builtins, "open", custom_open)
-        monkeypatch.setattr("pysysinfo.dumps.linux.graphics.pci_path_linux", lambda x: f"PciRoot(0x0)/Pci(0x2,0x0)")
+        monkeypatch.setattr("pysysinfo.core.linux.graphics.pci_path_linux", lambda x: f"PciRoot(0x0)/Pci(0x2,0x0)")
 
         def mock_run(command, *args, **kwargs):
             if command[0] == "lspci":
@@ -494,7 +494,7 @@ class TestFetchGraphicsInfo:
             raise FileNotFoundError(path)
 
         monkeypatch.setattr(builtins, "open", custom_open)
-        monkeypatch.setattr("pysysinfo.dumps.linux.graphics.pci_path_linux", lambda x: "PciRoot(0x0)/Pci(0x1,0x0)")
+        monkeypatch.setattr("pysysinfo.core.linux.graphics.pci_path_linux", lambda x: "PciRoot(0x0)/Pci(0x1,0x0)")
 
         def mock_run(command, *args, **kwargs):
             if command[0] == "nvidia-smi":
@@ -538,7 +538,7 @@ class TestFetchGraphicsInfo:
             raise FileNotFoundError(path)
 
         monkeypatch.setattr(builtins, "open", custom_open)
-        monkeypatch.setattr("pysysinfo.dumps.linux.graphics.pci_path_linux", lambda x: "PciRoot(0x0)/Pci(0x3,0x0)")
+        monkeypatch.setattr("pysysinfo.core.linux.graphics.pci_path_linux", lambda x: "PciRoot(0x0)/Pci(0x3,0x0)")
         monkeypatch.setattr(
             "glob.glob",
             lambda x: ["/sys/bus/pci/devices/0000:03:00.0/drm/card0/device/mem_info_vram_total"]
@@ -629,7 +629,7 @@ class TestFetchGraphicsInfo:
             raise FileNotFoundError(path)
 
         monkeypatch.setattr(builtins, "open", custom_open)
-        monkeypatch.setattr("pysysinfo.dumps.linux.graphics.pci_path_linux", lambda x: "PciRoot(0x0)/Pci(0x2,0x0)")
+        monkeypatch.setattr("pysysinfo.core.linux.graphics.pci_path_linux", lambda x: "PciRoot(0x0)/Pci(0x2,0x0)")
         monkeypatch.setattr(subprocess, "run", lambda *args, **kwargs: subprocess.CompletedProcess(args, 0, stdout=""))
 
         info = fetch_graphics_info()
@@ -667,7 +667,7 @@ class TestFetchGraphicsInfo:
         def mock_pci_path(device):
             raise Exception("PCI path failed")
 
-        monkeypatch.setattr("pysysinfo.dumps.linux.graphics.pci_path_linux", mock_pci_path)
+        monkeypatch.setattr("pysysinfo.core.linux.graphics.pci_path_linux", mock_pci_path)
         monkeypatch.setattr(subprocess, "run", lambda *args, **kwargs: subprocess.CompletedProcess(args, 0, stdout=""))
 
         info = fetch_graphics_info()
@@ -700,7 +700,7 @@ class TestFetchGraphicsInfo:
             raise FileNotFoundError(path)
 
         monkeypatch.setattr(builtins, "open", custom_open)
-        monkeypatch.setattr("pysysinfo.dumps.linux.graphics.pci_path_linux", lambda x: "PciRoot(0x0)/Pci(0x1,0x0)")
+        monkeypatch.setattr("pysysinfo.core.linux.graphics.pci_path_linux", lambda x: "PciRoot(0x0)/Pci(0x1,0x0)")
 
         def mock_run(command, *args, **kwargs):
             if command[0] == "nvidia-smi":
@@ -740,7 +740,7 @@ class TestFetchGraphicsInfo:
             raise FileNotFoundError(path)
 
         monkeypatch.setattr(builtins, "open", custom_open)
-        monkeypatch.setattr("pysysinfo.dumps.linux.graphics.pci_path_linux", lambda x: "PciRoot(0x0)/Pci(0x2,0x0)")
+        monkeypatch.setattr("pysysinfo.core.linux.graphics.pci_path_linux", lambda x: "PciRoot(0x0)/Pci(0x2,0x0)")
 
         def mock_run(command, *args, **kwargs):
             if command[0] == "lspci":
@@ -778,7 +778,7 @@ class TestFetchGraphicsInfo:
             raise FileNotFoundError(path)
 
         monkeypatch.setattr(builtins, "open", custom_open)
-        monkeypatch.setattr("pysysinfo.dumps.linux.graphics.pci_path_linux", lambda x: "PciRoot(0x0)/Pci(0x2,0x0)")
+        monkeypatch.setattr("pysysinfo.core.linux.graphics.pci_path_linux", lambda x: "PciRoot(0x0)/Pci(0x2,0x0)")
         monkeypatch.setattr(subprocess, "run", lambda *args, **kwargs: subprocess.CompletedProcess(args, 0, stdout=""))
 
         info = fetch_graphics_info()

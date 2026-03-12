@@ -4,7 +4,7 @@ import time
 import winreg
 from typing import Optional
 
-from pysysinfo.dumps.windows.common import format_acpi_path, format_pci_path
+from pysysinfo.core.windows.common import format_acpi_path, format_pci_path
 from pysysinfo.interops.win.api.signatures import GetWmiInfo
 from pysysinfo.models.gpu_models import GPUInfo
 from pysysinfo.models.gpu_models import GraphicsInfo

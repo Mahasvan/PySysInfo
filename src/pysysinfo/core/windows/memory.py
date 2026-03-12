@@ -1,7 +1,7 @@
 import ctypes
 from typing import Tuple
 
-from pysysinfo.dumps.windows.win_enum import ECC_MEMORY_TYPE, MEMORY_TYPE
+from pysysinfo.core.windows.win_enum import ECC_MEMORY_TYPE, MEMORY_TYPE
 from pysysinfo.interops.win.api.constants import ECC_MULTI_BIT, ECC_SINGLE_BIT
 from pysysinfo.interops.win.api.signatures import GetWmiInfo
 from pysysinfo.models.memory_models import (

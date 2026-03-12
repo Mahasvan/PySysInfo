@@ -7,7 +7,7 @@ Refer interops/mac for the rewritten implementation.
 # Original source:
 # https://github.com/dortania/OpenCore-Legacy-Patcher/blob/ca859c7ad7ac2225af3b50626d88f3bfe014eaa8/resources/device_probe.py#L67-L93
 # Copied from - https://github.com/KernelWanderers/OCSysInfo/blob/main/src/util/pci_root.py
-from pysysinfo.dumps.mac.deprecated.ioreg import *
+from pysysinfo.core.mac.deprecated.ioreg import *
 
 
 def construct_pci_path_mac(parent_entry, acpi):

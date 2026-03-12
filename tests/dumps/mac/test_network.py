@@ -3,7 +3,7 @@ from unittest.mock import patch, MagicMock
 
 import pytest
 
-from pysysinfo.dumps.mac.network import (
+from pysysinfo.core.mac.network import (
     _fetch_controllers,
     _fetch_ethernet_details,
     _fetch_airport_details,
@@ -95,25 +95,25 @@ def _make_apple_silicon_ioreg_entry(
 
 class TestFetchControllers:
 
-    @patch("pysysinfo.dumps.mac.network.subprocess.run")
+    @patch("pysysinfo.core.mac.network.subprocess.run")
     def test_returns_interface_list(self, mock_run):
         mock_run.return_value = _make_subprocess_result("en0 en1 en2")
         result = _fetch_controllers()
         assert result == ["en0", "en1", "en2"]
 
-    @patch("pysysinfo.dumps.mac.network.subprocess.run")
+    @patch("pysysinfo.core.mac.network.subprocess.run")
     def test_single_interface(self, mock_run):
         mock_run.return_value = _make_subprocess_result("en0")
         result = _fetch_controllers()
         assert result == ["en0"]
 
-    @patch("pysysinfo.dumps.mac.network.subprocess.run")
+    @patch("pysysinfo.core.mac.network.subprocess.run")
     def test_empty_output_returns_empty_list(self, mock_run):
         mock_run.return_value = _make_subprocess_result("")
         result = _fetch_controllers()
         assert result == []
 
-    @patch("pysysinfo.dumps.mac.network.subprocess.run")
+    @patch("pysysinfo.core.mac.network.subprocess.run")
     def test_subprocess_failure_propagates(self, mock_run):
         """
         BUG 2: No try/except around subprocess call.
@@ -127,7 +127,7 @@ class TestFetchControllers:
 
 class TestFetchEthernetDetails:
 
-    @patch("pysysinfo.dumps.mac.network.subprocess.run")
+    @patch("pysysinfo.core.mac.network.subprocess.run")
     def test_single_ethernet_controller(self, mock_run):
         plist_data = _make_ethernet_plist([{
             "spethernet_BSD_Device_Name": "en0",
@@ -143,7 +143,7 @@ class TestFetchEthernetDetails:
         assert result["en0"].manufacturer == "Intel"
         assert result["en0"].device_id == "0x15B8"
 
-    @patch("pysysinfo.dumps.mac.network.subprocess.run")
+    @patch("pysysinfo.core.mac.network.subprocess.run")
     def test_multiple_ethernet_controllers(self, mock_run):
         plist_data = _make_ethernet_plist([
             {
@@ -166,7 +166,7 @@ class TestFetchEthernetDetails:
         assert "en0" in result
         assert "en3" in result
 
-    @patch("pysysinfo.dumps.mac.network.subprocess.run")
+    @patch("pysysinfo.core.mac.network.subprocess.run")
     def test_subprocess_failure_propagates(self, mock_run):
         """BUG 2: No error handling in _fetch_ethernet_details."""
         mock_run.side_effect = FileNotFoundError("system_profiler not found")
@@ -258,7 +258,7 @@ class TestGetBsdInterfaceAppleSilicon:
 
 class TestFetchAirportDetails:
 
-    @patch("pysysinfo.dumps.mac.network.subprocess.run")
+    @patch("pysysinfo.core.mac.network.subprocess.run")
     def test_intel_mac_brcm_nic(self, mock_run):
         """AirPort_BrcmNIC entry is parsed correctly on Intel Macs."""
         plist_data = _make_ioreg_plist([_make_intel_ioreg_entry(
@@ -274,7 +274,7 @@ class TestFetchAirportDetails:
         assert result["en1"].device_id == "0x4331"
         assert result["en1"].name == "AirPort Extreme"
 
-    @patch("pysysinfo.dumps.mac.network.subprocess.run")
+    @patch("pysysinfo.core.mac.network.subprocess.run")
     def test_intel_mac_vendor_device_uppercased(self, mock_run):
         """Vendor and device IDs are stored as uppercase hex strings."""
         plist_data = _make_ioreg_plist([_make_intel_ioreg_entry(
@@ -286,7 +286,7 @@ class TestFetchAirportDetails:
         assert result["en1"].vendor_id == "0x8086"
         assert result["en1"].device_id == "0x095a"
 
-    @patch("pysysinfo.dumps.mac.network.subprocess.run")
+    @patch("pysysinfo.core.mac.network.subprocess.run")
     def test_intel_mac_no_matching_interface_child(self, mock_run):
         """Entry with no AirPort_BrcmNIC_Interface child produces no result."""
         entry = {
@@ -301,7 +301,7 @@ class TestFetchAirportDetails:
         result = _fetch_airport_details()
         assert result == {}
 
-    @patch("pysysinfo.dumps.mac.network.subprocess.run")
+    @patch("pysysinfo.core.mac.network.subprocess.run")
     def test_apple_silicon_bcm_wlan_core(self, mock_run):
         """AppleBCMWLANCore entry is parsed correctly on Apple Silicon Macs."""
         plist_data = _make_ioreg_plist([_make_apple_silicon_ioreg_entry(
@@ -317,7 +317,7 @@ class TestFetchAirportDetails:
         assert result["en0"].vendor_id == "0x14e4"
         assert result["en0"].device_id == "0x4488"
 
-    @patch("pysysinfo.dumps.mac.network.subprocess.run")
+    @patch("pysysinfo.core.mac.network.subprocess.run")
     def test_apple_silicon_no_bsd_interface_skipped(self, mock_run):
         """Apple Silicon entry with no resolvable BSD interface is not added."""
         entry = {
@@ -331,7 +331,7 @@ class TestFetchAirportDetails:
         result = _fetch_airport_details()
         assert result == {}
 
-    @patch("pysysinfo.dumps.mac.network.subprocess.run")
+    @patch("pysysinfo.core.mac.network.subprocess.run")
     def test_unknown_driver_is_skipped(self, mock_run):
         """Unknown drivers print a warning and are skipped — no exception raised."""
         entry = {"IORegistryEntryName": "AirPortAtheros40"}
@@ -341,7 +341,7 @@ class TestFetchAirportDetails:
         result = _fetch_airport_details()
         assert result == {}
 
-    @patch("pysysinfo.dumps.mac.network.subprocess.run")
+    @patch("pysysinfo.core.mac.network.subprocess.run")
     def test_missing_driver_name_returns_early(self, mock_run):
         """Entry without IORegistryEntryName causes early return with empty result."""
         plist_data = _make_ioreg_plist([{"IONameMatched": "pci14e4,4331"}])
@@ -350,7 +350,7 @@ class TestFetchAirportDetails:
         result = _fetch_airport_details()
         assert result == {}
 
-    @patch("pysysinfo.dumps.mac.network.subprocess.run")
+    @patch("pysysinfo.core.mac.network.subprocess.run")
     def test_multiple_controllers(self, mock_run):
         """Multiple controllers across both Mac types are all collected."""
         plist_data = _make_ioreg_plist([
@@ -363,7 +363,7 @@ class TestFetchAirportDetails:
         assert "en0" in result
         assert "en1" in result
 
-    @patch("pysysinfo.dumps.mac.network.subprocess.run")
+    @patch("pysysinfo.core.mac.network.subprocess.run")
     def test_subprocess_failure_propagates(self, mock_run):
         mock_run.side_effect = FileNotFoundError("ioreg not found")
         with pytest.raises(FileNotFoundError):
@@ -374,8 +374,8 @@ class TestFetchAirportDetails:
 
 class TestFetchSystemProfilerDetails:
 
-    @patch("pysysinfo.dumps.mac.network._fetch_ethernet_details")
-    @patch("pysysinfo.dumps.mac.network.subprocess.run")
+    @patch("pysysinfo.core.mac.network._fetch_ethernet_details")
+    @patch("pysysinfo.core.mac.network.subprocess.run")
     def test_single_ethernet_nic(self, mock_run, mock_eth):
         network_plist = _make_network_plist([{
             "interface": "en0",
@@ -400,8 +400,8 @@ class TestFetchSystemProfilerDetails:
         assert m.vendor_id == "0x8086"
         assert m.manufacturer == "Intel"
 
-    @patch("pysysinfo.dumps.mac.network._fetch_airport_details")
-    @patch("pysysinfo.dumps.mac.network.subprocess.run")
+    @patch("pysysinfo.core.mac.network._fetch_airport_details")
+    @patch("pysysinfo.core.mac.network.subprocess.run")
     def test_single_wifi_nic(self, mock_run, mock_air):
         network_plist = _make_network_plist([{
             "interface": "en1",
@@ -420,7 +420,7 @@ class TestFetchSystemProfilerDetails:
         assert m.type == "AirPort"
         assert m.vendor_id == "0x14e4"
 
-    @patch("pysysinfo.dumps.mac.network.subprocess.run")
+    @patch("pysysinfo.core.mac.network.subprocess.run")
     def test_interface_not_in_valid_list_is_skipped(self, mock_run):
         network_plist = _make_network_plist([{
             "interface": "en5",
@@ -433,7 +433,7 @@ class TestFetchSystemProfilerDetails:
         result = _fetch_system_profiler_details(["en0", "en1"])
         assert result.modules == []
 
-    @patch("pysysinfo.dumps.mac.network.subprocess.run")
+    @patch("pysysinfo.core.mac.network.subprocess.run")
     def test_no_mac_address_skipped(self, mock_run):
         """Devices without MAC address are skipped (unplugged devices)."""
         network_plist = _make_network_plist([{
@@ -446,7 +446,7 @@ class TestFetchSystemProfilerDetails:
         result = _fetch_system_profiler_details(["en0"])
         assert result.modules == []
 
-    @patch("pysysinfo.dumps.mac.network.subprocess.run")
+    @patch("pysysinfo.core.mac.network.subprocess.run")
     def test_no_ip_address_still_included(self, mock_run):
         network_plist = _make_network_plist([{
             "interface": "en0",
@@ -460,9 +460,9 @@ class TestFetchSystemProfilerDetails:
         assert len(result.modules) == 1
         assert result.modules[0].ip_address is None
 
-    @patch("pysysinfo.dumps.mac.network._fetch_ethernet_details")
-    @patch("pysysinfo.dumps.mac.network._fetch_airport_details")
-    @patch("pysysinfo.dumps.mac.network.subprocess.run")
+    @patch("pysysinfo.core.mac.network._fetch_ethernet_details")
+    @patch("pysysinfo.core.mac.network._fetch_airport_details")
+    @patch("pysysinfo.core.mac.network.subprocess.run")
     def test_mixed_ethernet_and_wifi(self, mock_run, mock_air, mock_eth):
         network_plist = _make_network_plist([
             {
@@ -490,7 +490,7 @@ class TestFetchSystemProfilerDetails:
 
 class TestMissingItemsKey:
 
-    @patch("pysysinfo.dumps.mac.network.subprocess.run")
+    @patch("pysysinfo.core.mac.network.subprocess.run")
     def test_missing_items_key_returns_empty(self, mock_run):
         bad_plist = plistlib.dumps([{
             "not_items": [{"interface": "en0"}]
@@ -505,7 +505,7 @@ class TestMissingItemsKey:
 
 class TestEmptyControllers:
 
-    @patch("pysysinfo.dumps.mac.network.subprocess.run")
+    @patch("pysysinfo.core.mac.network.subprocess.run")
     def test_empty_controllers_passes_empty_list(self, mock_run):
         def side_effect(cmd, **kwargs):
             if cmd == ["ipconfig", "getiflist"]:
@@ -525,7 +525,7 @@ class TestEmptyControllers:
 
 class TestFetchNetworkInfo:
 
-    @patch("pysysinfo.dumps.mac.network.subprocess.run")
+    @patch("pysysinfo.core.mac.network.subprocess.run")
     def test_returns_network_info_type(self, mock_run):
         def side_effect(cmd, **kwargs):
             if cmd == ["ipconfig", "getiflist"]:
@@ -539,7 +539,7 @@ class TestFetchNetworkInfo:
         result = fetch_network_info()
         assert isinstance(result, NetworkInfo)
 
-    @patch("pysysinfo.dumps.mac.network.subprocess.run")
+    @patch("pysysinfo.core.mac.network.subprocess.run")
     def test_ipconfig_failure_propagates(self, mock_run):
         """BUG 2: No error handling around subprocess calls in fetch_network_info."""
         mock_run.side_effect = FileNotFoundError("ipconfig not found")

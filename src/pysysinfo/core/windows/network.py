@@ -1,6 +1,6 @@
 import ctypes
 
-from pysysinfo.dumps.windows.common import format_acpi_path, format_pci_path
+from pysysinfo.core.windows.common import format_acpi_path, format_pci_path
 from pysysinfo.interops.win.api.constants import STATUS_OK
 from pysysinfo.interops.win.api.signatures import GetNetworkHardwareInfo
 from pysysinfo.models.network_models import NICInfo, NetworkInfo

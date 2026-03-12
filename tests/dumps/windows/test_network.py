@@ -1,6 +1,6 @@
 import pytest
 
-import pysysinfo.dumps.windows.network as network
+import pysysinfo.core.windows.network as network
 from pysysinfo.interops.win.api.constants import (
     STATUS_FAILURE,
 )

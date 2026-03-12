@@ -2,7 +2,7 @@ import os
 import re
 from typing import Optional
 
-from pysysinfo.dumps.common.edid import parse_edid
+from pysysinfo.core.common.edid import parse_edid
 from pysysinfo.models.display_models import DisplayInfo, DisplayModuleInfo
 
 

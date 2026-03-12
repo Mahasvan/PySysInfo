@@ -2,7 +2,7 @@ import builtins
 import os
 from unittest.mock import MagicMock
 
-from pysysinfo.dumps.linux.memory import (
+from pysysinfo.core.linux.memory import (
     fetch_memory_info,
     _part_no,
     _dimm_type,
@@ -524,7 +524,7 @@ class TestLinuxMemory:
         def mock_megabyte(**kwargs):
             raise ValueError("Capacity Error")
 
-        monkeypatch.setattr("pysysinfo.dumps.linux.memory.Megabyte", mock_megabyte)
+        monkeypatch.setattr("pysysinfo.core.linux.memory.Megabyte", mock_megabyte)
 
         memory_info = fetch_memory_info()
         # The exception is caught by outer except block

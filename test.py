@@ -1,7 +1,6 @@
-from src.pysysinfo.dumps.mac.mac_dump import MacHardwareManager
+from src.pysysinfo.core.mac.mac_dump import MacHardwareManager
 
 hm = MacHardwareManager()
 
-graphics = hm.fetch_graphics_info()
-
-print(graphics.model_dump_json(indent=2))
+hardware = hm.fetch_network_info()
+print(hardware.model_dump_json(indent=2))

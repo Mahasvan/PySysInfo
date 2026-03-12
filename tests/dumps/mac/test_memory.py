@@ -3,7 +3,7 @@ from unittest.mock import patch
 
 import pytest
 
-from pysysinfo.dumps.mac.memory import (
+from pysysinfo.core.mac.memory import (
     get_ram_size_from_reg,
     get_arm_ram_info,
     get_ram_size_from_system_profiler,
@@ -52,7 +52,7 @@ class TestGetRamSizeFromReg:
 
 class TestGetArmRamInfo:
 
-    @patch("pysysinfo.dumps.mac.memory.subprocess.check_output")
+    @patch("pysysinfo.core.mac.memory.subprocess.check_output")
     def test_single_arm_module(self, mock_co):
         plist_data = [{
             "_items": [{
@@ -70,13 +70,13 @@ class TestGetArmRamInfo:
         assert info.modules[0].capacity.capacity == 8
         assert info.modules[0].capacity.unit == "GB"
 
-    @patch("pysysinfo.dumps.mac.memory.subprocess.check_output")
+    @patch("pysysinfo.core.mac.memory.subprocess.check_output")
     def test_system_profiler_failure_returns_failed(self, mock_co):
         mock_co.side_effect = FileNotFoundError("system_profiler not found")
         info = get_arm_ram_info()
         assert info.status.type == StatusType.FAILED
 
-    @patch("pysysinfo.dumps.mac.memory.subprocess.check_output")
+    @patch("pysysinfo.core.mac.memory.subprocess.check_output")
     def test_arm_ram_status_message_about_partial_data(self, mock_co):
         plist_data = [{"_items": []}]
         mock_co.return_value = plistlib.dumps(plist_data, fmt=plistlib.FMT_XML)
@@ -89,7 +89,7 @@ class TestGetArmRamInfo:
 
 class TestGetRamSizeFromSystemProfiler:
 
-    @patch("pysysinfo.dumps.mac.memory.subprocess.check_output")
+    @patch("pysysinfo.core.mac.memory.subprocess.check_output")
     def test_two_dimms(self, mock_co):
         plist_data = [{
             "_items": [{
@@ -106,7 +106,7 @@ class TestGetRamSizeFromSystemProfiler:
         assert all(s.capacity == 8 for s in sizes)
         assert all(s.unit == "GB" for s in sizes)
 
-    @patch("pysysinfo.dumps.mac.memory.subprocess.check_output")
+    @patch("pysysinfo.core.mac.memory.subprocess.check_output")
     def test_failure_re_raises(self, mock_co):
         """BUG 3: get_ram_size_from_system_profiler re-raises exceptions."""
         mock_co.side_effect = FileNotFoundError("not found")
@@ -129,8 +129,8 @@ class TestFetchMemoryInfoX86:
             }]
         }, fmt=plistlib.FMT_XML)
 
-    @patch("pysysinfo.dumps.mac.memory.get_ram_size_from_system_profiler")
-    @patch("pysysinfo.dumps.mac.memory.subprocess.check_output")
+    @patch("pysysinfo.core.mac.memory.get_ram_size_from_system_profiler")
+    @patch("pysysinfo.core.mac.memory.subprocess.check_output")
     def test_intel_two_dimms(self, mock_co, mock_sp):
         from pysysinfo.models.size_models import Gigabyte
         mock_sp.return_value = [Gigabyte(capacity=8), Gigabyte(capacity=8)]
@@ -168,7 +168,7 @@ class TestFetchMemoryInfoX86:
         assert info.modules[0].slot.channel == "DIMM0"
         assert info.modules[0].slot.bank == "BANK0"
 
-    @patch("pysysinfo.dumps.mac.memory.subprocess.check_output")
+    @patch("pysysinfo.core.mac.memory.subprocess.check_output")
     def test_arm_detected_delegates_to_get_arm_ram_info(self, mock_co):
         """When uname returns arm64, fetch_memory_info should use get_arm_ram_info."""
         plist_data = [{
@@ -189,7 +189,7 @@ class TestFetchMemoryInfoX86:
         info = fetch_memory_info()
         assert isinstance(info, MemoryInfo)
 
-    @patch("pysysinfo.dumps.mac.memory.subprocess.check_output")
+    @patch("pysysinfo.core.mac.memory.subprocess.check_output")
     def test_ioreg_failure_returns_failed(self, mock_co):
         def side_effect(cmd):
             if cmd == ["uname", "-m"]:
@@ -200,8 +200,8 @@ class TestFetchMemoryInfoX86:
         info = fetch_memory_info()
         assert info.status.type == StatusType.FAILED
 
-    @patch("pysysinfo.dumps.mac.memory.get_ram_size_from_system_profiler")
-    @patch("pysysinfo.dumps.mac.memory.subprocess.check_output")
+    @patch("pysysinfo.core.mac.memory.get_ram_size_from_system_profiler")
+    @patch("pysysinfo.core.mac.memory.subprocess.check_output")
     def test_system_profiler_failure_falls_back_to_reg(self, mock_co, mock_sp):
         """When system_profiler fails, the reg-based sizes are retained."""
         mock_sp.side_effect = Exception("system_profiler broke")
@@ -238,8 +238,8 @@ class TestFetchMemoryInfoX86:
         # Module should still have data from reg
         assert len(info.modules) == 1
 
-    @patch("pysysinfo.dumps.mac.memory.get_ram_size_from_system_profiler")
-    @patch("pysysinfo.dumps.mac.memory.subprocess.check_output")
+    @patch("pysysinfo.core.mac.memory.get_ram_size_from_system_profiler")
+    @patch("pysysinfo.core.mac.memory.subprocess.check_output")
     def test_return_type_is_memory_info(self, mock_co, mock_sp):
         mock_sp.return_value = []
 
@@ -272,8 +272,8 @@ class TestFetchMemoryInfoX86:
 
 class TestECCDetection:
 
-    @patch("pysysinfo.dumps.mac.memory.get_ram_size_from_system_profiler")
-    @patch("pysysinfo.dumps.mac.memory.subprocess.check_output")
+    @patch("pysysinfo.core.mac.memory.get_ram_size_from_system_profiler")
+    @patch("pysysinfo.core.mac.memory.subprocess.check_output")
     def test_ecc_enabled_detected(self, mock_co, mock_sp):
         from pysysinfo.models.size_models import Gigabyte
         mock_sp.return_value = [Gigabyte(capacity=32)]
@@ -317,8 +317,8 @@ class TestUnevenListLengths:
     """When lists have different lengths, shorter ones should be skipped
     gracefully and both modules should still be appended."""
 
-    @patch("pysysinfo.dumps.mac.memory.get_ram_size_from_system_profiler")
-    @patch("pysysinfo.dumps.mac.memory.subprocess.check_output")
+    @patch("pysysinfo.core.mac.memory.get_ram_size_from_system_profiler")
+    @patch("pysysinfo.core.mac.memory.subprocess.check_output")
     def test_mismatched_list_lengths_still_appends_both(self, mock_co, mock_sp):
         from pysysinfo.models.size_models import Gigabyte
         mock_sp.return_value = [Gigabyte(capacity=8)]

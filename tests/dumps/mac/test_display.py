@@ -1,7 +1,7 @@
 import json
 from unittest.mock import patch, MagicMock
 
-from pysysinfo.dumps.mac.display import (
+from pysysinfo.core.mac.display import (
     _get_monitor_resolution_from_system_profiler,
     _get_refresh_rate_from_system_profiler,
     _enrich_data_from_edid,
@@ -155,7 +155,7 @@ class TestEnrichDataFromEdid:
 
 class TestFetchMonitorInfoSystemProfiler:
 
-    @patch("pysysinfo.dumps.mac.display.subprocess.run")
+    @patch("pysysinfo.core.mac.display.subprocess.run")
     def test_single_monitor_basic_info(self, mock_run):
         # gpu_name comes from the controller-level sppci_model, not the monitor dict
         sp_data = {"SPDisplaysDataType": [{
@@ -184,7 +184,7 @@ class TestFetchMonitorInfoSystemProfiler:
         assert m.resolution.width == 3024
         assert m.resolution.height == 1964
 
-    @patch("pysysinfo.dumps.mac.display.subprocess.run")
+    @patch("pysysinfo.core.mac.display.subprocess.run")
     def test_missing_name_is_partial(self, mock_run):
         sp_data = _make_sp_output([[{
             "spdisplays_pixelresolution": "1920 x 1080 @ 60Hz",
@@ -198,7 +198,7 @@ class TestFetchMonitorInfoSystemProfiler:
         assert monitors[0].status.type == StatusType.PARTIAL
         assert any("name" in m.lower() for m in monitors[0].status.messages)
 
-    @patch("pysysinfo.dumps.mac.display.subprocess.run")
+    @patch("pysysinfo.core.mac.display.subprocess.run")
     def test_missing_serial_is_partial(self, mock_run):
         sp_data = _make_sp_output([[{
             "_name": "Display",
@@ -212,7 +212,7 @@ class TestFetchMonitorInfoSystemProfiler:
         assert monitors[0].status.type == StatusType.PARTIAL
         assert any("serial" in m.lower() for m in monitors[0].status.messages)
 
-    @patch("pysysinfo.dumps.mac.display.subprocess.run")
+    @patch("pysysinfo.core.mac.display.subprocess.run")
     def test_missing_year_is_partial(self, mock_run):
         sp_data = _make_sp_output([[{
             "_name": "Display",
@@ -226,7 +226,7 @@ class TestFetchMonitorInfoSystemProfiler:
         monitors = _fetch_monitor_info_system_profiler()
         assert any("year" in m.lower() for m in monitors[0].status.messages)
 
-    @patch("pysysinfo.dumps.mac.display.subprocess.run")
+    @patch("pysysinfo.core.mac.display.subprocess.run")
     def test_missing_gpu_name_is_partial(self, mock_run):
         sp_data = {"SPDisplaysDataType": [{
             "spdisplays_ndrvs": [{
@@ -243,7 +243,7 @@ class TestFetchMonitorInfoSystemProfiler:
         monitors = _fetch_monitor_info_system_profiler()
         assert any("GPU" in m for m in monitors[0].status.messages)
 
-    @patch("pysysinfo.dumps.mac.display.subprocess.run")
+    @patch("pysysinfo.core.mac.display.subprocess.run")
     def test_empty_sp_output_returns_empty_list(self, mock_run):
         mock_result = MagicMock()
         mock_result.stdout = json.dumps({})
@@ -252,7 +252,7 @@ class TestFetchMonitorInfoSystemProfiler:
         monitors = _fetch_monitor_info_system_profiler()
         assert monitors == []
 
-    @patch("pysysinfo.dumps.mac.display.subprocess.run")
+    @patch("pysysinfo.core.mac.display.subprocess.run")
     def test_json_decode_error_returns_empty_list(self, mock_run):
         mock_result = MagicMock()
         mock_result.stdout = "NOT JSON"
@@ -261,7 +261,7 @@ class TestFetchMonitorInfoSystemProfiler:
         monitors = _fetch_monitor_info_system_profiler()
         assert monitors == []
 
-    @patch("pysysinfo.dumps.mac.display.subprocess.run")
+    @patch("pysysinfo.core.mac.display.subprocess.run")
     def test_multiple_monitors_across_controllers(self, mock_run):
         sp_data = _make_sp_output([
             [{"_name": "Monitor A", "spdisplays_pixelresolution": "1920 x 1080 @ 60Hz"}],
@@ -276,7 +276,7 @@ class TestFetchMonitorInfoSystemProfiler:
         assert monitors[0].name == "Monitor A"
         assert monitors[1].name == "Monitor B"
 
-    @patch("pysysinfo.dumps.mac.display.subprocess.run")
+    @patch("pysysinfo.core.mac.display.subprocess.run")
     def test_edid_enrichment_called_when_present(self, mock_run):
         """When _spdisplays_edid is present, _enrich_data_from_edid is called."""
         # 128 bytes of zeros is a minimal (invalid but parseable) EDID
@@ -296,7 +296,7 @@ class TestFetchMonitorInfoSystemProfiler:
         monitors = _fetch_monitor_info_system_profiler()
         assert len(monitors) == 1
 
-    @patch("pysysinfo.dumps.mac.display.subprocess.run")
+    @patch("pysysinfo.core.mac.display.subprocess.run")
     def test_missing_edid_is_partial(self, mock_run):
         sp_data = _make_sp_output([[{
             "_name": "Display",
@@ -317,7 +317,7 @@ class TestFetchMonitorInfoSystemProfiler:
 
 class TestFetchDisplayInfo:
 
-    @patch("pysysinfo.dumps.mac.display.subprocess.run")
+    @patch("pysysinfo.core.mac.display.subprocess.run")
     def test_returns_display_info_type(self, mock_run):
         from pysysinfo.models.display_models import DisplayInfo
         sp_data = _make_sp_output()
@@ -328,7 +328,7 @@ class TestFetchDisplayInfo:
         info = fetch_display_info()
         assert isinstance(info, DisplayInfo)
 
-    @patch("pysysinfo.dumps.mac.display.subprocess.run")
+    @patch("pysysinfo.core.mac.display.subprocess.run")
     def test_modules_populated(self, mock_run):
         sp_data = _make_sp_output([[
             {"_name": "A", "spdisplays_pixelresolution": "1920x1080 @ 60Hz"},

@@ -2,7 +2,7 @@ import builtins
 import os
 from unittest.mock import MagicMock
 
-from pysysinfo.dumps.linux.storage import fetch_storage_info
+from pysysinfo.core.linux.storage import fetch_storage_info
 from pysysinfo.models.status_models import StatusType
 
 

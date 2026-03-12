@@ -3,7 +3,7 @@ import os
 import subprocess
 from typing import Optional
 
-from pysysinfo.dumps.linux.common import pci_path_linux
+from pysysinfo.core.linux.common import pci_path_linux
 from pysysinfo.models.gpu_models import GPUInfo, GraphicsInfo
 from pysysinfo.models.size_models import Megabyte
 from pysysinfo.models.status_models import StatusType

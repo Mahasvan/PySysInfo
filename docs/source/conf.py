@@ -10,11 +10,11 @@ if sys.platform != "win32":
     autodoc_mock_imports += [
         "winreg",
         "ctypes",
-        "pysysinfo.dumps.windows.cpu",
-        "pysysinfo.dumps.windows.graphics",
-        "pysysinfo.dumps.windows.memory",
-        "pysysinfo.dumps.windows.storage",
-        "pysysinfo.dumps.windows.win_enum",
+        "pysysinfo.core.windows.cpu",
+        "pysysinfo.core.windows.graphics",
+        "pysysinfo.core.windows.memory",
+        "pysysinfo.core.windows.storage",
+        "pysysinfo.core.windows.win_enum",
     ]
 
 if sys.platform != "darwin":
