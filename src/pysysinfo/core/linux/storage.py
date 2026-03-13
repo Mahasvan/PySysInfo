@@ -41,7 +41,7 @@ def _fetch_emmc_info(folder: str) -> Tuple[DiskInfo, Status]:
         status.type = StatusType.PARTIAL
         status.messages.append("Disk vendor id could not be found")
 
-    device_id = open(f"{path}/device/device/oemid", "r").read().strip()
+    device_id = open(f"{path}/device/oemid", "r").read().strip()
     disk.device_id = device_id
     if not device_id:
         status.type = StatusType.PARTIAL
@@ -112,13 +112,21 @@ def fetch_storage_info() -> StorageInfo:
 
     for folder in os.listdir("/sys/block"):
         try:
+            path = f"/sys/block/{folder}"
+
+            # Skip partitions (they have a 'partition' file)
+            if os.path.exists(f"{path}/partition"):
+                continue
+
+            # Skip eMMC boot and RPMB partitions
+            if "boot" in folder or "rpmb" in folder:
+                continue
+
             if folder.startswith("mmc"):
                 disk, status = _fetch_emmc_info(folder)
             elif "nvme" in folder or "sd" in folder:
                 disk, status = _fetch_standard_disk_info(folder)
             else:
-                print("Unknown disk type:", folder)
-                print("Please contact developer with this information to help improve support for your machine.")
                 continue
 
             storage_info.status.type = status.type
