@@ -161,6 +161,27 @@ def _fetch_airport_details() -> Dict[str, NICInfo]:
 
             res[bsd_identifier] = nic_info
 
+        elif driver == "AirPort_Brcm4331":
+            # Older Intel Macs with Broadcom BCM4331 chipset
+            io_name = item.get("IONameMatched", "")
+            io_model = item.get("IOModel", "")
+            match = io_name_pattern.match(io_name)
+            
+            if match:
+                vendor, device = match.groups()
+                nic_info = NICInfo()
+                nic_info.vendor_id = "0x" + vendor
+                nic_info.device_id = "0x" + device
+                if io_model:
+                    nic_info.name = io_model
+                
+                # Find the BSD interface name from the child "en1" entry
+                for child in item.get("IORegistryEntryChildren", []):
+                    if child.get("IOObjectClass", "").startswith("en"):
+                        bsd_identifier = child.get("IORegistryEntryName")
+                        res[bsd_identifier] = nic_info
+                        break
+
         else:
             # todo: Implement for drivers such as AirPortAtheros40, AirPortBrcm4331, AirPortBrcm4360
             print("Unknown driver: ", driver)

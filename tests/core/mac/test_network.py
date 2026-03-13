@@ -91,6 +91,25 @@ def _make_apple_silicon_ioreg_entry(
     }
 
 
+def _make_brcm4331_ioreg_entry(
+    io_name_matched="pci14e4,4331",
+    io_model="Wireless Network Adapter (802.11 a/b/g/n)",
+    bsd_name="en1",
+):
+    """AirPort_Brcm4331 entry as seen on older Intel Macs."""
+    return {
+        "IORegistryEntryName": "AirPort_Brcm4331",
+        "IONameMatched": io_name_matched,
+        "IOModel": io_model,
+        "IORegistryEntryChildren": [
+            {
+                "IOObjectClass": bsd_name,
+                "IORegistryEntryName": bsd_name,
+            }
+        ],
+    }
+
+
 # ── _fetch_controllers ───────────────────────────────────────────────────────
 
 class TestFetchControllers:
@@ -324,6 +343,82 @@ class TestFetchAirportDetails:
             "IORegistryEntryName": "AppleBCMWLANCore",
             "ModuleDictionary": {"ManufacturerID": 0x14e4, "ProductID": 0x4488},
             "IORegistryEntryChildren": [],  # missing Skywalk tree
+        }
+        plist_data = _make_ioreg_plist([entry])
+        mock_run.return_value = MagicMock(stdout=plist_data)
+
+        result = _fetch_airport_details()
+        assert result == {}
+
+    @patch("pysysinfo.core.mac.network.subprocess.run")
+    def test_brcm4331_driver(self, mock_run):
+        """AirPort_Brcm4331 entry is parsed correctly on older Intel Macs."""
+        plist_data = _make_ioreg_plist([_make_brcm4331_ioreg_entry(
+            io_name_matched="pci14e4,4331",
+            io_model="Wireless Network Adapter (802.11 a/b/g/n)",
+            bsd_name="en1",
+        )])
+        mock_run.return_value = MagicMock(stdout=plist_data)
+
+        result = _fetch_airport_details()
+        assert "en1" in result
+        assert result["en1"].vendor_id == "0x14e4"
+        assert result["en1"].device_id == "0x4331"
+        assert result["en1"].name == "Wireless Network Adapter (802.11 a/b/g/n)"
+
+    @patch("pysysinfo.core.mac.network.subprocess.run")
+    def test_brcm4331_alternate_device_id(self, mock_run):
+        """AirPort_Brcm4331 supports multiple device IDs (4331, 4353, 432b)."""
+        plist_data = _make_ioreg_plist([_make_brcm4331_ioreg_entry(
+            io_name_matched="pci14e4,4353",
+            bsd_name="en1",
+        )])
+        mock_run.return_value = MagicMock(stdout=plist_data)
+
+        result = _fetch_airport_details()
+        assert "en1" in result
+        assert result["en1"].vendor_id == "0x14e4"
+        assert result["en1"].device_id == "0x4353"
+
+    @patch("pysysinfo.core.mac.network.subprocess.run")
+    def test_brcm4331_no_model(self, mock_run):
+        """AirPort_Brcm4331 without IOModel still extracts vendor/device IDs."""
+        entry = _make_brcm4331_ioreg_entry(bsd_name="en1")
+        del entry["IOModel"]
+        plist_data = _make_ioreg_plist([entry])
+        mock_run.return_value = MagicMock(stdout=plist_data)
+
+        result = _fetch_airport_details()
+        assert "en1" in result
+        assert result["en1"].vendor_id == "0x14e4"
+        assert result["en1"].device_id == "0x4331"
+        assert result["en1"].name is None
+
+    @patch("pysysinfo.core.mac.network.subprocess.run")
+    def test_brcm4331_no_matching_child(self, mock_run):
+        """AirPort_Brcm4331 entry with no en* child produces no result."""
+        entry = {
+            "IORegistryEntryName": "AirPort_Brcm4331",
+            "IONameMatched": "pci14e4,4331",
+            "IOModel": "Wireless Network Adapter",
+            "IORegistryEntryChildren": [],
+        }
+        plist_data = _make_ioreg_plist([entry])
+        mock_run.return_value = MagicMock(stdout=plist_data)
+
+        result = _fetch_airport_details()
+        assert result == {}
+
+    @patch("pysysinfo.core.mac.network.subprocess.run")
+    def test_brcm4331_no_regex_match(self, mock_run):
+        """AirPort_Brcm4331 with malformed IONameMatched is skipped."""
+        entry = {
+            "IORegistryEntryName": "AirPort_Brcm4331",
+            "IONameMatched": "invalid-format",
+            "IOModel": "Wireless Network Adapter",
+            "IORegistryEntryChildren": [
+                {"IOObjectClass": "en1", "IORegistryEntryName": "en1"}
+            ],
         }
         plist_data = _make_ioreg_plist([entry])
         mock_run.return_value = MagicMock(stdout=plist_data)
