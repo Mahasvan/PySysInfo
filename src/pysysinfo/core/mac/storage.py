@@ -14,6 +14,7 @@ This module fetches storage information on macOS using a C++ extension that inte
 Refer interops/mac/bindings/storage_info.py for the C++ extension implementation.
 """
 
+
 def fetch_storage_info() -> StorageInfo:
     storage_info = StorageInfo()
 

@@ -9,7 +9,6 @@ from pysysinfo.models.status_models import Status
 class ResolutionInfo(BaseModel):
     """Resolution information for a Display."""
 
-
     #: Horizontal resolution in pixels.
     width: Optional[int] = None
     #: Vertical resolution in pixels.

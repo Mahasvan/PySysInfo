@@ -5,6 +5,7 @@ from pydantic import BaseModel, Field
 from pysysinfo.models.component_model import ComponentInfo
 from pysysinfo.models.size_models import StorageSize
 
+
 class AppleExtendedGPUInfo(BaseModel):
     """Contains extra information about Apple Silicon GPUs."""
     #: Number of GPU cores.
@@ -15,6 +16,7 @@ class AppleExtendedGPUInfo(BaseModel):
 
     #: GPU Generation
     gpu_gen: Optional[int] = None
+
 
 class GPUInfo(BaseModel):
     """Information for one GPU is stored here"""

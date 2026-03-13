@@ -5,6 +5,7 @@ from pysysinfo.models.size_models import Megabyte
 from pysysinfo.models.status_models import StatusType, Status
 from pysysinfo.models.storage_models import StorageInfo, DiskInfo
 
+
 def _fetch_emmc_info(folder: str) -> Tuple[DiskInfo, Status]:
     """
     Helper function for eMMC devices, which have different places to get some data.
@@ -99,6 +100,7 @@ def _fetch_standard_disk_info(folder: str) -> Tuple[DiskInfo, Status]:
     disk.size = Megabyte(capacity=(size_in_bytes // 1024 ** 2))
 
     return disk, status
+
 
 def fetch_storage_info() -> StorageInfo:
     storage_info = StorageInfo()

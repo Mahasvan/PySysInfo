@@ -60,8 +60,8 @@ def _traverse_ioreg(root: dict, steps: List[tuple], result_key: str = "IORegistr
 # Traversal path for AppleBCMWLANCore (Intel Macs / most Apple Silicon)
 _STEPS_BCM_WLAN = [
     ("IORegistryEntryName", "AppleBCMWLANSkywalkInterface"),
-    ("IOObjectClass",       "IOSkywalkLegacyEthernet"),
-    ("IOObjectClass",       "IOSkywalkLegacyEthernetInterface"),
+    ("IOObjectClass", "IOSkywalkLegacyEthernet"),
+    ("IOObjectClass", "IOSkywalkLegacyEthernetInterface"),
 ]
 
 # Traversal path for AppleWLANDriver (Wi-Fi 7, M5 series)
@@ -69,7 +69,7 @@ _STEPS_BCM_WLAN = [
 _STEPS_WLAN_DRIVER = [
     ("IORegistryEntryName", "AppleWLANInterfaceSTA"),
     ("IORegistryEntryName", "IOSkywalkLegacyEthernet"),
-    ("IOObjectClass",       "IOSkywalkLegacyEthernetInterface"),
+    ("IOObjectClass", "IOSkywalkLegacyEthernetInterface"),
 ]
 
 
@@ -86,8 +86,8 @@ def _get_bsd_interface_apple_silicon(item: dict, driver: str = "AppleBCMWLANCore
         _traverse_ioreg(item, _STEPS_WLAN_DRIVER)
 
     return (
-        _traverse_ioreg(item, _STEPS_BCM_WLAN)
-        or _traverse_ioreg(item, _STEPS_WLAN_DRIVER)
+            _traverse_ioreg(item, _STEPS_BCM_WLAN)
+            or _traverse_ioreg(item, _STEPS_WLAN_DRIVER)
     )
 
 
@@ -166,7 +166,7 @@ def _fetch_airport_details() -> Dict[str, NICInfo]:
             io_name = item.get("IONameMatched", "")
             io_model = item.get("IOModel", "")
             match = io_name_pattern.match(io_name)
-            
+
             if match:
                 vendor, device = match.groups()
                 nic_info = NICInfo()
@@ -174,7 +174,7 @@ def _fetch_airport_details() -> Dict[str, NICInfo]:
                 nic_info.device_id = "0x" + device
                 if io_model:
                     nic_info.name = io_model
-                
+
                 # Find the BSD interface name from the child "en1" entry
                 for child in item.get("IORegistryEntryChildren", []):
                     if child.get("IOObjectClass", "").startswith("en"):
