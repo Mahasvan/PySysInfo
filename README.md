@@ -48,10 +48,11 @@ print(json.dumps(json_data, indent=2))
 | GPU         |   ✅   |   ✅    | ✅* (1)  |
 | Memory      |   ✅   |   ✅    |    ✅    |
 | Network     |   ❌   |   ✅    |    ✅    |
-| Audio       |   ❌   |   ❌    |    ✅    |
-| Motherboard |   ❌   |   ❌    |    ✅    |
 | Storage     |   ✅   |   ✅    |    ✅    |
 | Display     |   ❌   | ❌* (2) | ✅* (3)  |
+| Audio       |   ❌   |   ❌    | ✅* (3)  |
+| Motherboard |   ❌   |   ❌    |    ✅    |
+
 | Vendor      |   ❌   |   ❌    |    ➖    |
 | Input       |   ❌   |   ❌    |    ❌    |
 
