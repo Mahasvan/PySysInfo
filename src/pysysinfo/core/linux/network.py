@@ -3,21 +3,36 @@ import os
 import subprocess
 from typing import Dict, Optional, Tuple
 
+from pysysinfo.core.linux.common import pci_path_linux
 from pysysinfo.models.network_models import NetworkInfo, NICInfo
 from pysysinfo.models.status_models import Status
 
+NOISY_PREFIXES = (
+    # Loopback
+    "lo",
+    # Docker / Basic Bridges
+    "veth", "br-", "docker",
+    # Kubernetes CNIs
+    "flannel", "cni", "cali", "cilium", "weave", "kube-ipvs0",
+    # Hypervisors (KVM / libvirt / LXC)
+    "virbr", "vnet", "lxc",
+    # Tunnels / Virtual routing
+    "dummy", "tun", "tap"
+)
 
 def _enrich_with_sysfs_info(nic: NICInfo, status: Status) -> None:
     """Helper to read hardware details directly from Linux sysfs."""
     interface_name = nic.interface
     if not interface_name: return
 
+    # todo: pci.ids file may be locally stored in Linux distros.
+    # When a scraper-parser is made, make use of this, to get device name.
+
     base_path = f"/sys/class/net/{interface_name}/device"
 
     # Virtual interfaces won't have a /device path
     if not os.path.exists(base_path):
-        nic.type += " (virtual)"
-        return
+        raise ValueError(f"Interface is virtual: {interface_name}")
 
     try:
         with open(f"{base_path}/vendor", "r") as f:
@@ -41,8 +56,7 @@ def _enrich_with_sysfs_info(nic: NICInfo, status: Status) -> None:
     try:
         # Resolves the symlink to get the BDF address (e.g., 0000:01:00.0)
         base_name =os.path.basename(os.path.realpath(base_path))
-        print(base_name)
-        # todo: construct PCI path from the base address
+        nic.pci_path = pci_path_linux(base_name)
     except OSError:
         pass
 
@@ -56,7 +70,6 @@ def _fetch_ip_data() -> NetworkInfo:
 
     for row in data:
         nic = NICInfo()
-        print(row)
         ifname = row.get("ifname")
 
         nic.interface = ifname
@@ -79,9 +92,13 @@ def _fetch_ip_data() -> NetworkInfo:
         nic.ip_address = ip_addr
 
 
-        _enrich_with_sysfs_info(nic, network_info.status)
+        try:
+            _enrich_with_sysfs_info(nic, network_info.status)
+            network_info.modules.append(nic)
+        except ValueError:
+            # Virtual interface
+            pass
 
-        network_info.modules.append(nic)
 
     return network_info
 

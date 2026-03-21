@@ -47,12 +47,11 @@ print(json.dumps(json_data, indent=2))
 | CPU         |   ✅   |   ✅    |    ✅    |
 | GPU         |   ✅   |   ✅    | ✅* (1)  |
 | Memory      |   ✅   |   ✅    |    ✅    |
-| Network     |   ❌   |   ✅    |    ✅    |
+| Network     |   ✅   |   ✅    |    ✅    |
 | Storage     |   ✅   |   ✅    |    ✅    |
 | Display     |   ❌   | ❌* (2) | ✅* (3)  |
 | Audio       |   ❌   |   ❌    | ✅* (3)  |
 | Motherboard |   ❌   |   ❌    |    ✅    |
-
 | Vendor      |   ❌   |   ❌    |    ➖    |
 | Input       |   ❌   |   ❌    |    ❌    |
 
