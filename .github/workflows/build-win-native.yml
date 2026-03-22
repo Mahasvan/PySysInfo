@@ -1,0 +1,66 @@
+name: Build Windows Native Bindings
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'src/pysysinfo/interops/win/include/**'
+      - 'src/pysysinfo/interops/win/src/**'
+      - 'src/pysysinfo/interops/win/CMakeLists.txt'
+      - '.github/workflows/build-win-native.yml'
+  pull_request:
+    paths:
+      - 'src/pysysinfo/interops/win/include/**'
+      - 'src/pysysinfo/interops/win/src/**'
+      - 'src/pysysinfo/interops/win/CMakeLists.txt'
+      - '.github/workflows/build-win-native.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure
+        shell: bash
+        run: |
+          cmake -S src/pysysinfo/interops/win -B build-win \
+            -G Ninja \
+            -DCMAKE_C_COMPILER=gcc \
+            -DCMAKE_CXX_COMPILER=g++ \
+            -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build
+        shell: bash
+        run: cmake --build build-win
+
+      - name: Verify artifact
+        shell: bash
+        run: |
+          file src/pysysinfo/interops/win/bindings/device_info.dll
+          objdump -p src/pysysinfo/interops/win/bindings/device_info.dll | grep "DLL Name"
+
+      - name: Upload dll
+        uses: actions/upload-artifact@v4
+        with:
+          name: device_info-windows
+          path: src/pysysinfo/interops/win/bindings/device_info.dll
+
+      - name: Commit updated binary
+        if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/pysysinfo/interops/win/bindings/device_info.dll
+          if git diff --cached --quiet; then
+            echo "No binary changes to commit"
+          else
+            git commit -m "build: update Windows native binding [skip ci]"
+            git pull --rebase
+            git push
+          fi
