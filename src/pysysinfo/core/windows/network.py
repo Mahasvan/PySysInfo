@@ -1,8 +1,9 @@
 import ctypes
 
 from pysysinfo.core.windows.common import format_acpi_path, format_pci_path
-from pysysinfo.interops.win.api.constants import STATUS_OK
-from pysysinfo.interops.win.api.signatures import GetNetworkHardwareInfo
+# todo: refactor to new bindings
+from pysysinfo.interops.win.legacy.constants import STATUS_OK
+from pysysinfo.interops.win.legacy.signatures import GetNetworkHardwareInfo
 from pysysinfo.models.network_models import NICInfo, NetworkInfo
 from pysysinfo.models.status_models import Status, StatusType
 from pysysinfo.util.location_paths import get_location_paths

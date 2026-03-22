@@ -1,7 +1,8 @@
 import ctypes
 
 from pysysinfo.core.windows.win_enum import MEDIA_TYPE, BUS_TYPE
-from pysysinfo.interops.win.api.signatures import GetWmiInfo
+# todo: refactor to new bindings
+from pysysinfo.interops.win.legacy.signatures import GetWmiInfo
 from pysysinfo.models.size_models import Megabyte
 from pysysinfo.models.status_models import StatusType
 from pysysinfo.models.storage_models import StorageInfo, DiskInfo

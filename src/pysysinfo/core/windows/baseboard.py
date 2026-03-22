@@ -1,8 +1,9 @@
 from ctypes import byref
 
-from pysysinfo.interops.win.api.constants import STATUS_OK
-from pysysinfo.interops.win.api.signatures import FetchSMBIOSData
-from pysysinfo.interops.win.api.structs import SMBIOSHwInfo
+# todo: refactor to new bindings
+from pysysinfo.interops.win.legacy.constants import STATUS_OK
+from pysysinfo.interops.win.legacy.signatures import FetchSMBIOSData
+from pysysinfo.interops.win.legacy.structs import SMBIOSHwInfo
 from pysysinfo.models.baseboard_models import BaseboardInfo
 from pysysinfo.models.status_models import Status, StatusType
 

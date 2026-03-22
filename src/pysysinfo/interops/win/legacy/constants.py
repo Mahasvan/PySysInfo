@@ -1,6 +1,6 @@
 import ctypes
 
-from pysysinfo.interops.win.api.structs import GUID
+from pysysinfo.interops.win.legacy.structs import GUID
 
 # Win32 General Constants
 ENUM_CURRENT_SETTINGS = -1

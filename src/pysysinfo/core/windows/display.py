@@ -16,7 +16,8 @@ from ctypes import wintypes
 from typing import Optional
 
 from pysysinfo.core.windows.win_enum import DISPLAY_CON_TYPE
-from pysysinfo.interops.win.api.constants import (
+# todo: refactor to new bindings
+from pysysinfo.interops.win.legacy.constants import (
     STATUS_OK,
     GUID_DEVINTERFACE_MONITOR,
     DIGCF_PRESENT,
@@ -30,7 +31,7 @@ from pysysinfo.interops.win.api.constants import (
     DMDO_180,
     DMDO_270,
 )
-from pysysinfo.interops.win.api.signatures import (
+from pysysinfo.interops.win.legacy.signatures import (
     GetGPUForDisplay,
     SetupDiGetClassDevsA,
     SetupDiEnumDeviceInterfaces,
@@ -45,7 +46,7 @@ from pysysinfo.interops.win.api.signatures import (
     GetDisplayPathInfo,
     EnumDisplayMonitors,
 )
-from pysysinfo.interops.win.api.structs import (
+from pysysinfo.interops.win.legacy.structs import (
     SP_DEVICE_INTERFACE_DATA,
     SP_DEVINFO_DATA,
     MONITORINFOEXA,

@@ -1,6 +1,6 @@
 from importlib import resources
 
-from pysysinfo.interops.win.api.structs import *
+from pysysinfo.interops.win.legacy.structs import *
 
 user32 = ctypes.WinDLL("user32", use_last_error=True)
 setupapi = ctypes.WinDLL("setupapi", use_last_error=True)

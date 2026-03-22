@@ -1,7 +1,8 @@
 import ctypes
 
-from pysysinfo.interops.win.api.constants import STATUS_OK
-from pysysinfo.interops.win.api.signatures import GetAudioHardwareInfo
+# todo: refactor to new bindings
+from pysysinfo.interops.win.legacy.constants import STATUS_OK
+from pysysinfo.interops.win.legacy.signatures import GetAudioHardwareInfo
 from pysysinfo.models.audio_models import (
     AudioControllerInfo,
     AudioDeviceInfo,
