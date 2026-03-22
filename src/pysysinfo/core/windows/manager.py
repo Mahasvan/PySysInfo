@@ -6,8 +6,6 @@ from pysysinfo.core.windows.graphics import fetch_graphics_info
 from pysysinfo.core.windows.memory import fetch_memory_info
 from pysysinfo.core.windows.network import fetch_network_info_fast
 from pysysinfo.core.windows.storage import fetch_storage_info
-from pysysinfo.models.audio_models import AudioInfo
-from pysysinfo.models.baseboard_models import BaseboardInfo
 from pysysinfo.models.cpu_models import CPUInfo
 from pysysinfo.models.display_models import DisplayInfo
 from pysysinfo.models.gpu_models import GraphicsInfo

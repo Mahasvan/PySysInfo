@@ -2,7 +2,7 @@ name: Build macOS Native Bindings
 
 on:
   push:
-    branches: [main]
+    branches: [ main ]
     paths:
       - 'src/pysysinfo/interops/mac/include/**'
       - 'src/pysysinfo/interops/mac/src/**'

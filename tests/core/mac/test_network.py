@@ -42,9 +42,9 @@ def _make_ioreg_plist(items):
 
 
 def _make_intel_ioreg_entry(
-    io_name_matched="pci14e4,4331",
-    io_model="AirPort Extreme",
-    bsd_name="en1",
+        io_name_matched="pci14e4,4331",
+        io_model="AirPort Extreme",
+        bsd_name="en1",
 ):
     """AirPort_BrcmNIC entry as seen on Intel Macs."""
     return {
@@ -61,9 +61,9 @@ def _make_intel_ioreg_entry(
 
 
 def _make_apple_silicon_ioreg_entry(
-    manufacturer_id=0x14e4,
-    product_id=0x4488,
-    bsd_name="en0",
+        manufacturer_id=0x14e4,
+        product_id=0x4488,
+        bsd_name="en0",
 ):
     """AppleBCMWLANCore entry as seen on Apple Silicon Macs."""
     return {
@@ -92,9 +92,9 @@ def _make_apple_silicon_ioreg_entry(
 
 
 def _make_brcm4331_ioreg_entry(
-    io_name_matched="pci14e4,4331",
-    io_model="Wireless Network Adapter (802.11 a/b/g/n)",
-    bsd_name="en1",
+        io_name_matched="pci14e4,4331",
+        io_model="Wireless Network Adapter (802.11 a/b/g/n)",
+        bsd_name="en1",
 ):
     """AirPort_Brcm4331 entry as seen on older Intel Macs."""
     return {

@@ -5,7 +5,6 @@ A Python Library to simplify retrieval of hardware components of your computer.
 - To get started, read the **[Quickstart](https://mahasvan.github.io/PySysInfo/quickstart.html).**
 - Additionally, you can view the **[Documentation](https://mahasvan.github.io/PySysInfo/)**.
 
-
 ## Installation
 
 ### macOS / Linux
@@ -45,10 +44,11 @@ print(json.dumps(json_data, indent=2))
 | Component   | Linux | macOS  | Windows |
 |-------------|:-----:|:------:|:-------:|
 | CPU         |   ✅   |   ✅    |    ✅    |
-| GPU         |   ✅   |   ✅    | ✅* (1)  |
+| GPU         |   ✅   |   ✅    |    ✅    |
 | Memory      |   ✅   |   ✅    |    ✅    |
 | Network     |   ✅   |   ✅    |    ✅    |
-| Storage     |   ✅   |   ✅    |    ✅    |
+| Storage     |   ✅   |   ✅    |    ✅    | 
+| --          |  --   |   -    |    -    |
 | Display     |   ❌   | ❌* (2) | ✅* (3)  |
 | Audio       |   ❌   |   ❌    | ✅* (3)  |
 | Motherboard |   ❌   |   ❌    |    ✅    |

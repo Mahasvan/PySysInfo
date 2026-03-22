@@ -260,7 +260,8 @@ class TestLinuxStorage:
         monkeypatch.setattr(os.path, "isdir", lambda x: True)
         monkeypatch.setattr(os, "listdir", lambda x: [
             "sda", "sda1", "sda2",  # sda is disk, sda1/sda2 are partitions
-            "mmcblk0", "mmcblk0p1", "mmcblk0boot0", "mmcblk0boot1", "mmcblk0rpmb",  # mmcblk0 is disk, others should be filtered
+            "mmcblk0", "mmcblk0p1", "mmcblk0boot0", "mmcblk0boot1", "mmcblk0rpmb",
+            # mmcblk0 is disk, others should be filtered
             "nvme0n1", "nvme0n1p1", "nvme0n1p2"  # nvme0n1 is disk, partitions should be filtered
         ])
 

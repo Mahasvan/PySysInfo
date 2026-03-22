@@ -2,7 +2,7 @@ name: Build Windows Native Bindings
 
 on:
   push:
-    branches: [main]
+    branches: [ main ]
     paths:
       - 'src/pysysinfo/interops/win/include/**'
       - 'src/pysysinfo/interops/win/src/**'

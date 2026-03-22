@@ -15,8 +15,6 @@ from dataclasses import dataclass
 from typing import Optional
 from unittest.mock import patch, MagicMock
 
-import pytest
-
 from pysysinfo.core.mac.graphics import fetch_graphics_info
 from pysysinfo.models.status_models import StatusType
 
@@ -46,13 +44,13 @@ class FakeGPUProperties:
 # ── helpers ──────────────────────────────────────────────────────────────────
 
 def _apple_gpu(
-    name="Apple M3 Pro",
-    vendor_id=0x106B,
-    device_id=0x0000,
-    core_count=20,
-    gpu_perf_shaders=8,
-    gpu_gen=15,
-    unified_memory_mb=18432,
+        name="Apple M3 Pro",
+        vendor_id=0x106B,
+        device_id=0x0000,
+        core_count=20,
+        gpu_perf_shaders=8,
+        gpu_gen=15,
+        unified_memory_mb=18432,
 ) -> FakeGPUProperties:
     """Return a fully-populated Apple Silicon GPU stub."""
     return FakeGPUProperties(
@@ -70,10 +68,10 @@ def _apple_gpu(
 
 
 def _discrete_gpu(
-    name="NVIDIA GeForce RTX 3090",
-    vendor_id=0x10DE,
-    device_id=0x2204,
-    vram_mb=24576,
+        name="NVIDIA GeForce RTX 3090",
+        vendor_id=0x10DE,
+        device_id=0x2204,
+        vram_mb=24576,
 ) -> FakeGPUProperties:
     """Return a fully-populated discrete (non-Apple-Silicon) GPU stub."""
     return FakeGPUProperties(
@@ -120,7 +118,6 @@ class TestBindingLoadFailures:
         then evicting it from sys.modules so the lazy import is forced to run.
         """
         import sys
-        import importlib.abc
         import importlib.machinery
 
         _TARGET = "pysysinfo.interops.mac.bindings.gpu_info"
@@ -233,7 +230,8 @@ class TestAppleSiliconGPU:
         assert info.modules[0].device_id == hex(0xABCD)
 
     def test_apple_m1_gpu(self):
-        info = self._run([_apple_gpu(name="Apple M1", core_count=7, gpu_perf_shaders=0, gpu_gen=13, unified_memory_mb=8192)])
+        info = self._run(
+            [_apple_gpu(name="Apple M1", core_count=7, gpu_perf_shaders=0, gpu_gen=13, unified_memory_mb=8192)])
         gpu = info.modules[0]
         assert gpu.name == "Apple M1"
         assert gpu.vram.capacity == 8192
@@ -241,7 +239,8 @@ class TestAppleSiliconGPU:
         assert gpu.apple_gpu_info.gpu_gen == 13
 
     def test_apple_m2_max_gpu(self):
-        info = self._run([_apple_gpu(name="Apple M2 Max", core_count=38, gpu_perf_shaders=16, gpu_gen=14, unified_memory_mb=32768)])
+        info = self._run(
+            [_apple_gpu(name="Apple M2 Max", core_count=38, gpu_perf_shaders=16, gpu_gen=14, unified_memory_mb=32768)])
         gpu = info.modules[0]
         assert gpu.name == "Apple M2 Max"
         assert gpu.vram.capacity == 32768
@@ -254,7 +253,7 @@ class TestAppleSiliconGPU:
             vendor_id=0x106B,
             device_id=0x0000,
             is_apple_silicon=True,
-            apple_gpu=None,          # unexpectedly absent
+            apple_gpu=None,  # unexpectedly absent
         )
         info = self._run([stub])
 
@@ -282,7 +281,8 @@ class TestDiscreteGPU:
             return fetch_graphics_info()
 
     def test_nvidia_gpu_success(self):
-        info = self._run([_discrete_gpu(name="NVIDIA GeForce RTX 3090", vendor_id=0x10DE, device_id=0x2204, vram_mb=24576)])
+        info = self._run(
+            [_discrete_gpu(name="NVIDIA GeForce RTX 3090", vendor_id=0x10DE, device_id=0x2204, vram_mb=24576)])
         assert info.status.type == StatusType.SUCCESS
         gpu = info.modules[0]
         assert gpu.name == "NVIDIA GeForce RTX 3090"
@@ -314,7 +314,7 @@ class TestDiscreteGPU:
         stub = FakeGPUProperties(
             name="Intel HD 4000",
             vendor_id=0x8086,
-            device_id=0x0000,       # truly missing
+            device_id=0x0000,  # truly missing
             is_apple_silicon=False,
             apple_gpu=None,
         )
@@ -469,7 +469,7 @@ class TestEdgeCases:
             is_apple_silicon=True,
             apple_gpu=FakeAppleGPUProperties(
                 core_count=20, gpu_perf_shaders=8, gpu_gen=15,
-                unified_memory_mb=0,   # bad value from binding
+                unified_memory_mb=0,  # bad value from binding
             ),
         )
         info = self._run([stub])
@@ -509,5 +509,3 @@ class TestEdgeCases:
         from pysysinfo.models.gpu_models import GraphicsInfo
         info = self._run([_apple_gpu()])
         assert isinstance(info, GraphicsInfo)
-
-

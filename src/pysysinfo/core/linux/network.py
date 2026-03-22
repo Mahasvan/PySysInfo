@@ -1,7 +1,6 @@
 import json
 import os
 import subprocess
-from typing import Dict, Optional, Tuple
 
 from pysysinfo.core.linux.common import pci_path_linux
 from pysysinfo.models.network_models import NetworkInfo, NICInfo
@@ -19,6 +18,7 @@ NOISY_PREFIXES = (
     # Tunnels / Virtual routing
     "dummy", "tun", "tap"
 )
+
 
 def _enrich_with_sysfs_info(nic: NICInfo, status: Status) -> None:
     """Helper to read hardware details directly from Linux sysfs."""
@@ -55,7 +55,7 @@ def _enrich_with_sysfs_info(nic: NICInfo, status: Status) -> None:
 
     try:
         # Resolves the symlink to get the BDF address (e.g., 0000:01:00.0)
-        base_name =os.path.basename(os.path.realpath(base_path))
+        base_name = os.path.basename(os.path.realpath(base_path))
         nic.pci_path = pci_path_linux(base_name)
     except OSError:
         pass
@@ -91,7 +91,6 @@ def _fetch_ip_data() -> NetworkInfo:
 
         nic.ip_address = ip_addr
 
-
         try:
             _enrich_with_sysfs_info(nic, network_info.status)
             network_info.modules.append(nic)
@@ -99,10 +98,9 @@ def _fetch_ip_data() -> NetworkInfo:
             # Virtual interface
             pass
 
-
     return network_info
+
 
 def fetch_network_info() -> NetworkInfo:
     ip_data = _fetch_ip_data()
     return ip_data
-

@@ -5,7 +5,6 @@ from pysysinfo.core.mac.memory import fetch_memory_info
 from pysysinfo.core.mac.network import fetch_network_info
 from pysysinfo.core.mac.storage import fetch_storage_info
 from pysysinfo.models.cpu_models import CPUInfo
-from pysysinfo.models.display_models import DisplayInfo
 from pysysinfo.models.gpu_models import GraphicsInfo
 from pysysinfo.models.info_models import HardwareInfo
 from pysysinfo.models.info_models import HardwareManagerInterface
