@@ -2,6 +2,7 @@ name: Build Native Bindings
 
 on:
   push:
+    branches: [main]
     paths:
       - 'src/pysysinfo/interops/mac/**'
       - 'src/pysysinfo/interops/win/**'
@@ -14,17 +15,11 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   build-mac:
     runs-on: macos-latest
-    if: >-
-      github.event_name == 'workflow_dispatch' ||
-      contains(toJSON(github.event.commits.*.modified), 'interops/mac') ||
-      contains(toJSON(github.event.commits.*.added), 'interops/mac') ||
-      contains(toJSON(github.event.pull_request.changed_files), 'interops/mac') ||
-      contains(toJSON(github.event.commits.*.modified), 'build-native.yml')
     steps:
       - uses: actions/checkout@v4
 
@@ -47,12 +42,6 @@ jobs:
 
   build-win:
     runs-on: windows-latest
-    if: >-
-      github.event_name == 'workflow_dispatch' ||
-      contains(toJSON(github.event.commits.*.modified), 'interops/win') ||
-      contains(toJSON(github.event.commits.*.added), 'interops/win') ||
-      contains(toJSON(github.event.pull_request.changed_files), 'interops/win') ||
-      contains(toJSON(github.event.commits.*.modified), 'build-native.yml')
     steps:
       - uses: actions/checkout@v4
 
@@ -80,3 +69,35 @@ jobs:
         with:
           name: device_info-windows
           path: src/pysysinfo/interops/win/bindings/device_info.dll
+
+  commit-binaries:
+    needs: [build-mac, build-win]
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download macOS artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: libdevice_info-macos
+          path: src/pysysinfo/interops/mac/bindings/
+
+      - name: Download Windows artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: device_info-windows
+          path: src/pysysinfo/interops/win/bindings/
+
+      - name: Commit updated binaries
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/pysysinfo/interops/mac/bindings/libdevice_info.dylib
+          git add src/pysysinfo/interops/win/bindings/device_info.dll
+          if git diff --cached --quiet; then
+            echo "No binary changes to commit"
+          else
+            git commit -m "build: update native bindings [skip ci]"
+            git push
+          fi
