@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="./">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>PySysInfo &#8212; PySysInfo 0.0.2-beta1 documentation</title>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=d1102ebc" />
+    <link rel="stylesheet" type="text/css" href="_static/basic.css?v=b08954a9" />
+    <link rel="stylesheet" type="text/css" href="_static/alabaster.css?v=27fed22d" />
+    <link rel="stylesheet" type="text/css" href="_static/autodoc_pydantic.css" />
+    <script src="_static/documentation_options.js?v=9e128d1e"></script>
+    <script src="_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Quickstart" href="quickstart.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+
+  
+  
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <p>sphinx-quickstart on Wed Dec 31 19:12:18 2025.
+You can adapt this file completely to your liking, but it should at least
+contain the root <cite>toctree</cite> directive.</p>
+<section id="pysysinfo">
+<h1>PySysInfo<a class="headerlink" href="#pysysinfo" title="Link to this heading">¶</a></h1>
+<p>PySysInfo is a Python library that gathers info about system components, such as the
+CPU, memory, storage, and graphics, across Linux, macOS, and Windows.</p>
+<section id="features">
+<h2>Features<a class="headerlink" href="#features" title="Link to this heading">¶</a></h2>
+<ul class="simple">
+<li><p>Consistent structure on all platforms, using <a class="reference external" href="https://docs.pydantic.dev/latest/concepts/models/">Pydantic models</a>.</p></li>
+<li><p>Usage stays the same everywhere, with no need for code changes across platforms.</p></li>
+<li><p>Supports data retrieval as Class objects, Python dictionaries, or JSON-parsable strings.</p></li>
+<li><p>For a list of supported hardware components, refer to <a class="reference internal" href="supported.html#supported"><span class="std std-ref">Supported Components</span></a>.</p></li>
+</ul>
+<hr class="docutils" />
+<p>To get started, refer to <a class="reference internal" href="quickstart.html#quickstart"><span class="std std-ref">Quickstart</span></a>.</p>
+</section>
+<hr class="docutils" />
+<section id="contents">
+<h2>Contents<a class="headerlink" href="#contents" title="Link to this heading">¶</a></h2>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="quickstart.html">Quickstart</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="quickstart.html#prerequisites">Prerequisites</a></li>
+<li class="toctree-l2"><a class="reference internal" href="quickstart.html#install">Install</a></li>
+<li class="toctree-l2"><a class="reference internal" href="quickstart.html#basic-usage">Basic usage</a></li>
+<li class="toctree-l2"><a class="reference internal" href="quickstart.html#targeted-collection">Targeted collection</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="hardware_managers.html">Hardware Managers</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="hardware_managers.html#instantiating-a-hardware-manager">Instantiating a Hardware Manager</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="querying_info.html">Querying Info</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="querying_info.html#complete-info-retrieval">Complete Info Retrieval</a></li>
+<li class="toctree-l2"><a class="reference internal" href="querying_info.html#single-component-retrieval">Single Component Retrieval</a></li>
+<li class="toctree-l2"><a class="reference internal" href="querying_info.html#accessing-retrieved-data">Accessing Retrieved Data</a></li>
+<li class="toctree-l2"><a class="reference internal" href="querying_info.html#errors-during-hardware-discovery">Errors during Hardware Discovery</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="serialization.html">Serialization</a></li>
+<li class="toctree-l1"><a class="reference internal" href="supported.html">Supported Components</a></li>
+<li class="toctree-l1"><a class="reference internal" href="theory.html">Theory</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="theory.html#platform-data-sources">Platform data sources</a></li>
+<li class="toctree-l2"><a class="reference internal" href="theory.html#per-component-collection-placeholder">Per-component collection (placeholder)</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="models.html">Models</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="models.html#component-models">Component Models</a></li>
+<li class="toctree-l2"><a class="reference internal" href="models.html#status-models">Status Models</a></li>
+<li class="toctree-l2"><a class="reference internal" href="models.html#size-models">Size Models</a></li>
+</ul>
+</li>
+</ul>
+</div>
+</section>
+</section>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="#">PySysInfo</a></h1>
+
+
+
+
+
+
+
+
+
+<search id="searchbox" style="display: none" role="search">
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="Search"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script><h3>Navigation</h3>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="quickstart.html">Quickstart</a></li>
+<li class="toctree-l1"><a class="reference internal" href="hardware_managers.html">Hardware Managers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="querying_info.html">Querying Info</a></li>
+<li class="toctree-l1"><a class="reference internal" href="serialization.html">Serialization</a></li>
+<li class="toctree-l1"><a class="reference internal" href="supported.html">Supported Components</a></li>
+<li class="toctree-l1"><a class="reference internal" href="theory.html">Theory</a></li>
+<li class="toctree-l1"><a class="reference internal" href="models.html">Models</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="#">Documentation overview</a><ul>
+      <li>Next: <a href="quickstart.html" title="next chapter">Quickstart</a></li>
+  </ul></li>
+</ul>
+</div>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &#169;2025, Mahasvan Mohan.
+      
+      |
+      Powered by <a href="https://www.sphinx-doc.org/">Sphinx 9.1.0</a>
+      &amp; <a href="https://alabaster.readthedocs.io">Alabaster 1.0.0</a>
+      
+      |
+      <a href="_sources/index.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>
