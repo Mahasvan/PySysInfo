@@ -15,6 +15,9 @@ add_library(device_info SHARED
         src/gpu_info.cpp
 )
 
+# Force static linking of runtime libraries to avoid dependency issues in Python
+target_link_options(device_info PRIVATE -static-libgcc -static-libstdc++ -static)
+
 target_include_directories(device_info
         PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include
 )
@@ -42,7 +45,5 @@ target_include_directories(WinDeviceInfo
         PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include
 )
 
-target_link_libraries(WinDeviceInfo
-        PRIVATE
-        device_info
-)
+# No longer linking directly to device_info to allow dynamic loading from custom path
+# target_link_libraries(WinDeviceInfo PRIVATE device_info)
