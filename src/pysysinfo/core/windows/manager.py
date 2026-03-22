@@ -27,13 +27,10 @@ class WindowsHardwareManager(HardwareManagerInterface):
     def __init__(self):
         self.info = WindowsHardwareInfo(
             cpu=CPUInfo(),
+            graphics=GraphicsInfo(),
             memory=MemoryInfo(),
             storage=StorageInfo(),
-            graphics=GraphicsInfo(),
             network=NetworkInfo(),
-            display=DisplayInfo(),
-            audio=AudioInfo(),
-            baseboard=BaseboardInfo(),
         )
 
     def fetch_cpu_info(self) -> CPUInfo:
@@ -73,7 +70,5 @@ class WindowsHardwareManager(HardwareManagerInterface):
         self.fetch_memory_info()
         self.fetch_storage_info()
         self.fetch_graphics_info()
-        self.fetch_display_info()
-        self.fetch_audio_info()
-        self.fetch_baseboard_info()
+        self.fetch_network_info()
         return self.info

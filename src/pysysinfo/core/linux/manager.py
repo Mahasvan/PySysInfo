@@ -25,9 +25,10 @@ class LinuxHardwareManager(HardwareManagerInterface):
     def __init__(self):
         self.info = LinuxHardwareInfo(
             cpu=CPUInfo(),
+            graphics=GraphicsInfo(),
             memory=MemoryInfo(),
             storage=StorageInfo(),
-            graphics=GraphicsInfo(),
+            network=NetworkInfo(),
         )
 
     def fetch_cpu_info(self) -> CPUInfo:
@@ -48,9 +49,10 @@ class LinuxHardwareManager(HardwareManagerInterface):
 
     def fetch_hardware_info(self) -> HardwareInfo:
         self.fetch_cpu_info()
-        self.fetch_memory_info()
-        self.fetch_storage_info()
         self.fetch_graphics_info()
+        self.fetch_memory_info()
+        self.fetch_network_info()
+        self.fetch_storage_info()
         return self.info
 
     def fetch_display_info(self) -> DisplayInfo:

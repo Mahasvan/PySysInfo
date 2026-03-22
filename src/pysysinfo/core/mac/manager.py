@@ -23,10 +23,9 @@ class MacHardwareManager(HardwareManagerInterface):
     def __init__(self):
         self.info = MacHardwareInfo(
             cpu=CPUInfo(),
+            graphics=GraphicsInfo(),
             memory=MemoryInfo(),
             storage=StorageInfo(),
-            graphics=GraphicsInfo(),
-            display=DisplayInfo(),
             network=NetworkInfo(),
         )
 
@@ -56,9 +55,8 @@ class MacHardwareManager(HardwareManagerInterface):
 
     def fetch_hardware_info(self) -> HardwareInfo:
         self.fetch_cpu_info()
+        self.fetch_graphics_info()
         self.fetch_memory_info()
         self.fetch_storage_info()
-        self.fetch_graphics_info()
         self.fetch_network_info()
-        self.fetch_display_info()
         return self.info
