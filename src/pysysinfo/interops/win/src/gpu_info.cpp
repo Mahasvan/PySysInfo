@@ -2,7 +2,7 @@
 #include "win_helpers.h"
 
 #include <windows.h>
-#include <dxgi1_6.h>
+#include <dxgi.h>
 #include <setupapi.h>
 #include <devguid.h>
 
@@ -208,8 +208,9 @@ int get_gpu_info(WinGPUProperties *out, int max_count) {
             continue;
         }
 
-        // Skip software/remote adapters
-        if (desc.Flags & DXGI_ADAPTER_FLAG_SOFTWARE) {
+        // Skip software/remote adapters (DXGI_ADAPTER_FLAG_SOFTWARE = 2, defined in DXGI 1.2+)
+        // On Windows 7 no adapter sets this flag, so the check is a safe no-op.
+        if (desc.Flags & 2u) {
             adapter->Release();
             continue;
         }
