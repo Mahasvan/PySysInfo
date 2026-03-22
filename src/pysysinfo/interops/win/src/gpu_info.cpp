@@ -10,6 +10,7 @@
 #include <string>
 #include <regex>
 #include <vector>
+#include <set>
 
 #pragma comment(lib, "dxgi.lib")
 #pragma comment(lib, "setupapi.lib")
@@ -198,6 +199,7 @@ int get_gpu_info(WinGPUProperties *out, int max_count) {
 
     int count = 0;
     IDXGIAdapter1 *adapter = nullptr;
+    std::set<std::wstring> seen_pnp_ids;
 
     for (UINT a = 0; factory->EnumAdapters1(a, &adapter) != DXGI_ERROR_NOT_FOUND && count < max_count; ++a) {
         DXGI_ADAPTER_DESC1 desc;
@@ -212,6 +214,18 @@ int get_gpu_info(WinGPUProperties *out, int max_count) {
             continue;
         }
 
+        // Deduplicate: DXGI can enumerate the same physical GPU multiple times (common on AMD APUs)
+        std::wstring pnp_id_early = PnpDeviceIdFromDXGI(desc);
+        if (!pnp_id_early.empty()) {
+            std::wstring upper_pnp = pnp_id_early;
+            for (auto &ch : upper_pnp) ch = towupper(ch);
+            if (seen_pnp_ids.count(upper_pnp)) {
+                adapter->Release();
+                continue;
+            }
+            seen_pnp_ids.insert(upper_pnp);
+        }
+
         WinGPUProperties gpu = {};
 
         // Name from DXGI
@@ -223,8 +237,8 @@ int get_gpu_info(WinGPUProperties *out, int max_count) {
         gpu.vendor_id = desc.VendorId;
         gpu.device_id = desc.DeviceId;
 
-        // Find the PNP device instance to get extended info
-        std::wstring pnp_id = PnpDeviceIdFromDXGI(desc);
+        // PNP device instance already resolved above for dedup
+        const std::wstring &pnp_id = pnp_id_early;
         std::string pnp_utf8 = WideToUtf8(pnp_id.c_str());
 
         // Parse subsystem IDs from PNP device ID string
