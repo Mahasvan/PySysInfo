@@ -10,16 +10,13 @@ Prerequisites
 
 Install
 -------
-Currently, the project is hosted on TestPyPI. To install, run:
+To install HWProbe, run:
 
 .. code-block:: bash
 
-   pip3 install --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple/ HWProbe
+   pip3 install HWProbe
+   pip install HWProbe  # Windows users may need to use 'pip' instead of 'pip3'
 
-The official PyPI release is:
-
-.. image:: https://i.redd.it/ssjo8ocxehjb1.png
-    :alt: Cyberpunk 2077 - Coming when it's ready
 
 Basic usage
 -----------
