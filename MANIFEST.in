@@ -1,0 +1,4 @@
+include LICENSE
+include README.md
+recursive-include src/hwprobe/interops/win/bindings *.dll
+recursive-include src/hwprobe/interops/mac/bindings *.dylib
