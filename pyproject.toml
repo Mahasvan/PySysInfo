@@ -31,7 +31,8 @@ dependencies = [
 where = ["src"]
 
 [tool.setuptools.package-data]
-"hwprobe" = ["interops/**/dll/*.dll"]
+"hwprobe.interops.win.bindings" = ["*.dll"]
+"hwprobe.interops.mac.bindings" = ["*.dylib"]
 
 [project.urls]
 Homepage = "https://github.com/Mahasvan/HWProbe"
