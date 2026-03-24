@@ -4,302 +4,152 @@
 Querying Info
 =============
 
-Information about the computer can be queried on a per-component basis, or all components at once.
-
------------------------
-Complete Info Retrieval
------------------------
-
-In the following example, we query all available information from the system.
-
-.. code-block:: python
-
-    import hwprobe
-    from hwprobe.models.info_models import HardwareInfo
-
-    hm = hwprobe.HardwareManager()
-    info = hm.fetch_hardware_info()
-
-    print(type(info))
-    print(isinstance(info, HardwareInfo))
-
-Output on a macOS machine:
-
-.. code-block:: shell
-
-    <class 'hwprobe.models.info_models.MacHardwareInfo'>
-    True
-
-------------
-
-``fetch_hardware_info()`` returns an instance of an OS-specific ``HardwareInfo`` class, which has the following structure.
-
-.. autoclass:: hwprobe.models.info_models.HardwareInfo
-    :members:
-    :exclude-members: __new__,__init__,model_config
-
-------------
-
-Depending on the OS, one of the following classes is returned.
-Do note that the structure and usage remain the same.
-
-
-.. autoclass:: hwprobe.models.info_models.WindowsHardwareInfo
-    :show-inheritance:
-    :noindex:
-    :exclude-members: __new__,__init__
-
-.. autoclass:: hwprobe.models.info_models.MacHardwareInfo
-    :show-inheritance:
-    :exclude-members: __new__,__init__
-    :noindex:
-
-.. autoclass:: hwprobe.models.info_models.LinuxHardwareInfo
-    :show-inheritance:
-    :exclude-members: __new__,__init__
-    :noindex:
-
--------------------------------
-Single Component Retrieval
--------------------------------
-
-In the following example, we query data for just the CPU.
-The same structure can be followed for GPU, Memory, etc.
-
-.. code-block:: python
-
-    import hwprobe
-
-    hm = hwprobe.HardwareManager()
-    cpu_info = hm.fetch_cpu_info()
-
-    print(type(cpu_info))
-    print(cpu_info.name)
-
-Output:
-
-.. code-block:: shell
-
-    <class 'hwprobe.models.cpu_models.CPUInfo'>
-    Apple M3
-
-------------------------
 Accessing Retrieved Data
 ------------------------
 
-There are two ways to access the data retrieved from HWProbe.
+There are two equivalent ways to access retrieved data.
 
--------------
-
-The first is to assign the output of ``fetch_hardware_info()``
-or the other single-component methods into a variable.
+**Option 1: Use the return value directly.**
 
 .. code-block:: python
 
-    import hwprobe
+   import hwprobe
 
-    hm = hwprobe.HardwareManager()
-    info = hm.fetch_hardware_info()
+   hm = hwprobe.HardwareManager()
+   info = hm.fetch_hardware_info()
 
-    print(info.cpu.name)
-    print(info.cpu.architecture)
-    print(info.cpu.vendor)
-
-
-
-Output:
+   print(info.cpu.name)
+   print(info.cpu.architecture)
+   print(info.cpu.vendor)
 
 .. code-block:: shell
 
-    Apple M3
-    ARM
-    Apple
+   Apple M3
+   ARM
+   Apple
 
+**Option 2: Use the** ``info`` **attribute on the manager.**
 
-Here's another example:
-
+Calling any ``fetch_*`` method populates the ``info`` attribute, so previously
+fetched data remains accessible without re-querying.
 
 .. code-block:: python
 
-    import hwprobe
+   import hwprobe
 
-    hm = hwprobe.HardwareManager()
+   hm = hwprobe.HardwareManager()
 
-    storage = hm.fetch_storage_info()
+   hm.fetch_cpu_info()
+   print("CPU Name:", hm.info.cpu.name)
 
-    print("Found", len(storage.disks), "storage devices")
-    print("==========")
-    for disk in storage.disks:
-        print("Name:", disk.model)
-        print("Size:", disk.size.capacity, disk.size.unit)
-        print("==========")
+   hm.fetch_storage_info()
+   print("Found", len(hm.info.storage.disks), "disks")
 
-Output:
+   # CPU data is still available
+   print("CPU Manufacturer:", hm.info.cpu.vendor)
 
 .. code-block:: shell
 
-    Found 1 storage devices
-    ==========
-    Name: APPLE SSD AP0512Z
-    Size: 477102 MB
-    ==========
+   CPU Name: Apple M3
+   Found 1 disks
+   CPU Manufacturer: Apple
 
--------------
-
-The second way is to use the ``info`` attribute of the
-:class:`HardwareManager <hwprobe.models.info_models.HardwareManagerInterface>`.
-Querying any data automatically populates the ``info`` attribute,
-meaning it can be accessed directly from the HardwareManager instance.
+Both approaches return the same objects:
 
 .. code-block:: python
 
-    import hwprobe
+   info = hm.fetch_hardware_info()
+   print(hm.info == info)         # True
+   print(hm.info.cpu == info.cpu) # True
 
-    hm = hwprobe.HardwareManager()
 
-    hm.fetch_cpu_info()
-    print("CPU Name:", hm.info.cpu.name)
+Working with Collections
+------------------------
 
-    hm.fetch_storage_info()
-    print("Found", len(hm.info.storage.disks), "disks")
-
-    # CPU data is still available at this point.
-    print("CPU Manufacturer:", hm.info.cpu.vendor)
-
-Output:
-
-.. code-block:: shell
-
-    CPU Name: Apple M3
-    Found 1 disks
-    CPU Manufacturer: Apple
-
-This is possible because ``hm.info`` is an instance of the :class:`HardwareInfo <hwprobe.models.info_models.HardwareInfo>` class.
-
-The data returned from ``fetch_hardware_info()`` and ``hm.info`` are the exact same.
+Components like storage and graphics contain lists of devices:
 
 .. code-block:: python
 
-    import hwprobe
+   import hwprobe
 
-    hm = hwprobe.HardwareManager()
+   hm = hwprobe.HardwareManager()
+   storage = hm.fetch_storage_info()
 
-    info = hm.fetch_hardware_info()
-    print(hm.info == info)
-
-    cpu_info = hm.fetch_cpu_info()
-    print(hm.info.cpu == cpu_info)
-
-Output:
+   print("Found", len(storage.disks), "storage devices")
+   for disk in storage.disks:
+       print("Name:", disk.model)
+       print("Size:", disk.size.capacity, disk.size.unit)
 
 .. code-block:: shell
 
-    True
-    True
+   Found 1 storage devices
+   Name: APPLE SSD AP0512Z
+   Size: 477102 MB
 
 
 .. _errors-during-hardware-discovery:
 
---------------------------------
-Errors during Hardware Discovery
---------------------------------
-Sometimes, errors may be encountered during hardware discovery
-that partially or fatally affect the process.
+Error Handling
+--------------
 
-When querying data, each component will have a ``status`` property.
-this property contains info about whether any errors were encountered when fetching data.
-
-When querying per-component information:
+Every component has a ``status`` property indicating whether errors occurred
+during discovery.
 
 .. code-block:: python
 
-    cpu_info = hm.fetch_cpu_info()
-    print(cpu_info.status.type)
+   import hwprobe
 
-Output:
+   hm = hwprobe.HardwareManager()
+   hm.fetch_hardware_info()
 
-.. code-block:: shell
-
-    StatusType.SUCCESS
-
-When querying complete information:
-
-.. code-block:: python
-
-    import hwprobe
-
-    hm = hwprobe.HardwareManager()
-
-    hm.fetch_hardware_info()
-
-    print("CPU:", hm.info.cpu.status.type)
-    print("Graphics:", hm.info.graphics.status.type)
-    print("Storage:", hm.info.storage.status.type)
-
-Output:
+   print("CPU:", hm.info.cpu.status.type)
+   print("Graphics:", hm.info.graphics.status.type)
+   print("Storage:", hm.info.storage.status.type)
 
 .. code-block:: shell
 
-    CPU: StatusType.SUCCESS
-    Graphics: StatusType.SUCCESS
-    Storage: StatusType.SUCCESS
+   CPU: StatusType.SUCCESS
+   Graphics: StatusType.SUCCESS
+   Storage: StatusType.SUCCESS
 
--------
-
-the ``status`` property follows the following structure:
+The ``status`` property has the following structure:
 
 .. autoclass:: hwprobe.models.status_models.Status
     :members:
     :exclude-members: model_config
     :no-index:
 
---------
-
-The ``type`` attribute is an Enum.
-Depending on the errors encountered, it can be one of the following three values.
+The ``type`` attribute is one of three values:
 
 .. autoclass:: hwprobe.models.status_models.StatusType
     :members:
     :no-index:
 
--------
-
-When using this library, the following example may be of use,
-to handle partial and fatal errors.
+Here is an example of handling partial and fatal errors:
 
 .. code-block:: python
 
-    import hwprobe
-    from hwprobe.models.status_models import StatusType
+   import hwprobe
+   from hwprobe.models.status_models import StatusType
 
-    hm = hwprobe.HardwareManager()
+   hm = hwprobe.HardwareManager()
+   cpu = hm.fetch_cpu_info()
 
-    cpu = hm.fetch_cpu_info()
+   if cpu.status.type == StatusType.FAILED:
+       print("Fatal issue(s) occurred:")
+       for message in cpu.status.messages:
+           print(message)
+       exit(1)
 
-    if cpu.status.type == StatusType.FAILED:
-        print("Failed - Fatal issue(s) occurred:")
-        for message in cpu.status.messages:
-            print(message)
+   elif cpu.status.type == StatusType.PARTIAL:
+       print("Partial error(s) occurred:")
+       for message in cpu.status.messages:
+           print(message)
+       print(cpu.name)
 
-        exit(1) # Don't continue executing
-
-    elif cpu.status.type == StatusType.PARTIAL:
-        print("Partial Error - Issue(s) occurred:")
-        for message in cpu.status.messages:
-            print(message)
-
-        # Continue executing
-        print(cpu.name)
-
-    else:
-        # It is StatusType.SUCCESS
-        print("Successfully retrieved info!")
-        print(cpu.name)
-
-Output:
+   else:
+       print("Success:", cpu.name)
 
 .. code-block:: shell
 
-    Successfully retrieved info!
-    Apple M3
-
+   Success: Apple M3

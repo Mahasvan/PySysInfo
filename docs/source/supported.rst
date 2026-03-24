@@ -1,4 +1,5 @@
 .. _supported:
+
 --------------------
 Supported Components
 --------------------
@@ -8,6 +9,7 @@ As of this version, HWProbe supports retrieving info from the following componen
 - CPU
 - GPU
 - Memory
+- Network
 - Storage
 
 To get started, visit :ref:`quickstart`.

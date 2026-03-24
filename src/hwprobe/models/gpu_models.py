@@ -55,7 +55,6 @@ class GPUInfo(BaseModel):
     vram: Optional[StorageSize] = None
 
     #: Only for Apple Silicon GPUs. ``null`` on all other platforms and GPUs.
-    #: ``null`` on all other platforms.
     apple_gpu_info: Optional[AppleExtendedGPUInfo] = None
 
 

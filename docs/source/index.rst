@@ -1,7 +1,4 @@
-.. HWProbe documentation master file, created by
-sphinx-quickstart on Wed Dec 31 19:12:18 2025.
-You can adapt this file completely to your liking, but it should at least
-contain the root `toctree` directive.
+.. HWProbe documentation master file
 
 ---------
 HWProbe
@@ -19,11 +16,29 @@ Features
 - Supports data retrieval as Class objects, Python dictionaries, or JSON-parsable strings.
 - For a list of supported hardware components, refer to :ref:`supported`.
 
-------
+=======
+Install
+=======
 
-To get started, refer to :ref:`quickstart`.
+**Prerequisites:** Python 3.9 or newer.
 
--------
+.. code-block:: bash
+
+   pip install HWProbe
+
+=============
+Quick Example
+=============
+
+.. code-block:: python
+
+   from hwprobe import HardwareManager
+
+   manager = HardwareManager()
+   hardware = manager.fetch_hardware_info()
+   print(hardware.model_dump_json(indent=2))
+
+--------
 
 ========
 Contents
@@ -33,9 +48,6 @@ Contents
    :maxdepth: 2
 
    quickstart
-   hardware_managers
    querying_info
-   serialization
    supported
-   theory
    models
