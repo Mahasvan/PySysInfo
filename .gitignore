@@ -337,7 +337,9 @@ scalene*
 # Compiled Dynamic libraries
 *.so
 *.dylib
+!src/hwprobe/interops/mac/bindings/*.dylib
 *.dll
+!src/hwprobe/interops/win/bindings/*.dll
 *.so.*
 
 
