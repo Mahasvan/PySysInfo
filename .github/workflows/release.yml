@@ -1,0 +1,61 @@
+# Release workflow: builds the Python package and creates a GitHub Release.
+#
+# How to trigger a release:
+#   1. Bump the version in src/hwprobe/__init__.py
+#   2. Commit the change:
+#        git add src/hwprobe/__init__.py
+#        git commit -m "release: v0.1.0"
+#   3. Create and push a version tag:
+#        git tag v0.1.0
+#        git push origin main --tags
+#   4. The tag push automatically triggers this workflow.
+#
+# You can also trigger this manually from the Actions tab (workflow_dispatch).
+# When triggered manually, the version is read from src/hwprobe/__init__.py.
+
+name: Build & Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+
+      - name: Install build tool
+        run: pip install build
+
+      - name: Build package
+        run: python -m build
+
+      # When triggered by a tag push, github.ref_name is the tag (e.g. "v0.1.0").
+      # When triggered manually, we fall back to reading __version__ from code.
+      - name: Determine version
+        id: version
+        run: |
+          if [[ "${{ github.ref_type }}" == "tag" ]]; then
+            echo "tag=${{ github.ref_name }}" >> "$GITHUB_OUTPUT"
+          else
+            VERSION=$(python -c "import sys; sys.path.insert(0, 'src'); from hwprobe import __version__; print(__version__)")
+            echo "tag=v${VERSION}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.version.outputs.tag }}
+          name: ${{ steps.version.outputs.tag }}
+          generate_release_notes: true
+          files: dist/*
