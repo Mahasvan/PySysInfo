@@ -34,8 +34,8 @@ jobs:
         with:
           python-version: "3.x"
 
-      - name: Install build tool
-        run: pip install build
+      - name: Install dependencies
+        run: pip install . build
 
       - name: Build package
         run: python -m build
@@ -48,7 +48,7 @@ jobs:
           if [[ "${{ github.ref_type }}" == "tag" ]]; then
             echo "tag=${{ github.ref_name }}" >> "$GITHUB_OUTPUT"
           else
-            VERSION=$(python -c "import sys; sys.path.insert(0, 'src'); from hwprobe import __version__; print(__version__)")
+            VERSION=$(python -c "from hwprobe import __version__; print(__version__)")
             echo "tag=v${VERSION}" >> "$GITHUB_OUTPUT"
           fi
 
