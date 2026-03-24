@@ -4,12 +4,12 @@ import platform
 import sys
 import time
 
-# Add src to path so we can import pysysinfo
+# Add src to path so we can import hwprobe
 sys.path.append(os.path.join(os.path.dirname(__file__), "src"))
 
-import pysysinfo
+import hwprobe
 
-print("Version:", pysysinfo.__version__)
+print("Version:", hwprobe.__version__)
 
 global_start_time = time.time()
 
@@ -20,7 +20,7 @@ elif platform.system() == "Darwin":
 else:
     print("OS: Linux")
 
-hm = pysysinfo.HardwareManager()
+hm = hwprobe.HardwareManager()
 
 loading_end_time = time.time()
 

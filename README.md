@@ -1,28 +1,28 @@
-# PySysInfo
+# HWProbe
 
 A Python Library to simplify retrieval of hardware components of your computer.
 
-- To get started, read the **[Quickstart](https://mahasvan.github.io/PySysInfo/quickstart.html).**
-- Additionally, you can view the **[Documentation](https://mahasvan.github.io/PySysInfo/)**.
+- To get started, read the **[Quickstart](https://mahasvan.github.io/HWProbe/quickstart.html).**
+- Additionally, you can view the **[Documentation](https://mahasvan.github.io/HWProbe/)**.
 
 ## Installation
 
 ### macOS / Linux
 
 ```bash
-pip3 install --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple/ PySysInfo
+pip3 install --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple/ HWProbe
 ```
 
 ### Windows
 
 ```bash
-pip install --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple/ PySysInfo
+pip install --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple/ HWProbe
 ```
 
 ## Usage
 
 ```python
-from pysysinfo import HardwareManager
+from hwprobe import HardwareManager
 import json
 
 hm = HardwareManager()

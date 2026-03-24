@@ -1,4 +1,4 @@
-from src.pysysinfo import HardwareManager
+from src.hwprobe import HardwareManager
 
 hm = HardwareManager()
 

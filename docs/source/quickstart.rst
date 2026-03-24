@@ -14,7 +14,7 @@ Currently, the project is hosted on TestPyPI. To install, run:
 
 .. code-block:: bash
 
-   pip3 install --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple/ PySysInfo
+   pip3 install --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple/ HWProbe
 
 The official PyPI release is:
 
@@ -27,7 +27,7 @@ Instantiate the platform-aware manager and collect everything in one shot:
 
 .. code-block:: python
 
-   from pysysinfo import HardwareManager
+   from hwprobe import HardwareManager
 
    manager = HardwareManager()
    hardware = manager.fetch_hardware_info()
@@ -41,7 +41,7 @@ Fetch individual components when you only need one subsystem:
 
 .. code-block:: python
 
-   from pysysinfo import HardwareManager
+   from hwprobe import HardwareManager
 
    manager = HardwareManager()
 

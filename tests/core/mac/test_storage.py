@@ -1,8 +1,8 @@
 from dataclasses import dataclass
 from unittest.mock import patch, MagicMock
 
-from pysysinfo.core.mac.storage import fetch_storage_info
-from pysysinfo.models.status_models import StatusType
+from hwprobe.core.mac.storage import fetch_storage_info
+from hwprobe.models.status_models import StatusType
 
 
 # ── lightweight stand-in for the binding's dataclass ─────────────────────────
@@ -131,13 +131,13 @@ def _patch_binding(disk_list):
 
     return patch.dict(
         "sys.modules",
-        {"pysysinfo.interops.mac.bindings.storage_info": mock_module},
+        {"hwprobe.interops.mac.bindings.storage_info": mock_module},
     )
 
 
 def _run(disk_list):
     import sys
-    sys.modules.pop("pysysinfo.interops.mac.bindings.storage_info", None)
+    sys.modules.pop("hwprobe.interops.mac.bindings.storage_info", None)
     with _patch_binding(disk_list):
         return fetch_storage_info()
 
@@ -153,7 +153,7 @@ class TestBindingLoadFailures:
         import sys
         import importlib.abc
 
-        _TARGET = "pysysinfo.interops.mac.bindings.storage_info"
+        _TARGET = "hwprobe.interops.mac.bindings.storage_info"
 
         class _DylibMissingFinder(importlib.abc.MetaPathFinder):
             def find_spec(self, fullname, path, target=None):
@@ -188,9 +188,9 @@ class TestBindingLoadFailures:
         )
 
         import sys
-        sys.modules.pop("pysysinfo.interops.mac.bindings.storage_info", None)
+        sys.modules.pop("hwprobe.interops.mac.bindings.storage_info", None)
 
-        with patch.dict("sys.modules", {"pysysinfo.interops.mac.bindings.storage_info": mock_module}):
+        with patch.dict("sys.modules", {"hwprobe.interops.mac.bindings.storage_info": mock_module}):
             info = fetch_storage_info()
 
         assert info.status.type == StatusType.FAILED
@@ -203,9 +203,9 @@ class TestBindingLoadFailures:
         mock_module.get_storage_info.side_effect = OSError("Unexpected OS error")
 
         import sys
-        sys.modules.pop("pysysinfo.interops.mac.bindings.storage_info", None)
+        sys.modules.pop("hwprobe.interops.mac.bindings.storage_info", None)
 
-        with patch.dict("sys.modules", {"pysysinfo.interops.mac.bindings.storage_info": mock_module}):
+        with patch.dict("sys.modules", {"hwprobe.interops.mac.bindings.storage_info": mock_module}):
             info = fetch_storage_info()
 
         assert info.status.type == StatusType.FAILED
@@ -433,7 +433,7 @@ class TestEdgeCases:
         assert info.modules[0].size.capacity == size_8tb // (1024 * 1024)
 
     def test_return_type_is_storage_info(self):
-        from pysysinfo.models.storage_models import StorageInfo
+        from hwprobe.models.storage_models import StorageInfo
         info = _run([_nvme_ssd()])
         assert isinstance(info, StorageInfo)
 

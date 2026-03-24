@@ -9,17 +9,17 @@ autodoc_mock_imports = []
 if sys.platform != "win32":
     autodoc_mock_imports += [
         "winreg",
-        "pysysinfo.interops.win",
-        "pysysinfo.core.windows.audio",
-        "pysysinfo.core.windows.baseboard",
-        "pysysinfo.core.windows.common",
-        "pysysinfo.core.windows.cpu",
-        "pysysinfo.core.windows.display",
-        "pysysinfo.core.windows.graphics",
-        "pysysinfo.core.windows.memory",
-        "pysysinfo.core.windows.network",
-        "pysysinfo.core.windows.storage",
-        "pysysinfo.core.windows.win_enum",
+        "hwprobe.interops.win",
+        "hwprobe.core.windows.audio",
+        "hwprobe.core.windows.baseboard",
+        "hwprobe.core.windows.common",
+        "hwprobe.core.windows.cpu",
+        "hwprobe.core.windows.display",
+        "hwprobe.core.windows.graphics",
+        "hwprobe.core.windows.memory",
+        "hwprobe.core.windows.network",
+        "hwprobe.core.windows.storage",
+        "hwprobe.core.windows.win_enum",
     ]
 
 if sys.platform != "darwin":
@@ -39,12 +39,12 @@ if sys.platform != "darwin":
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
 
-import pysysinfo
+import hwprobe
 
-project = 'PySysInfo'
+project = 'HWProbe'
 copyright = '2025, Mahasvan Mohan'
 author = 'Mahasvan Mohan'
-release = pysysinfo.__version__
+release = hwprobe.__version__
 
 autodoc_class_signature = "separated"
 add_module_names = False

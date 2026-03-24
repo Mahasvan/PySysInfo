@@ -2,7 +2,7 @@ import builtins
 import os
 from unittest.mock import MagicMock
 
-from pysysinfo.core.linux.memory import (
+from hwprobe.core.linux.memory import (
     fetch_memory_info,
     _part_no,
     _dimm_type,
@@ -11,9 +11,9 @@ from pysysinfo.core.linux.memory import (
     _ecc_support,
     _dimm_speed,
 )
-from pysysinfo.models.memory_models import MemoryModuleSlot
-from pysysinfo.models.size_models import Megabyte, Kilobyte
-from pysysinfo.models.status_models import StatusType
+from hwprobe.models.memory_models import MemoryModuleSlot
+from hwprobe.models.size_models import Megabyte, Kilobyte
+from hwprobe.models.status_models import StatusType
 
 
 class TestPartNo:
@@ -524,7 +524,7 @@ class TestLinuxMemory:
         def mock_megabyte(**kwargs):
             raise ValueError("Capacity Error")
 
-        monkeypatch.setattr("pysysinfo.core.linux.memory.Megabyte", mock_megabyte)
+        monkeypatch.setattr("hwprobe.core.linux.memory.Megabyte", mock_megabyte)
 
         memory_info = fetch_memory_info()
         # The exception is caught by outer except block

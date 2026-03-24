@@ -9,10 +9,10 @@ Here is an example of using ``.model_dump()`` to output a Python dictionary:
 
 .. code-block:: python
 
-    import pysysinfo
+    import hwprobe
     from pprint import pprint
 
-    hm = pysysinfo.HardwareManager()
+    hm = hwprobe.HardwareManager()
 
     cpu = hm.fetch_cpu_info()
     pprint(cpu.model_dump())

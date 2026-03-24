@@ -1,13 +1,13 @@
 # Documentation
 
-This file contains steps to build documentation for PySysInfo.
+This file contains steps to build documentation for HWProbe.
 
 ## Building Documentation
 
 - Optional: Make a venv
 
 ```bash
-cd PySysInfo
+cd HWProbe
 python -m venv venv
 source venv/bin/activate  # On Windows: venv\Scripts\activate
 ````

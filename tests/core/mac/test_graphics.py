@@ -1,11 +1,11 @@
 """
-Tests for pysysinfo.core.mac.graphics.fetch_graphics_info
+Tests for hwprobe.core.mac.graphics.fetch_graphics_info
 
 Strategy
 --------
 fetch_graphics_info imports the binding lazily (inside the try block), so
 every test patches the binding at the point it is looked up:
-    pysysinfo.core.mac.graphics  <– the module under test
+    hwprobe.core.mac.graphics  <– the module under test
 
 We build minimal fake GPUProperties / AppleGPUProperties objects that mirror
 the real dataclasses from the binding, without importing the dylib at all.
@@ -15,8 +15,8 @@ from dataclasses import dataclass
 from typing import Optional
 from unittest.mock import patch, MagicMock
 
-from pysysinfo.core.mac.graphics import fetch_graphics_info
-from pysysinfo.models.status_models import StatusType
+from hwprobe.core.mac.graphics import fetch_graphics_info
+from hwprobe.models.status_models import StatusType
 
 
 # ── lightweight stand-ins for the binding's dataclasses ─────────────────────
@@ -95,7 +95,7 @@ def _patch_binding(gpu_list):
 
     return patch.dict(
         "sys.modules",
-        {"pysysinfo.interops.mac.bindings.gpu_info": mock_module},
+        {"hwprobe.interops.mac.bindings.gpu_info": mock_module},
     )
 
 
@@ -110,7 +110,7 @@ class TestBindingLoadFailures:
 
         The binding raises FileNotFoundError at *module level* (not inside a
         function), so the exception surfaces when Python executes the
-        ``from pysysinfo.interops.mac.bindings.gpu_info import ...`` line
+        ``from hwprobe.interops.mac.bindings.gpu_info import ...`` line
         inside fetch_graphics_info.
 
         We simulate this by installing a temporary meta-path finder that
@@ -120,7 +120,7 @@ class TestBindingLoadFailures:
         import sys
         import importlib.machinery
 
-        _TARGET = "pysysinfo.interops.mac.bindings.gpu_info"
+        _TARGET = "hwprobe.interops.mac.bindings.gpu_info"
 
         class _DylibMissingFinder(importlib.abc.MetaPathFinder):
             def find_spec(self, fullname, path, target=None):
@@ -155,9 +155,9 @@ class TestBindingLoadFailures:
         )
 
         import sys
-        sys.modules.pop("pysysinfo.interops.mac.bindings.gpu_info", None)
+        sys.modules.pop("hwprobe.interops.mac.bindings.gpu_info", None)
 
-        with patch.dict("sys.modules", {"pysysinfo.interops.mac.bindings.gpu_info": mock_module}):
+        with patch.dict("sys.modules", {"hwprobe.interops.mac.bindings.gpu_info": mock_module}):
             info = fetch_graphics_info()
 
         assert info.status.type == StatusType.FAILED
@@ -170,9 +170,9 @@ class TestBindingLoadFailures:
         mock_module.get_gpu_info.side_effect = OSError("Unexpected OS error")
 
         import sys
-        sys.modules.pop("pysysinfo.interops.mac.bindings.gpu_info", None)
+        sys.modules.pop("hwprobe.interops.mac.bindings.gpu_info", None)
 
-        with patch.dict("sys.modules", {"pysysinfo.interops.mac.bindings.gpu_info": mock_module}):
+        with patch.dict("sys.modules", {"hwprobe.interops.mac.bindings.gpu_info": mock_module}):
             info = fetch_graphics_info()
 
         assert info.status.type == StatusType.FAILED
@@ -187,7 +187,7 @@ class TestAppleSiliconGPU:
 
     def _run(self, gpu_list):
         import sys
-        sys.modules.pop("pysysinfo.interops.mac.bindings.gpu_info", None)
+        sys.modules.pop("hwprobe.interops.mac.bindings.gpu_info", None)
         with _patch_binding(gpu_list):
             return fetch_graphics_info()
 
@@ -276,7 +276,7 @@ class TestDiscreteGPU:
 
     def _run(self, gpu_list):
         import sys
-        sys.modules.pop("pysysinfo.interops.mac.bindings.gpu_info", None)
+        sys.modules.pop("hwprobe.interops.mac.bindings.gpu_info", None)
         with _patch_binding(gpu_list):
             return fetch_graphics_info()
 
@@ -363,7 +363,7 @@ class TestMultipleGPUs:
 
     def _run(self, gpu_list):
         import sys
-        sys.modules.pop("pysysinfo.interops.mac.bindings.gpu_info", None)
+        sys.modules.pop("hwprobe.interops.mac.bindings.gpu_info", None)
         with _patch_binding(gpu_list):
             return fetch_graphics_info()
 
@@ -423,7 +423,7 @@ class TestEdgeCases:
 
     def _run(self, gpu_list):
         import sys
-        sys.modules.pop("pysysinfo.interops.mac.bindings.gpu_info", None)
+        sys.modules.pop("hwprobe.interops.mac.bindings.gpu_info", None)
         with _patch_binding(gpu_list):
             return fetch_graphics_info()
 
@@ -506,6 +506,6 @@ class TestEdgeCases:
         assert info.modules[0].vram.capacity == 192 * 1024
 
     def test_return_type_is_graphics_info(self):
-        from pysysinfo.models.gpu_models import GraphicsInfo
+        from hwprobe.models.gpu_models import GraphicsInfo
         info = self._run([_apple_gpu()])
         assert isinstance(info, GraphicsInfo)

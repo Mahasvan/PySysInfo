@@ -3,7 +3,7 @@
 Supported Components
 --------------------
 
-As of this version, PySysInfo supports retrieving info from the following components.
+As of this version, HWProbe supports retrieving info from the following components.
 
 - CPU
 - GPU

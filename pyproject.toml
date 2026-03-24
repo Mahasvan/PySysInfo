@@ -3,10 +3,10 @@ requires = ["setuptools"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools.dynamic]
-version = { attr = "pysysinfo.__version__" }
+version = { attr = "hwprobe.__version__" }
 
 [project]
-name = "PySysInfo"
+name = "HWProbe"
 dynamic = ["version"]
 description = "A cross-platform system information gatherer"
 readme = "README.md"
@@ -31,8 +31,8 @@ dependencies = [
 where = ["src"]
 
 [tool.setuptools.package-data]
-"pysysinfo" = ["interops/**/dll/*.dll"]
+"hwprobe" = ["interops/**/dll/*.dll"]
 
 [project.urls]
-Homepage = "https://github.com/Mahasvan/PySysInfo"
-Issues = "https://github.com/Mahasvan/PySysInfo/issues"
+Homepage = "https://github.com/Mahasvan/HWProbe"
+Issues = "https://github.com/Mahasvan/HWProbe/issues"

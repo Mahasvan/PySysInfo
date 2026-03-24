@@ -1,11 +1,11 @@
 import pytest
 
-import pysysinfo.core.windows.network as network
-from pysysinfo.interops.win.legacy.constants import (
+import hwprobe.core.windows.network as network
+from hwprobe.interops.win.legacy.constants import (
     STATUS_FAILURE,
 )
-from pysysinfo.models.network_models import NICInfo, NetworkInfo
-from pysysinfo.models.status_models import StatusType
+from hwprobe.models.network_models import NICInfo, NetworkInfo
+from hwprobe.models.status_models import StatusType
 
 
 # ============================================================

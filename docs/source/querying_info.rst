@@ -14,10 +14,10 @@ In the following example, we query all available information from the system.
 
 .. code-block:: python
 
-    import pysysinfo
-    from pysysinfo.models.info_models import HardwareInfo
+    import hwprobe
+    from hwprobe.models.info_models import HardwareInfo
 
-    hm = pysysinfo.HardwareManager()
+    hm = hwprobe.HardwareManager()
     info = hm.fetch_hardware_info()
 
     print(type(info))
@@ -27,14 +27,14 @@ Output on a macOS machine:
 
 .. code-block:: shell
 
-    <class 'pysysinfo.models.info_models.MacHardwareInfo'>
+    <class 'hwprobe.models.info_models.MacHardwareInfo'>
     True
 
 ------------
 
 ``fetch_hardware_info()`` returns an instance of an OS-specific ``HardwareInfo`` class, which has the following structure.
 
-.. autoclass:: pysysinfo.models.info_models.HardwareInfo
+.. autoclass:: hwprobe.models.info_models.HardwareInfo
     :members:
     :exclude-members: __new__,__init__,model_config
 
@@ -44,17 +44,17 @@ Depending on the OS, one of the following classes is returned.
 Do note that the structure and usage remain the same.
 
 
-.. autoclass:: pysysinfo.models.info_models.WindowsHardwareInfo
+.. autoclass:: hwprobe.models.info_models.WindowsHardwareInfo
     :show-inheritance:
     :noindex:
     :exclude-members: __new__,__init__
 
-.. autoclass:: pysysinfo.models.info_models.MacHardwareInfo
+.. autoclass:: hwprobe.models.info_models.MacHardwareInfo
     :show-inheritance:
     :exclude-members: __new__,__init__
     :noindex:
 
-.. autoclass:: pysysinfo.models.info_models.LinuxHardwareInfo
+.. autoclass:: hwprobe.models.info_models.LinuxHardwareInfo
     :show-inheritance:
     :exclude-members: __new__,__init__
     :noindex:
@@ -68,9 +68,9 @@ The same structure can be followed for GPU, Memory, etc.
 
 .. code-block:: python
 
-    import pysysinfo
+    import hwprobe
 
-    hm = pysysinfo.HardwareManager()
+    hm = hwprobe.HardwareManager()
     cpu_info = hm.fetch_cpu_info()
 
     print(type(cpu_info))
@@ -80,14 +80,14 @@ Output:
 
 .. code-block:: shell
 
-    <class 'pysysinfo.models.cpu_models.CPUInfo'>
+    <class 'hwprobe.models.cpu_models.CPUInfo'>
     Apple M3
 
 ------------------------
 Accessing Retrieved Data
 ------------------------
 
-There are two ways to access the data retrieved from PySysInfo.
+There are two ways to access the data retrieved from HWProbe.
 
 -------------
 
@@ -96,9 +96,9 @@ or the other single-component methods into a variable.
 
 .. code-block:: python
 
-    import pysysinfo
+    import hwprobe
 
-    hm = pysysinfo.HardwareManager()
+    hm = hwprobe.HardwareManager()
     info = hm.fetch_hardware_info()
 
     print(info.cpu.name)
@@ -121,9 +121,9 @@ Here's another example:
 
 .. code-block:: python
 
-    import pysysinfo
+    import hwprobe
 
-    hm = pysysinfo.HardwareManager()
+    hm = hwprobe.HardwareManager()
 
     storage = hm.fetch_storage_info()
 
@@ -147,15 +147,15 @@ Output:
 -------------
 
 The second way is to use the ``info`` attribute of the
-:class:`HardwareManager <pysysinfo.models.info_models.HardwareManagerInterface>`.
+:class:`HardwareManager <hwprobe.models.info_models.HardwareManagerInterface>`.
 Querying any data automatically populates the ``info`` attribute,
 meaning it can be accessed directly from the HardwareManager instance.
 
 .. code-block:: python
 
-    import pysysinfo
+    import hwprobe
 
-    hm = pysysinfo.HardwareManager()
+    hm = hwprobe.HardwareManager()
 
     hm.fetch_cpu_info()
     print("CPU Name:", hm.info.cpu.name)
@@ -174,15 +174,15 @@ Output:
     Found 1 disks
     CPU Manufacturer: Apple
 
-This is possible because ``hm.info`` is an instance of the :class:`HardwareInfo <pysysinfo.models.info_models.HardwareInfo>` class.
+This is possible because ``hm.info`` is an instance of the :class:`HardwareInfo <hwprobe.models.info_models.HardwareInfo>` class.
 
 The data returned from ``fetch_hardware_info()`` and ``hm.info`` are the exact same.
 
 .. code-block:: python
 
-    import pysysinfo
+    import hwprobe
 
-    hm = pysysinfo.HardwareManager()
+    hm = hwprobe.HardwareManager()
 
     info = hm.fetch_hardware_info()
     print(hm.info == info)
@@ -226,9 +226,9 @@ When querying complete information:
 
 .. code-block:: python
 
-    import pysysinfo
+    import hwprobe
 
-    hm = pysysinfo.HardwareManager()
+    hm = hwprobe.HardwareManager()
 
     hm.fetch_hardware_info()
 
@@ -248,7 +248,7 @@ Output:
 
 the ``status`` property follows the following structure:
 
-.. autoclass:: pysysinfo.models.status_models.Status
+.. autoclass:: hwprobe.models.status_models.Status
     :members:
     :exclude-members: model_config
     :no-index:
@@ -258,7 +258,7 @@ the ``status`` property follows the following structure:
 The ``type`` attribute is an Enum.
 Depending on the errors encountered, it can be one of the following three values.
 
-.. autoclass:: pysysinfo.models.status_models.StatusType
+.. autoclass:: hwprobe.models.status_models.StatusType
     :members:
     :no-index:
 
@@ -269,10 +269,10 @@ to handle partial and fatal errors.
 
 .. code-block:: python
 
-    import pysysinfo
-    from pysysinfo.models.status_models import StatusType
+    import hwprobe
+    from hwprobe.models.status_models import StatusType
 
-    hm = pysysinfo.HardwareManager()
+    hm = hwprobe.HardwareManager()
 
     cpu = hm.fetch_cpu_info()
 

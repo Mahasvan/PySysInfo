@@ -1,13 +1,13 @@
 Theory
 ======
 
-PySysInfo standardizes OS-specific discovery into a shared `HardwareInfo` model. Each platform manager wraps a set of `fetch_*` helpers that pull from native sources and populate Pydantic models for CPU, memory, storage, and graphics.
+HWProbe standardizes OS-specific discovery into a shared `HardwareInfo` model. Each platform manager wraps a set of `fetch_*` helpers that pull from native sources and populate Pydantic models for CPU, memory, storage, and graphics.
 
 Platform data sources
 ---------------------
-- Linux: reads system facts from the sysfs pseudo file system via `fetch_*` helpers under `pysysinfo.dumps.linux`.
-- Windows: queries the Registry and WMI through the helpers in `pysysinfo.dumps.windows`.
-- macOS: uses `sysctl` and IORegistry via helpers in `pysysinfo.dumps.mac`.
+- Linux: reads system facts from the sysfs pseudo file system via `fetch_*` helpers under `hwprobe.dumps.linux`.
+- Windows: queries the Registry and WMI through the helpers in `hwprobe.dumps.windows`.
+- macOS: uses `sysctl` and IORegistry via helpers in `hwprobe.dumps.mac`.
 
 Per-component collection (placeholder)
 -------------------------------------------

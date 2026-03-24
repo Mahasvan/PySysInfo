@@ -6,8 +6,8 @@ Hardware Managers
 
 The first step to retrieving hardware information is to instantiate a ``HardwareManager``.
 
-Depending on the OS present, PySysInfo can automatically load the appropriate Hardware Manager class.
-The Hardware Manager classes implement the structure of :class:`HardwareManagerInterface <pysysinfo.models.info_models.HardwareManagerInterface>`.
+Depending on the OS present, HWProbe can automatically load the appropriate Hardware Manager class.
+The Hardware Manager classes implement the structure of :class:`HardwareManagerInterface <hwprobe.models.info_models.HardwareManagerInterface>`.
 
 
 --------------------------------
@@ -18,10 +18,10 @@ The following codeblock shows how a ``HardwareManager`` is instantiated.
 
 .. code-block:: python
 
-    import pysysinfo
-    from pysysinfo.models.info_models import HardwareManagerInterface
+    import hwprobe
+    from hwprobe.models.info_models import HardwareManagerInterface
 
-    hm = pysysinfo.HardwareManager()
+    hm = hwprobe.HardwareManager()
 
     print(type(hm))
     print(isinstance(hm, HardwareManagerInterface))
@@ -31,7 +31,7 @@ Output:
 
 .. code-block:: shell
 
-    <class 'pysysinfo.core.mac.MacHardwareManager'>
+    <class 'hwprobe.core.mac.MacHardwareManager'>
     True
 
 The type of HardwareManager instantiated depends on the OS.
@@ -41,15 +41,15 @@ On macOS, as we can see, the ``MacHardwareManager`` was instantiated.
 
 Depending on your OS, when ``HardwareManager()`` is called, one of the following classes will be instantiated:
 
-.. autoclass:: pysysinfo.core.windows.manager.WindowsHardwareManager
+.. autoclass:: hwprobe.core.windows.manager.WindowsHardwareManager
     :exclude-members: __init__,__new__
     :noindex:
 
-.. autoclass:: pysysinfo.core.mac.manager.MacHardwareManager
+.. autoclass:: hwprobe.core.mac.manager.MacHardwareManager
     :exclude-members: __init__,__new__
     :noindex:
 
-.. autoclass:: pysysinfo.core.linux.manager.LinuxHardwareManager
+.. autoclass:: hwprobe.core.linux.manager.LinuxHardwareManager
     :exclude-members: __init__,__new__
     :noindex:
 
@@ -57,7 +57,7 @@ Depending on your OS, when ``HardwareManager()`` is called, one of the following
 
 All ``HardwareManager`` classes have the following property and methods:
 
-.. autoclass:: pysysinfo.models.info_models.HardwareManagerInterface
+.. autoclass:: hwprobe.models.info_models.HardwareManagerInterface
     :members:
     :noindex:
 
@@ -68,9 +68,9 @@ We can now use this knowledge to query information about the hardware.
 
 .. code-block:: python
 
-    import pysysinfo
+    import hwprobe
 
-    hm = pysysinfo.HardwareManager()
+    hm = hwprobe.HardwareManager()
 
     info = hm.fetch_hardware_info()
     print(type(info))
@@ -79,16 +79,16 @@ Output on a macOS machine:
 
 .. code-block:: shell
 
-    <class 'pysysinfo.models.info_models.MacHardwareInfo'>
+    <class 'hwprobe.models.info_models.MacHardwareInfo'>
 
 ------------
 
 Information can be queried all at once, or on a per-component basis.
 
-:meth:`fetch_hardware_info() <pysysinfo.models.info_models.HardwareManagerInterface.fetch_hardware_info>` can be used to query all info.
+:meth:`fetch_hardware_info() <hwprobe.models.info_models.HardwareManagerInterface.fetch_hardware_info>` can be used to query all info.
 
 The other methods in the
-:class:`HardwareManagerInterface <pysysinfo.models.info_models.HardwareManagerInterface>`
+:class:`HardwareManagerInterface <hwprobe.models.info_models.HardwareManagerInterface>`
 class can be used to query each component.
 
 We explore this in the :ref:`querying-info` section.

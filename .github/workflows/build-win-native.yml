@@ -4,15 +4,15 @@ on:
   push:
     branches: [ main ]
     paths:
-      - 'src/pysysinfo/interops/win/include/**'
-      - 'src/pysysinfo/interops/win/src/**'
-      - 'src/pysysinfo/interops/win/CMakeLists.txt'
+      - '../../src/hwprobe/interops/win/include/**'
+      - '../../src/hwprobe/interops/win/src/**'
+      - '../../src/hwprobe/interops/win/CMakeLists.txt'
       - '.github/workflows/build-win-native.yml'
   pull_request:
     paths:
-      - 'src/pysysinfo/interops/win/include/**'
-      - 'src/pysysinfo/interops/win/src/**'
-      - 'src/pysysinfo/interops/win/CMakeLists.txt'
+      - '../../src/hwprobe/interops/win/include/**'
+      - '../../src/hwprobe/interops/win/src/**'
+      - '../../src/hwprobe/interops/win/CMakeLists.txt'
       - '.github/workflows/build-win-native.yml'
   workflow_dispatch:
 
@@ -28,7 +28,7 @@ jobs:
       - name: Configure
         shell: bash
         run: |
-          cmake -S src/pysysinfo/interops/win -B build-win \
+          cmake -S src/hwprobe/interops/win -B build-win \
             -G Ninja \
             -DCMAKE_C_COMPILER=gcc \
             -DCMAKE_CXX_COMPILER=g++ \
@@ -41,14 +41,14 @@ jobs:
       - name: Verify artifact
         shell: bash
         run: |
-          file src/pysysinfo/interops/win/bindings/device_info.dll
-          objdump -p src/pysysinfo/interops/win/bindings/device_info.dll | grep "DLL Name"
+          file src/hwprobe/interops/win/bindings/device_info.dll
+          objdump -p src/hwprobe/interops/win/bindings/device_info.dll | grep "DLL Name"
 
       - name: Upload dll
         uses: actions/upload-artifact@v4
         with:
           name: device_info-windows
-          path: src/pysysinfo/interops/win/bindings/device_info.dll
+          path: src/hwprobe/interops/win/bindings/device_info.dll
 
       - name: Commit updated binary
         if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
@@ -56,7 +56,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add src/pysysinfo/interops/win/bindings/device_info.dll
+          git add src/hwprobe/interops/win/bindings/device_info.dll
           if git diff --cached --quiet; then
             echo "No binary changes to commit"
           else

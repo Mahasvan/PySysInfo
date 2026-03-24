@@ -4,15 +4,15 @@ from ctypes import py_object, addressof
 
 import pytest
 
-import pysysinfo.core.windows.display as display
-from pysysinfo.interops.win.legacy.constants import (
+import hwprobe.core.windows.display as display
+from hwprobe.interops.win.legacy.constants import (
     STATUS_OK,
     STATUS_NOK,
     STATUS_INVALID_ARG,
     STATUS_FAILURE,
 )
-from pysysinfo.models.display_models import DisplayInfo
-from pysysinfo.models.status_models import StatusType
+from hwprobe.models.display_models import DisplayInfo
+from hwprobe.models.status_models import StatusType
 
 
 # ============================================================

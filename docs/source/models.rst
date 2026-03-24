@@ -4,7 +4,7 @@
 Models
 ------
 
-PySysInfo exposes Pydantic models for each hardware subsystem plus shared helpers for capacity units and discovery status.
+HWProbe exposes Pydantic models for each hardware subsystem plus shared helpers for capacity units and discovery status.
 
 
 ================
@@ -13,7 +13,7 @@ Component Models
 
 The Model for each component, such as CPU and GPU are subclasses of the ``ComponentInfo`` class.
 
-.. autoclass:: pysysinfo.models.component_model.ComponentInfo
+.. autoclass:: hwprobe.models.component_model.ComponentInfo
     :members:
     :exclude-members: model_config
 
@@ -27,7 +27,7 @@ CPU
 
 the information retrieved about the CPU is stored as the following class.
 
-.. autopydantic_model:: pysysinfo.models.cpu_models.CPUInfo
+.. autopydantic_model:: hwprobe.models.cpu_models.CPUInfo
     :show-inheritance:
     :inherited-members: ComponentInfo
     :exclude-members: __init__
@@ -38,12 +38,12 @@ the information retrieved about the CPU is stored as the following class.
 GPU
 ===
 
-Since there may be multiple GPUs present, the output for :meth:`fetch_graphics_info() <pysysinfo.models.info_models.HardwareManagerInterface.fetch_graphics_info>`
+Since there may be multiple GPUs present, the output for :meth:`fetch_graphics_info() <hwprobe.models.info_models.HardwareManagerInterface.fetch_graphics_info>`
 is a ``GraphicsInfo`` object, with the ``modules`` property containing a list of ``GPUInfo`` objects.
 
 ------
 
-.. autopydantic_model:: pysysinfo.models.gpu_models.GraphicsInfo
+.. autopydantic_model:: hwprobe.models.gpu_models.GraphicsInfo
     :show-inheritance:
     :inherited-members: ComponentInfo
     :exclude-members: __init__
@@ -51,13 +51,13 @@ is a ``GraphicsInfo`` object, with the ``modules`` property containing a list of
 
 --------
 
-.. autopydantic_model:: pysysinfo.models.gpu_models.GPUInfo
+.. autopydantic_model:: hwprobe.models.gpu_models.GPUInfo
     :exclude-members: __init__
     :model-show-field-summary: False
 
 ---------
 
-.. autopydantic_model:: pysysinfo.models.gpu_models.AppleExtendedGPUInfo
+.. autopydantic_model:: hwprobe.models.gpu_models.AppleExtendedGPUInfo
     :exclude-members: __init__
     :model-show-field-summary: False
 
@@ -66,31 +66,31 @@ is a ``GraphicsInfo`` object, with the ``modules`` property containing a list of
 Memory
 ======
 
-When :meth:`fetch_memory_info() <pysysinfo.models.info_models.HardwareManagerInterface.fetch_memory_info>` is queried,
-a :class:`MemoryInfo <pysysinfo.models.memory_models.MemoryInfo>` object is returned.
+When :meth:`fetch_memory_info() <hwprobe.models.info_models.HardwareManagerInterface.fetch_memory_info>` is queried,
+a :class:`MemoryInfo <hwprobe.models.memory_models.MemoryInfo>` object is returned.
 
 Similar to GPUs, the details of all RAM devices are stored as a list of
-:class:`MemoryModuleInfo <pysysinfo.models.memory_models.MemoryModuleInfo>` objects,
+:class:`MemoryModuleInfo <hwprobe.models.memory_models.MemoryModuleInfo>` objects,
 in the ``modules`` property.
 
 The RAM slot is stored in the ``slot`` property, as a
-:class:`MemoryModuleSlot <pysysinfo.models.memory_models.MemoryModuleSlot>` object.
+:class:`MemoryModuleSlot <hwprobe.models.memory_models.MemoryModuleSlot>` object.
 
 --------
 
-.. autopydantic_model:: pysysinfo.models.memory_models.MemoryInfo
+.. autopydantic_model:: hwprobe.models.memory_models.MemoryInfo
     :exclude-members: __init__
     :model-show-field-summary: False
 
 --------
 
-.. autopydantic_model:: pysysinfo.models.memory_models.MemoryModuleInfo
+.. autopydantic_model:: hwprobe.models.memory_models.MemoryModuleInfo
     :exclude-members: __init__
     :model-show-field-summary: False
 
 --------
 
-.. autopydantic_model:: pysysinfo.models.memory_models.MemoryModuleSlot
+.. autopydantic_model:: hwprobe.models.memory_models.MemoryModuleSlot
     :exclude-members: __init__
     :model-show-field-summary: False
 
@@ -99,21 +99,21 @@ The RAM slot is stored in the ``slot`` property, as a
 Storage
 =======
 
-When :meth:`fetch_memory_info() <pysysinfo.models.info_models.HardwareManagerInterface.fetch_storage_info>`
-is queried, a :class:`StorageInfo <pysysinfo.models.storage_models.StorageInfo>` object is returned.
+When :meth:`fetch_memory_info() <hwprobe.models.info_models.HardwareManagerInterface.fetch_storage_info>`
+is queried, a :class:`StorageInfo <hwprobe.models.storage_models.StorageInfo>` object is returned.
 
 Like GPU and RAM devices, Storage devices are stored as a list of
-:class:`DiskInfo <pysysinfo.models.storage_models.DiskInfo>` objects in the ``modules`` property.
+:class:`DiskInfo <hwprobe.models.storage_models.DiskInfo>` objects in the ``modules`` property.
 
 ------
 
-.. autopydantic_model:: pysysinfo.models.storage_models.StorageInfo
+.. autopydantic_model:: hwprobe.models.storage_models.StorageInfo
     :exclude-members: __init__
     :model-show-field-summary: False
 
 ------
 
-.. autopydantic_model:: pysysinfo.models.storage_models.DiskInfo
+.. autopydantic_model:: hwprobe.models.storage_models.DiskInfo
     :exclude-members: __init__
     :model-show-field-summary: False
 
@@ -122,15 +122,15 @@ Like GPU and RAM devices, Storage devices are stored as a list of
 Status Models
 =============
 
-Every component's :class:`ComponentInfo <pysysinfo.models.component_model.ComponentInfo>` subclass has
-a :attr:`status <pysysinfo.models.component_model.ComponentInfo.status>` property,
+Every component's :class:`ComponentInfo <hwprobe.models.component_model.ComponentInfo>` subclass has
+a :attr:`status <hwprobe.models.component_model.ComponentInfo.status>` property,
 which contains information on the errors encountered while retrieving data.
 
-This property will be of the :class:`Status <pysysinfo.models.status_models.Status>` class.
+This property will be of the :class:`Status <hwprobe.models.status_models.Status>` class.
 
 ---------
 
-.. autopydantic_model:: pysysinfo.models.status_models.Status
+.. autopydantic_model:: hwprobe.models.status_models.Status
     :exclude-members: __init__
     :model-show-field-summary: False
 
@@ -140,7 +140,7 @@ The ``type`` property of the status indicates whether there were errors during t
 
 This is an Enum, with three possible values.
 
-.. autoclass:: pysysinfo.models.status_models.StatusType
+.. autoclass:: hwprobe.models.status_models.StatusType
     :members:
 
 
@@ -150,10 +150,10 @@ Size Models
 
 Capacities, such as the size of a RAM module, or the storage capacity of a Storage Disk,
 is expressed as one of the subclasses of the
-:class:`StorageSize <pysysinfo.models.size_models.StorageSize>` class.
+:class:`StorageSize <hwprobe.models.size_models.StorageSize>` class.
 
 
-.. autopydantic_model:: pysysinfo.models.size_models.StorageSize
+.. autopydantic_model:: hwprobe.models.size_models.StorageSize
     :exclude-members: __init__
     :model-show-field-summary: False
 
@@ -164,19 +164,19 @@ Every ``size`` parameter, that is of type ``StorageSize``, will of be one of the
 
 ----------
 
-.. autopydantic_model:: pysysinfo.models.size_models.Kilobyte
+.. autopydantic_model:: hwprobe.models.size_models.Kilobyte
     :exclude-members: __init__
     :model-show-field-summary: False
 
 ----------
 
-.. autopydantic_model:: pysysinfo.models.size_models.Megabyte
+.. autopydantic_model:: hwprobe.models.size_models.Megabyte
     :exclude-members: __init__
     :model-show-field-summary: False
 
 ----------
 
-.. autopydantic_model:: pysysinfo.models.size_models.Gigabyte
+.. autopydantic_model:: hwprobe.models.size_models.Gigabyte
     :exclude-members: __init__
     :model-show-field-summary: False
 
