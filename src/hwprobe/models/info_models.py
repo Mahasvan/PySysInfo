@@ -62,15 +62,3 @@ class HardwareManagerInterface:
     def fetch_network_info(self) -> NetworkInfo:
         """Fetches Network Information."""
         pass
-
-    def fetch_display_info(self) -> DisplayInfo:
-        """Fetches Display Information."""
-        pass
-
-    def fetch_audio_info(self) -> AudioInfo:
-        """Fetches Audio Information."""
-        pass
-
-    def fetch_baseboard_info(self) -> BaseboardInfo:
-        """Fetches Baseboard Information."""
-        pass
