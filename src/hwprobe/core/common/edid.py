@@ -50,6 +50,8 @@ def parse_edid(edid_data: bytes) -> DisplayModuleInfo:
     # todo: Parse EDID v1.2 and v1.3. This will work for v1.4, but need to verify on the older versions.
     module = DisplayModuleInfo()
 
+    edid_version = (edid_data[0x12], edid_data[0x13])
+
     module.year = edid_data[0x11] + 1990
 
     manuf_bits = int.from_bytes(edid_data[0x08:0x0A], byteorder="big")
@@ -65,17 +67,16 @@ def parse_edid(edid_data: bytes) -> DisplayModuleInfo:
     id_serial_number = "0x" + edid_data[0x0C:0x10].hex().upper()
 
     input_type = edid_data[0x14]
+    module.resolution = ResolutionInfo()
+
     if input_type >> 7 == 1:  # MSB is 1 => Digital output
-        module.resolution = ResolutionInfo()
-
-        module.resolution.bit_depth = BIT_DEPTH_ENUM.get(
-            _get_bits(input_type.to_bytes(1, byteorder="little"), 1, 4),
-            0)
-
-        module.interface = INTERFACE_ENUM.get(input_type & 7, "Unknown")
-
+        if edid_version >= (1, 4):
+            module.resolution.bit_depth = BIT_DEPTH_ENUM.get(
+                _get_bits(input_type.to_bytes(1, byteorder="little"), 1, 4),
+                0)
+            module.interface = INTERFACE_ENUM.get(input_type & 7, "Unknown")
     else:
-        pass
+        module.interface = "Analog"
 
     resolution = (0, 0, 0)  # Width, Height, Refresh Rate
     # We will use this tuple to find the max resolution and refresh rate, and update it in `module.resolution`.
@@ -125,4 +126,3 @@ def parse_edid(edid_data: bytes) -> DisplayModuleInfo:
     return module
 
 # todo: parse extension blocks
-# todo: remove logging when verified to work
