@@ -1,6 +1,5 @@
-import pytest
-
 import hwprobe.core.windows.network as network
+import pytest
 from hwprobe.interops.win.legacy.constants import (
     STATUS_FAILURE,
 )

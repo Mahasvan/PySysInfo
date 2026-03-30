@@ -1,15 +1,11 @@
 from typing import Optional
 
-from pydantic import BaseModel
-
-from hwprobe.models.audio_models import AudioInfo
-from hwprobe.models.baseboard_models import BaseboardInfo
 from hwprobe.models.cpu_models import CPUInfo
-from hwprobe.models.display_models import DisplayInfo
 from hwprobe.models.gpu_models import GraphicsInfo
 from hwprobe.models.memory_models import MemoryInfo
 from hwprobe.models.network_models import NetworkInfo
 from hwprobe.models.storage_models import StorageInfo
+from pydantic import BaseModel
 
 
 class HardwareInfo(BaseModel):

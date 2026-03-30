@@ -2,7 +2,6 @@ import plistlib
 from unittest.mock import patch, MagicMock
 
 import pytest
-
 from hwprobe.core.mac.network import (
     _fetch_controllers,
     _fetch_ethernet_details,

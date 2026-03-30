@@ -1,9 +1,8 @@
 from typing import Optional, List
 
-from pydantic import BaseModel, Field
-
 from hwprobe.models.component_model import ComponentInfo
 from hwprobe.models.size_models import StorageSize
+from pydantic import BaseModel, Field
 
 
 class AppleExtendedGPUInfo(BaseModel):

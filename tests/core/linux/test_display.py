@@ -1,15 +1,13 @@
 import builtins
 import os
-from unittest.mock import mock_open, patch
+from unittest.mock import mock_open
 
-import pytest
-
-from hwprobe.models.display_models import DisplayModuleInfo
 from hwprobe.core.linux.display import (
     _extract_pci_bdf_from_sysfs_path,
     _fetch_individual_monitor_info,
     fetch_display_info,
 )
+from hwprobe.models.display_models import DisplayModuleInfo
 
 
 class TestExtractPciBdfFromSysfsPath:
@@ -107,6 +105,7 @@ class TestFetchIndividualMonitorInfo:
         self._patch_exists(monkeypatch, {self.EDID_PATH, self.ACPI_PATH})
 
         real_open = builtins.open
+
         def fake_open(path, *args, **kwargs):
             if path == self.EDID_PATH:
                 return mock_open(read_data=b"\x01\x02")()

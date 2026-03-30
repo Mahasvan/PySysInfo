@@ -1,9 +1,7 @@
 from typing import Optional, List
 
-from pydantic import BaseModel, Field
-
 from hwprobe.models.component_model import ComponentInfo
-from hwprobe.models.status_models import Status
+from pydantic import BaseModel, Field
 
 
 class ResolutionInfo(BaseModel):
@@ -45,6 +43,7 @@ class DisplayModuleInfo(BaseModel):
 
     #: Three-letter code assigned to each manufacturer.
     manufacturer_code: Optional[str] = None
+
 
 class DisplayInfo(ComponentInfo):
     """Contains a list of ``DisplayModuleInfo`` objects."""

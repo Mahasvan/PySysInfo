@@ -41,7 +41,6 @@ print(json.dumps(json_data, indent=2))
 
 <summary>Sample Output</summary>
 
-
 ```json
 {
   "cpu": {
@@ -198,7 +197,6 @@ print(json.dumps(json_data, indent=2))
 | Vendor      |   ❌   |   ❌    |    ➖    |
 | Input       |   ❌   |   ❌    |    ❌    |
 
-
 1. In progress
 2. Need to rewrite C++ bindings (In progress)
 
@@ -210,7 +208,6 @@ print(json.dumps(json_data, indent=2))
 | Autodetection of storage units                                        |   ❌    |
 | PCI Lookup — [PCI IDs Repository](https://github.com/pciutils/pciids) |   ❌    |
 
-
 ## Credits
 
 There are so many people that helped with developing this library, directly or indirectly.
@@ -220,11 +217,11 @@ There are so many people that helped with developing this library, directly or i
 
 - [kernel-dev](https://github.com/kernel-dev) for OCSysInfo
 - People who helped with testing the myriad of hardware combinations:
-  - [AjaxR0](https://github.com/AjaxR0)
-  - [Andrupka](https://github.com/Andrupka)
-  - [chrisdodgers](https://github.com/chrisdodgers)
-  - [Dids](https://github.com/dids)
-  - [PJFrye](https://github.com/PJFrye)
-  - So many more people, you know who you are, thank you so much!
+    - [AjaxR0](https://github.com/AjaxR0)
+    - [Andrupka](https://github.com/Andrupka)
+    - [chrisdodgers](https://github.com/chrisdodgers)
+    - [Dids](https://github.com/dids)
+    - [PJFrye](https://github.com/PJFrye)
+    - So many more people, you know who you are, thank you so much!
 
 </details>

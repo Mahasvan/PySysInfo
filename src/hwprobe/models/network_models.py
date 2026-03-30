@@ -1,8 +1,7 @@
 from typing import List, Optional
 
-from pydantic import BaseModel, Field
-
 from hwprobe.models.component_model import ComponentInfo
+from pydantic import BaseModel, Field
 
 
 class NICInfo(BaseModel):

@@ -1,6 +1,5 @@
-from pydantic import BaseModel, Field
-
 from hwprobe.models.status_models import Status
+from pydantic import BaseModel, Field
 
 
 class ComponentInfo(BaseModel):

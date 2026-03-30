@@ -1,7 +1,6 @@
 import os
 
 import pytest
-
 from hwprobe.core.linux.common import pci_path_linux, _format_pci_component
 
 

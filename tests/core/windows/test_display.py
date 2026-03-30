@@ -2,9 +2,8 @@ import ctypes
 import struct
 from ctypes import py_object, addressof
 
-import pytest
-
 import hwprobe.core.windows.display as display
+import pytest
 from hwprobe.interops.win.legacy.constants import (
     STATUS_OK,
     STATUS_NOK,

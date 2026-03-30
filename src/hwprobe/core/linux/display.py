@@ -6,7 +6,6 @@ from hwprobe.core.common.edid import parse_edid
 from hwprobe.core.linux.common import pci_path_linux
 from hwprobe.models.display_models import DisplayInfo, DisplayModuleInfo
 
-
 _PCI_BDF_PATTERN = re.compile(r"^[0-9a-fA-F]{4}:[0-9a-fA-F]{2}:[0-9a-fA-F]{2}\.[0-7]$")
 
 

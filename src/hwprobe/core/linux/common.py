@@ -3,7 +3,6 @@
 import os
 import re
 
-
 _PCI_BDF_PATTERN = re.compile(r"^[0-9a-fA-F]{4}:[0-9a-fA-F]{2}:[0-9a-fA-F]{2}\.[0-7]$")
 
 
@@ -49,4 +48,3 @@ def _resolve_device_chain_from_sysfs(device_slot: str):
         return None
 
     return bdfs[: end + 1]
-

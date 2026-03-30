@@ -2,7 +2,6 @@ import plistlib
 from unittest.mock import patch
 
 import pytest
-
 from hwprobe.core.mac.memory import (
     get_ram_size_from_reg,
     get_arm_ram_info,

@@ -1,9 +1,8 @@
 from typing import List, Optional
 
-from pydantic import BaseModel, Field
-
 from hwprobe.models.component_model import ComponentInfo
 from hwprobe.models.size_models import StorageSize
+from pydantic import BaseModel, Field
 
 
 class DiskInfo(BaseModel):
