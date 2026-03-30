@@ -1,52 +1,52 @@
 # Source: https://github.com/KernelWanderers/OCSysInfo/blob/main/src/util/pci_root.py
 
+import os
+import re
+
+
+_PCI_BDF_PATTERN = re.compile(r"^[0-9a-fA-F]{4}:[0-9a-fA-F]{2}:[0-9a-fA-F]{2}\.[0-7]$")
+
 
 def pci_path_linux(device_slot: str):
     """
     :param device_slot: format: <domain>:<bus>:<slot>.<function>
-    :return: PCI Path
+    :return: PCI path, e.g. PciRoot(0x0)/Pci(0x2,0x0)
     """
-
-    # Construct PCI path
-    # E.g: PciRoot(0x0)/Pci(0x2,0x0)
     try:
         domain = int(device_slot.split(":")[0], 16)
-        pci_path = f"PciRoot({hex(domain)})"
     except (IndexError, ValueError):
         return None
 
-    # Collect path components (current device and parents)
-    paths = []
-
-    # Add current device
-    current_components = _get_address_components(device_slot)
-    if current_components:
-        paths.append(",".join(current_components))
-
-    # Find parent bridges
-    # Check if 'slot' is listed in the directory of other devices
-    parent_components = _get_address_components(device_slot)
-    if parent_components:
-        paths.append(",".join(parent_components))
-
-    # Sort paths and append to pci_path
-    # Note: Sorting logic preserved from original code
-    for comp in sorted(paths, reverse=True):
-        pci_path += f"/Pci({comp})"
-
-    return pci_path
+    slots = _resolve_device_chain_from_sysfs(device_slot) or [device_slot]
+    pci_components = [_format_pci_component(s) for s in slots]
+    pci_suffix = "".join(f"/Pci({c})" for c in pci_components if c)
+    return f"PciRoot({hex(domain)}){pci_suffix}"
 
 
-def _get_address_components(slot_name):
-    """
-    :param slot_name: format: <domain>:<bus>:<slot>.<function>
-    :return: Tuple of address components
-    """
+def _format_pci_component(slot_name: str):
+    """Return 'slot,func' as hex string, e.g. '0x1f,0x3', or None."""
     try:
-        # slot_name example: 0000:00:1f.3
-        # split(":")[-1] -> 1f.3
-        # split(".") -> ['1f', '3']
         device_func = slot_name.split(":")[-1]
-        return tuple(hex(int(n, 16)) for n in device_func.split("."))
+        slot, func = device_func.split(".")
+        return f"{hex(int(slot, 16))},{hex(int(func, 16))}"
     except (ValueError, IndexError, AttributeError):
         return None
+
+
+def _resolve_device_chain_from_sysfs(device_slot: str):
+    """Return ordered PCI BDFs from root bridge to endpoint for a device."""
+    sysfs_path = os.path.realpath(f"/sys/bus/pci/devices/{device_slot}")
+    if not sysfs_path:
+        return None
+
+    bdfs = [p for p in sysfs_path.split(os.path.sep) if _PCI_BDF_PATTERN.match(p)]
+    if not bdfs:
+        return None
+
+    try:
+        end = next(i for i, b in enumerate(bdfs) if b.lower() == device_slot.lower())
+    except StopIteration:
+        return None
+
+    return bdfs[: end + 1]
+

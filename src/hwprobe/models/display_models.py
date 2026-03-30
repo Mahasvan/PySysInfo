@@ -21,8 +21,6 @@ class ResolutionInfo(BaseModel):
 
 class DisplayModuleInfo(BaseModel):
     """Information for one Display is stored here"""
-    status: Status = Field(default_factory=Status)
-
     name: Optional[str] = None
 
     #: Year it was manufactured / designed.
@@ -31,18 +29,15 @@ class DisplayModuleInfo(BaseModel):
     #: ACPI path of the display device.
     acpi_path: Optional[str] = None
 
+    #: PCI path of the device
+    pci_path: Optional[str] = None
+
     #: Parent GPU driving this display
     gpu_name: Optional[str] = None
 
     resolution: Optional[ResolutionInfo] = None
 
-    # Diagonal size in inches
-    inches: Optional[int] = None
-
-    # Orientation (landscape/portrait) (includes FLIPPED)
-    orientation: Optional[str] = None
-
-    # Display Interface (HDMI, DP, VGA, etc) - enum: DISPLAY_CON_TYPE
+    # Display Interface (HDMI, DP, VGA, etc.) - enum: DISPLAY_CON_TYPE
     interface: Optional[str] = None
 
     # Serial Number
@@ -50,7 +45,6 @@ class DisplayModuleInfo(BaseModel):
 
     #: Three-letter code assigned to each manufacturer.
     manufacturer_code: Optional[str] = None
-
 
 class DisplayInfo(ComponentInfo):
     """Contains a list of ``DisplayModuleInfo`` objects."""
