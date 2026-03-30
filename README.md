@@ -202,20 +202,29 @@ print(json.dumps(json_data, indent=2))
 1. In progress
 2. Need to rewrite C++ bindings (In progress)
 
-### Miscellaneous Tasks / Problems
+### Miscellaneous Tasks
 
-| Task                                                                                             | Status |
-|--------------------------------------------------------------------------------------------------|:------:|
-| GH actions for compiling `interops/{platform}/*.{c\|cpp}` to their respective output directories |   ✅    |
-| Group Pydantic Model fields into essential and optional                                          |   ❌    |
-| Remove `pyobjc` dependency in macOS by rewriting dependent code chunks in C++                    |   ✅    |
-| Autodetection of storage units                                                                   |   ❌    |
+| Task                                                                  | Status |
+|-----------------------------------------------------------------------|:------:|
+| Pending components                                                    |   ❌    |
+| Autodetection of storage units                                        |   ❌    |
+| PCI Lookup — [PCI IDs Repository](https://github.com/pciutils/pciids) |   ❌    |
 
-### Supporting Features
 
-| Feature                                                                                                                      | Status |
-|------------------------------------------------------------------------------------------------------------------------------|:------:|
-| PCI Lookup — [DeviceHunt](https://devicehunt.com)                                                                            |   ❌    |
-| PCI Lookup — [PCI IDs Repository](https://pci-ids.ucw.cz) ([GitHub](https://github.com/pciutils/pciids/blob/master/pci.ids)) |   ❌    |
-| Logging                                                                                                                      |   ✅    |
-| Working Library                                                                                                              |   ✅    |
+## Credits
+
+There are so many people that helped with developing this library, directly or indirectly.
+
+<details>
+<summary>Thank you to these people for bringing HWProbe to the shape it currently is in.</summary>
+
+- [kernel-dev](https://github.com/kernel-dev) for OCSysInfo
+- People who helped with testing the myriad of hardware combinations:
+  - [AjaxR0](https://github.com/AjaxR0)
+  - [Andrupka](https://github.com/Andrupka)
+  - [chrisdodgers](https://github.com/chrisdodgers)
+  - [Dids](https://github.com/dids)
+  - [PJFrye](https://github.com/PJFrye)
+  - So many more people, you know who you are, thank you so much!
+
+</details>
