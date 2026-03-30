@@ -6,19 +6,6 @@ from hwprobe.core.linux.common import pci_path_linux
 from hwprobe.models.network_models import NetworkInfo, NICInfo
 from hwprobe.models.status_models import Status
 
-NOISY_PREFIXES = (
-    # Loopback
-    "lo",
-    # Docker / Basic Bridges
-    "veth", "br-", "docker",
-    # Kubernetes CNIs
-    "flannel", "cni", "cali", "cilium", "weave", "kube-ipvs0",
-    # Hypervisors (KVM / libvirt / LXC)
-    "virbr", "vnet", "lxc",
-    # Tunnels / Virtual routing
-    "dummy", "tun", "tap"
-)
-
 
 def _enrich_with_sysfs_info(nic: NICInfo, status: Status) -> None:
     """Helper to read hardware details directly from Linux sysfs."""

@@ -22,6 +22,7 @@ def _fetch_individual_monitor_info(device_path: str) -> Optional[DisplayModuleIn
     parent_path = os.path.join(device_path, "device")
 
     # todo: populate parent graphics card info
+    # we have vendor and device ids of the parent gpu. When PCI-IDs integration is done, use it to get name
 
     with open(edid_path, "rb") as f:
         edid_data = f.read()
