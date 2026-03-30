@@ -2,12 +2,16 @@ import builtins
 import os
 from unittest.mock import mock_open
 
+import pytest
+
 from hwprobe.core.linux.display import (
     _extract_pci_bdf_from_sysfs_path,
+    _parse_connector_type,
     _fetch_individual_monitor_info,
     fetch_display_info,
 )
 from hwprobe.models.display_models import DisplayModuleInfo
+from hwprobe.models.status_models import StatusType
 
 
 class TestExtractPciBdfFromSysfsPath:
@@ -135,6 +139,7 @@ class TestFetchIndividualMonitorInfo:
 
 class TestFetchDisplayInfo:
     def test_collects_monitors_from_drm(self, monkeypatch):
+        monkeypatch.setattr(os.path, "isdir", lambda p: p == "/sys/class/drm")
         monkeypatch.setattr(
             os, "listdir",
             lambda path: {
@@ -154,6 +159,7 @@ class TestFetchDisplayInfo:
         assert names == {"card0-eDP-1", "card0-HDMI-A-1"}
 
     def test_skips_monitors_returning_none(self, monkeypatch):
+        monkeypatch.setattr(os.path, "isdir", lambda p: p == "/sys/class/drm")
         monkeypatch.setattr(
             os, "listdir",
             lambda path: {
@@ -169,3 +175,92 @@ class TestFetchDisplayInfo:
         info = fetch_display_info()
 
         assert len(info.modules) == 0
+
+    def test_failed_when_drm_root_missing(self, monkeypatch):
+        monkeypatch.setattr(os.path, "isdir", lambda p: False)
+
+        info = fetch_display_info()
+
+        assert info.status.type == StatusType.FAILED
+        assert any("/sys/class/drm" in m for m in info.status.messages)
+        assert info.modules == []
+
+    def test_partial_when_monitor_raises(self, monkeypatch):
+        monkeypatch.setattr(os.path, "isdir", lambda p: p == "/sys/class/drm")
+        monkeypatch.setattr(
+            os, "listdir",
+            lambda path: {
+                "/sys/class/drm": ["card0"],
+                "/sys/class/drm/card0": ["card0-eDP-1", "card0-HDMI-A-1"],
+            }.get(path, []),
+        )
+
+        call_count = {"n": 0}
+
+        def _mock_fetch(path):
+            call_count["n"] += 1
+            if call_count["n"] == 1:
+                raise RuntimeError("EDID decode failed")
+            return DisplayModuleInfo(name="Monitor B")
+
+        monkeypatch.setattr(
+            "hwprobe.core.linux.display._fetch_individual_monitor_info", _mock_fetch,
+        )
+
+        info = fetch_display_info()
+
+        assert info.status.type == StatusType.PARTIAL
+        assert any("card0-eDP-1" in m for m in info.status.messages)
+        assert len(info.modules) == 1
+        assert info.modules[0].name == "Monitor B"
+
+
+class TestParseConnectorType:
+
+    @pytest.mark.parametrize("dirname,expected", [
+        ("card0-eDP-1", "DisplayPort"),
+        ("card0-DP-1", "DisplayPort"),
+        ("card0-DP-2", "DisplayPort"),
+        ("card1-HDMI-A-1", "HDMI"),
+        ("card0-HDMI-B-1", "HDMI (B)"),
+        ("card0-DVI-D-1", "DVI"),
+        ("card0-DVI-I-1", "DVI"),
+        ("card0-DVI-A-1", "DVI"),
+        ("card0-VGA-1", "Analog"),
+        ("card0-LVDS-1", "LVDS"),
+        ("card0-DSI-1", "DSI"),
+    ])
+    def test_known_connectors(self, dirname, expected):
+        path = f"/sys/class/drm/card0/{dirname}"
+        assert _parse_connector_type(path) == expected
+
+    def test_unknown_connector_returns_none(self):
+        path = "/sys/class/drm/card0/card0-SPI-1"
+        assert _parse_connector_type(path) is None
+
+    def test_bare_card_dir_returns_none(self):
+        path = "/sys/class/drm/card0"
+        assert _parse_connector_type(path) is None
+
+    def test_connector_overrides_edid_interface(self, monkeypatch):
+        device_path = "/sys/class/drm/card0/card0-HDMI-A-1"
+        edid_path = os.path.join(device_path, "edid")
+
+        monkeypatch.setattr(os.path, "exists", lambda p: p == edid_path)
+        monkeypatch.setattr(
+            builtins, "open",
+            lambda *a, **kw: mock_open(read_data=b"\x01\x02")(),
+        )
+        monkeypatch.setattr(
+            "hwprobe.core.linux.display.parse_edid",
+            lambda _: DisplayModuleInfo(name="Test", interface="DisplayPort"),
+        )
+        monkeypatch.setattr(
+            os.path, "realpath",
+            lambda _: "/sys/devices/platform/drm/card0",
+        )
+
+        monitor = _fetch_individual_monitor_info(device_path)
+
+        assert monitor is not None
+        assert monitor.interface == "HDMI"
